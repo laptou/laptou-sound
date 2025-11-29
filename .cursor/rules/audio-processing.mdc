@@ -1,0 +1,238 @@
+---
+description: Audio processing patterns for waveform generation and transcoding
+globs: ["src/workers/**/*.ts", "src/lib/audio/**/*.ts"]
+---
+
+# Audio Processing for Laptou Sound
+
+## Processing Pipeline Overview
+
+1. User uploads original audio file -> stored in R2 `/originals/`
+2. Queue message sent with processing instructions
+3. Worker processes:
+   - Transcode to 128kbps MP3 for browser playback
+   - Generate waveform peaks for visualization
+   - Extract duration metadata
+4. Results stored in R2, database updated
+
+## Waveform Data Format
+
+Store waveform as JSON array of normalized peaks:
+
+```typescript
+interface WaveformData {
+  // array of peak values normalized to 0-1 range
+  // typically 100-200 points for responsive display
+  peaks: number[];
+  // duration in seconds
+  duration: number;
+  // samples per peak (for precision seeking)
+  samplesPerPeak: number;
+}
+```
+
+## Client-Side Waveform Rendering
+
+```typescript
+// src/components/WaveformPlayer.tsx
+import { createSignal, onMount, onCleanup } from "solid-js";
+
+interface Props {
+  waveformUrl: string;
+  audioUrl: string;
+}
+
+export function WaveformPlayer(props: Props) {
+  let canvasRef: HTMLCanvasElement | undefined;
+  let audioRef: HTMLAudioElement | undefined;
+  
+  const [peaks, setPeaks] = createSignal<number[]>([]);
+  const [progress, setProgress] = createSignal(0);
+  const [isPlaying, setIsPlaying] = createSignal(false);
+  
+  onMount(async () => {
+    // load waveform data
+    const res = await fetch(props.waveformUrl);
+    const data = await res.json();
+    setPeaks(data.peaks);
+    
+    // draw initial waveform
+    drawWaveform();
+  });
+  
+  const drawWaveform = () => {
+    if (!canvasRef) return;
+    const ctx = canvasRef.getContext("2d")!;
+    const { width, height } = canvasRef;
+    const peakData = peaks();
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    const barWidth = width / peakData.length;
+    const playedBars = Math.floor(progress() * peakData.length);
+    
+    peakData.forEach((peak, i) => {
+      const barHeight = peak * height * 0.8;
+      const x = i * barWidth;
+      const y = (height - barHeight) / 2;
+      
+      // different color for played vs unplayed
+      ctx.fillStyle = i < playedBars 
+        ? "var(--color-accent-500)" 
+        : "var(--color-accent-200)";
+      
+      ctx.fillRect(x, y, barWidth - 1, barHeight);
+    });
+  };
+  
+  // ... audio controls, seek handling, etc.
+}
+```
+
+## Processing with FFmpeg WASM (Browser/Worker)
+
+For lighter processing, FFmpeg WASM can run in Workers:
+
+```typescript
+import { FFmpeg } from "@ffmpeg/ffmpeg";
+
+async function transcodeToMp3(inputBuffer: ArrayBuffer): Promise<ArrayBuffer> {
+  const ffmpeg = new FFmpeg();
+  await ffmpeg.load();
+  
+  await ffmpeg.writeFile("input", new Uint8Array(inputBuffer));
+  
+  await ffmpeg.exec([
+    "-i", "input",
+    "-codec:a", "libmp3lame",
+    "-b:a", "128k",
+    "-ar", "44100",
+    "output.mp3"
+  ]);
+  
+  const output = await ffmpeg.readFile("output.mp3");
+  return output.buffer;
+}
+```
+
+## Waveform Generation
+
+Generate peaks from audio data:
+
+```typescript
+async function generateWaveform(
+  audioBuffer: ArrayBuffer,
+  targetPeaks: number = 150
+): Promise<WaveformData> {
+  // decode audio
+  const audioContext = new AudioContext();
+  const decoded = await audioContext.decodeAudioData(audioBuffer);
+  
+  // get raw samples from first channel
+  const samples = decoded.getChannelData(0);
+  const duration = decoded.duration;
+  
+  // calculate samples per peak
+  const samplesPerPeak = Math.floor(samples.length / targetPeaks);
+  
+  // extract peaks
+  const peaks: number[] = [];
+  for (let i = 0; i < targetPeaks; i++) {
+    const start = i * samplesPerPeak;
+    const end = start + samplesPerPeak;
+    
+    let max = 0;
+    for (let j = start; j < end && j < samples.length; j++) {
+      const abs = Math.abs(samples[j]);
+      if (abs > max) max = abs;
+    }
+    peaks.push(max);
+  }
+  
+  // normalize to 0-1 range
+  const maxPeak = Math.max(...peaks);
+  const normalizedPeaks = peaks.map(p => p / maxPeak);
+  
+  return {
+    peaks: normalizedPeaks,
+    duration,
+    samplesPerPeak,
+  };
+}
+```
+
+## External Processing Service (Recommended for Production)
+
+For production, consider an external service due to Worker CPU limits:
+
+```typescript
+// src/lib/audio/external-processor.ts
+interface ProcessingResult {
+  playbackUrl: string;
+  waveformData: WaveformData;
+  duration: number;
+}
+
+async function processWithExternalService(
+  originalUrl: string,
+  callbackUrl: string
+): Promise<void> {
+  // send to external service (AWS Lambda, dedicated server, etc.)
+  await fetch(process.env.AUDIO_PROCESSOR_URL!, {
+    method: "POST",
+    body: JSON.stringify({
+      sourceUrl: originalUrl,
+      callbackUrl,
+      outputFormat: "mp3",
+      bitrate: 128,
+      generateWaveform: true,
+      waveformPeaks: 150,
+    }),
+  });
+}
+```
+
+## R2 Keys for Audio Files
+
+```typescript
+// key generation helpers
+function getOriginalKey(trackId: string, versionId: string, filename: string) {
+  return `originals/${trackId}/${versionId}/${filename}`;
+}
+
+function getPlaybackKey(trackId: string, versionId: string) {
+  return `playback/${trackId}/${versionId}/audio.mp3`;
+}
+
+function getWaveformKey(trackId: string, versionId: string) {
+  return `waveforms/${trackId}/${versionId}/peaks.json`;
+}
+```
+
+## Processing Status States
+
+```typescript
+type ProcessingStatus = 
+  | "pending"      // queued, not started
+  | "processing"   // currently being processed
+  | "complete"     // ready for playback
+  | "failed";      // processing failed
+
+// UI should poll or use websockets to check status
+const statusMessages = {
+  pending: "Waiting in queue...",
+  processing: "Processing audio...",
+  complete: "Ready to play",
+  failed: "Processing failed. Please try again.",
+};
+```
+
+## Key Patterns
+
+1. Store original files for quality preservation
+2. Generate 128kbps MP3 for efficient streaming
+3. Pre-compute waveform peaks (150 points is good balance)
+4. Use canvas for responsive waveform rendering
+5. Consider external services for heavy processing
+6. Implement status polling for processing feedback
+7. Cache waveform data in browser for repeat views

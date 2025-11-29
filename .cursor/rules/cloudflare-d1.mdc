@@ -1,0 +1,150 @@
+---
+description: Cloudflare D1 database patterns for TanStack Start
+globs: ["src/lib/db*.ts", "src/server/**/*.ts", "migrations/**/*.sql", "wrangler.jsonc"]
+---
+
+# Cloudflare D1 with TanStack Start
+
+## Wrangler Configuration
+
+Add D1 binding in `wrangler.jsonc`:
+
+```jsonc
+{
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "laptou-sound-db",
+      "database_id": "<your-database-id>"
+    }
+  ]
+}
+```
+
+## Creating D1 Database
+
+```bash
+# create database
+bun wrangler d1 create laptou-sound-db
+
+# run migrations locally
+bun wrangler d1 migrations apply laptou-sound-db --local
+
+# run migrations in production
+bun wrangler d1 migrations apply laptou-sound-db --remote
+```
+
+## Migration Files
+
+Place migrations in `migrations/` directory with naming convention:
+`NNNN_description.sql` (e.g., `0001_initial_schema.sql`)
+
+```sql
+-- migrations/0001_initial_schema.sql
+CREATE TABLE IF NOT EXISTS track (
+  id TEXT PRIMARY KEY,
+  uploader_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  cover_url TEXT,
+  is_downloadable INTEGER DEFAULT 0,
+  social_prompt TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (uploader_id) REFERENCES user(id)
+);
+
+CREATE INDEX idx_track_uploader ON track(uploader_id);
+CREATE INDEX idx_track_created ON track(created_at DESC);
+```
+
+## Accessing D1 in Server Functions
+
+```typescript
+import { createServerFn } from "@tanstack/solid-start/server";
+import { getCloudflareContext } from "@tanstack/solid-start/server";
+
+const getTracks = createServerFn({ method: "GET" }).handler(async () => {
+  const { env } = await getCloudflareContext();
+  
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM track ORDER BY created_at DESC LIMIT 20`
+  ).all();
+  
+  return results;
+});
+```
+
+## Parameterized Queries
+
+Always use parameterized queries to prevent SQL injection:
+
+```typescript
+const getTrackById = createServerFn({ method: "GET" })
+  .validator((id: string) => id)
+  .handler(async ({ data: id }) => {
+    const { env } = await getCloudflareContext();
+    
+    const track = await env.DB.prepare(
+      `SELECT * FROM track WHERE id = ?`
+    ).bind(id).first();
+    
+    return track;
+  });
+```
+
+## Batch Operations
+
+```typescript
+const createTrackWithVersion = async (track: Track, version: TrackVersion) => {
+  const { env } = await getCloudflareContext();
+  
+  const batch = [
+    env.DB.prepare(`INSERT INTO track (id, uploader_id, title) VALUES (?, ?, ?)`)
+      .bind(track.id, track.uploaderId, track.title),
+    env.DB.prepare(`INSERT INTO track_version (id, track_id, version_number) VALUES (?, ?, ?)`)
+      .bind(version.id, track.id, version.versionNumber),
+  ];
+  
+  await env.DB.batch(batch);
+};
+```
+
+## Type Definitions
+
+Define types for your database schema:
+
+```typescript
+// src/lib/db/types.ts
+export interface Track {
+  id: string;
+  uploader_id: string;
+  title: string;
+  description: string | null;
+  cover_url: string | null;
+  is_downloadable: number; // SQLite uses integers for booleans
+  social_prompt: string | null;
+  created_at: string;
+}
+
+export interface TrackVersion {
+  id: string;
+  track_id: string;
+  version_number: number;
+  original_key: string;
+  playback_key: string | null;
+  waveform_key: string | null;
+  duration: number | null;
+  processing_status: "pending" | "processing" | "complete" | "failed";
+  created_at: string;
+}
+```
+
+## Key Patterns
+
+1. Use `getCloudflareContext()` to access D1 binding in server functions
+2. Always use parameterized queries with `.bind()`
+3. Use `.batch()` for multiple related operations
+4. SQLite uses INTEGER for booleans (0/1)
+5. Use TEXT for dates in ISO format
+6. Create indexes for frequently queried columns
+7. Use `--local` flag for development, `--remote` for production

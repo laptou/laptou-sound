@@ -1,0 +1,118 @@
+---
+description: Better Auth authentication patterns for TanStack Start with SolidJS
+globs: ["src/lib/auth*.ts", "src/routes/auth/**/*.tsx", "src/server/**/*.ts"]
+---
+
+# Better Auth with TanStack Start (SolidJS)
+
+## Server-Side Auth Instance
+
+Create the auth instance in `src/lib/auth.ts`:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { D1Dialect } from "kysely-d1";
+
+export const auth = betterAuth({
+  database: {
+    dialect: new D1Dialect({ database: env.DB }),
+    type: "sqlite",
+  },
+  emailAndPassword: {
+    enabled: true,
+  },
+});
+```
+
+## Client-Side Auth
+
+Create auth client in `src/lib/auth-client.ts`:
+
+```typescript
+import { createAuthClient } from "better-auth/solid";
+
+export const authClient = createAuthClient({
+  baseURL: import.meta.env.VITE_APP_URL,
+});
+
+export const { signIn, signUp, signOut, useSession } = authClient;
+```
+
+## API Route Handler
+
+Create API route at `src/routes/api/auth/$.ts`:
+
+```typescript
+import { createAPIFileRoute } from "@tanstack/solid-start/api";
+import { auth } from "~/lib/auth";
+
+export const APIRoute = createAPIFileRoute("/api/auth/$")({
+  GET: async ({ request }) => auth.handler(request),
+  POST: async ({ request }) => auth.handler(request),
+});
+```
+
+## Session Access in Server Functions
+
+```typescript
+import { createServerFn } from "@tanstack/solid-start/server";
+import { auth } from "~/lib/auth";
+import { getWebRequest } from "@tanstack/solid-start/server";
+
+const getSession = createServerFn({ method: "GET" }).handler(async () => {
+  const request = getWebRequest();
+  const session = await auth.api.getSession({ headers: request.headers });
+  return session;
+});
+```
+
+## Protected Routes
+
+Use `beforeLoad` to protect routes:
+
+```typescript
+import { createFileRoute, redirect } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/protected")({
+  beforeLoad: async ({ context }) => {
+    const session = await getSession();
+    if (!session) {
+      throw redirect({ to: "/auth/login" });
+    }
+    return { session };
+  },
+  component: ProtectedPage,
+});
+```
+
+## Role-Based Authorization
+
+Check user roles in server functions:
+
+```typescript
+const requireRole = (allowedRoles: string[]) =>
+  createServerFn({ method: "GET" }).handler(async () => {
+    const request = getWebRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    
+    if (!session?.user) {
+      throw new Error("Unauthorized");
+    }
+    
+    // query user_role table
+    const role = await getUserRole(session.user.id);
+    if (!allowedRoles.includes(role)) {
+      throw new Error("Forbidden");
+    }
+    
+    return { session, role };
+  });
+```
+
+## Key Patterns
+
+1. Always use `getWebRequest()` to access request headers in server functions
+2. Store custom user data (roles) in separate tables linked by userId
+3. Use `beforeLoad` for route-level auth checks
+4. Handle auth state reactively with `useSession()` on client
+5. Never expose sensitive auth logic to the client bundle

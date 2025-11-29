@@ -1,0 +1,227 @@
+---
+description: TanStack Start with SolidJS patterns and best practices
+globs: ["src/**/*.tsx", "src/**/*.ts", "vite.config.ts"]
+---
+
+# TanStack Start with SolidJS
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+├── lib/                 # Utilities, auth, db helpers
+├── routes/              # File-based routing
+│   ├── __root.tsx       # Root layout
+│   ├── index.tsx        # Home page (/)
+│   └── auth/
+│       └── login.tsx    # /auth/login
+├── router.tsx           # Router configuration
+├── routeTree.gen.ts     # Auto-generated route tree
+└── styles.css           # Global styles
+```
+
+## Creating Routes
+
+```typescript
+// src/routes/track/$trackId.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/track/$trackId")({
+  // data loading
+  loader: async ({ params }) => {
+    return await getTrack({ data: params.trackId });
+  },
+  // route component
+  component: TrackPage,
+});
+
+function TrackPage() {
+  const { trackId } = Route.useParams();
+  const track = Route.useLoaderData();
+  
+  return <div>{track().title}</div>;
+}
+```
+
+## Server Functions
+
+Server functions run on the server and can be called from client components:
+
+```typescript
+import { createServerFn } from "@tanstack/solid-start/server";
+import { getCloudflareContext } from "@tanstack/solid-start/server";
+
+// GET function
+export const getTracks = createServerFn({ method: "GET" }).handler(async () => {
+  const { env } = await getCloudflareContext();
+  const { results } = await env.DB.prepare(`SELECT * FROM track`).all();
+  return results;
+});
+
+// POST function with validation
+export const createTrack = createServerFn({ method: "POST" })
+  .validator((data: { title: string; description?: string }) => data)
+  .handler(async ({ data }) => {
+    const { env } = await getCloudflareContext();
+    // ... create track
+    return { id: newId };
+  });
+```
+
+## Using Server Functions in Components
+
+```typescript
+import { createResource, Suspense } from "solid-js";
+import { getTracks, createTrack } from "~/lib/server/tracks";
+
+function TrackList() {
+  const [tracks] = createResource(getTracks);
+  
+  const handleCreate = async () => {
+    const result = await createTrack({ data: { title: "New Track" } });
+  };
+  
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <For each={tracks()}>{(track) => <TrackCard track={track} />}</For>
+    </Suspense>
+  );
+}
+```
+
+## Route Loaders
+
+Use loaders for data that should be fetched before rendering:
+
+```typescript
+export const Route = createFileRoute("/")({
+  loader: async () => {
+    // this runs on server during SSR
+    return await getTracks();
+  },
+  component: HomePage,
+});
+
+function HomePage() {
+  const tracks = Route.useLoaderData();
+  // tracks is already loaded, no loading state needed
+  return <For each={tracks()}>{(track) => <TrackCard track={track} />}</For>;
+}
+```
+
+## Protected Routes with beforeLoad
+
+```typescript
+import { redirect } from "@tanstack/solid-router";
+import { getSession } from "~/lib/auth";
+
+export const Route = createFileRoute("/upload")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session) {
+      throw redirect({ to: "/auth/login" });
+    }
+    return { session };
+  },
+  component: UploadPage,
+});
+
+function UploadPage() {
+  const { session } = Route.useRouteContext();
+  // session is guaranteed to exist here
+}
+```
+
+## API Routes
+
+Create API endpoints for webhooks, file serving, etc:
+
+```typescript
+// src/routes/api/files/$key.ts
+import { createAPIFileRoute } from "@tanstack/solid-start/api";
+import { getCloudflareContext } from "@tanstack/solid-start/server";
+
+export const APIRoute = createAPIFileRoute("/api/files/$key")({
+  GET: async ({ params }) => {
+    const { env } = await getCloudflareContext();
+    const file = await env.R2.get(params.key);
+    
+    if (!file) {
+      return new Response("Not found", { status: 404 });
+    }
+    
+    return new Response(file.body, {
+      headers: { "Content-Type": file.httpMetadata?.contentType || "" },
+    });
+  },
+});
+```
+
+## Head/Meta Management
+
+```typescript
+export const Route = createFileRoute("/track/$trackId")({
+  head: ({ loaderData }) => ({
+    meta: [
+      { title: loaderData?.title ?? "Track" },
+      { name: "description", content: loaderData?.description },
+    ],
+  }),
+  component: TrackPage,
+});
+```
+
+## Error Boundaries
+
+```typescript
+export const Route = createFileRoute("/track/$trackId")({
+  errorComponent: ({ error }) => (
+    <div class="error">
+      <h1>Error loading track</h1>
+      <p>{error.message}</p>
+    </div>
+  ),
+  component: TrackPage,
+});
+```
+
+## SolidJS Patterns with TanStack
+
+```typescript
+import { createSignal, createEffect, Show, For } from "solid-js";
+
+function Component() {
+  // reactive state
+  const [count, setCount] = createSignal(0);
+  
+  // effects
+  createEffect(() => {
+    console.log("Count changed:", count());
+  });
+  
+  return (
+    <div>
+      {/* conditional rendering */}
+      <Show when={count() > 0} fallback={<p>No items</p>}>
+        <p>Count: {count()}</p>
+      </Show>
+      
+      {/* list rendering */}
+      <For each={items()}>
+        {(item, index) => <div>{index()}: {item.name}</div>}
+      </For>
+    </div>
+  );
+}
+```
+
+## Key Patterns
+
+1. Use `createFileRoute` for all route definitions
+2. Use `createServerFn` for server-side logic
+3. Access Cloudflare bindings via `getCloudflareContext()`
+4. Use `loader` for data needed at render time
+5. Use `beforeLoad` for authentication checks
+6. Use `createResource` for client-side data fetching
+7. Prefer SolidJS primitives (`createSignal`, `Show`, `For`) over React patterns
