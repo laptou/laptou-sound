@@ -1,5 +1,8 @@
-// database utilities and query helpers
-import type { D1Database } from "@cloudflare/workers-types";
+// database utilities and query helpers using drizzle orm
+// all db access methods include authorization checks
+import { eq, and, sql, desc, isNull, gt, max } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
+import * as schema from "./schema";
 import type {
   Track,
   TrackVersion,
@@ -17,93 +20,157 @@ export function generateId(): string {
   return crypto.randomUUID();
 }
 
+// authorization context for db operations
+export interface AuthContext {
+  userId?: string;
+  role?: UserRole;
+}
+
+// check if user has required role
+function requireRole(context: AuthContext | null, allowedRoles: UserRole[]): void {
+  if (!context?.userId || !context.role) {
+    throw new Error("Unauthorized: Authentication required");
+  }
+  if (!allowedRoles.includes(context.role)) {
+    throw new Error(`Forbidden: Requires one of: ${allowedRoles.join(", ")}`);
+  }
+}
+
+// check if user owns resource or is admin
+function requireOwnershipOrAdmin(
+  context: AuthContext | null,
+  ownerId: string
+): void {
+  if (!context?.userId) {
+    throw new Error("Unauthorized: Authentication required");
+  }
+  if (context.userId !== ownerId && context.role !== "admin") {
+    throw new Error("Forbidden: You can only access your own resources");
+  }
+}
+
 // user role queries
 export async function getUserRole(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   userId: string
 ): Promise<UserRole> {
   const result = await db
-    .prepare(`SELECT role FROM user_role WHERE user_id = ?`)
-    .bind(userId)
-    .first<{ role: UserRole }>();
+    .select({ role: schema.userRole.role })
+    .from(schema.userRole)
+    .where(eq(schema.userRole.userId, userId))
+    .limit(1);
 
-  return result?.role ?? "commenter";
+  return (result[0]?.role as UserRole) ?? "commenter";
 }
 
 export async function setUserRole(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   userId: string,
-  role: UserRole
+  role: UserRole,
+  context: AuthContext | null
 ): Promise<void> {
+  // only admins can set roles
+  requireRole(context, ["admin"]);
+
   const id = generateId();
   await db
-    .prepare(
-      `INSERT INTO user_role (id, user_id, role) VALUES (?, ?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET role = ?, updated_at = datetime('now')`
-    )
-    .bind(id, userId, role, role)
-    .run();
+    .insert(schema.userRole)
+    .values({
+      id,
+      userId,
+      role,
+      updatedAt: sql`datetime('now')`,
+    })
+    .onConflictDoUpdate({
+      target: schema.userRole.userId,
+      set: {
+        role,
+        updatedAt: sql`datetime('now')`,
+      },
+    });
 }
 
 // invite code queries
 export async function createInviteCode(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   createdBy: string,
   role: "uploader" | "admin",
-  expiresAt?: string
+  expiresAt: string | undefined,
+  context: AuthContext | null
 ): Promise<InviteCode> {
+  // only admins can create invite codes
+  requireRole(context, ["admin"]);
+
   const id = generateId();
   const code = generateInviteCode();
 
-  await db
-    .prepare(
-      `INSERT INTO invite_code (id, code, role, created_by, expires_at) VALUES (?, ?, ?, ?, ?)`
-    )
-    .bind(id, code, role, createdBy, expiresAt ?? null)
-    .run();
+  await db.insert(schema.inviteCode).values({
+    id,
+    code,
+    role,
+    createdBy,
+    expiresAt: expiresAt ?? null,
+  });
 
   const result = await db
-    .prepare(`SELECT * FROM invite_code WHERE id = ?`)
-    .bind(id)
-    .first<InviteCode>();
+    .select()
+    .from(schema.inviteCode)
+    .where(eq(schema.inviteCode.id, id))
+    .limit(1);
 
-  return result!;
+  return mapInviteCode(result[0]!);
 }
 
 export async function useInviteCode(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   code: string,
   userId: string
 ): Promise<InviteCode | null> {
   // find valid unused code
-  const invite = await db
-    .prepare(
-      `SELECT * FROM invite_code 
-       WHERE code = ? 
-       AND used_by IS NULL 
-       AND (expires_at IS NULL OR expires_at > datetime('now'))`
+  const invites = await db
+    .select()
+    .from(schema.inviteCode)
+    .where(
+      and(
+        eq(schema.inviteCode.code, code),
+        isNull(schema.inviteCode.usedBy),
+        sql`(${schema.inviteCode.expiresAt} IS NULL OR ${schema.inviteCode.expiresAt} > datetime('now'))`
+      )
     )
-    .bind(code)
-    .first<InviteCode>();
+    .limit(1);
 
+  const invite = invites[0];
   if (!invite) return null;
 
   // mark as used and set user role
-  await db.batch([
-    db
-      .prepare(
-        `UPDATE invite_code SET used_by = ?, used_at = datetime('now') WHERE id = ?`
-      )
-      .bind(userId, invite.id),
-    db
-      .prepare(
-        `INSERT INTO user_role (id, user_id, role) VALUES (?, ?, ?)
-         ON CONFLICT(user_id) DO UPDATE SET role = ?, updated_at = datetime('now')`
-      )
-      .bind(generateId(), userId, invite.role, invite.role),
-  ]);
+  await db.transaction(async (tx) => {
+    await tx
+      .update(schema.inviteCode)
+      .set({
+        usedBy: userId,
+        usedAt: sql`datetime('now')`,
+      })
+      .where(eq(schema.inviteCode.id, invite.id));
 
-  return invite;
+    const roleId = generateId();
+    await tx
+      .insert(schema.userRole)
+      .values({
+        id: roleId,
+        userId,
+        role: invite.role,
+        updatedAt: sql`datetime('now')`,
+      })
+      .onConflictDoUpdate({
+        target: schema.userRole.userId,
+        set: {
+          role: invite.role,
+          updatedAt: sql`datetime('now')`,
+        },
+      });
+  });
+
+  return mapInviteCode(invite);
 }
 
 function generateInviteCode(): string {
@@ -118,239 +185,411 @@ function generateInviteCode(): string {
 
 // track queries
 export async function getRecentTracks(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   limit = 20,
   offset = 0
 ): Promise<TrackWithLatestVersion[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT 
-        t.*,
-        tv.id as latest_version_id,
-        tv.playback_key,
-        tv.waveform_key,
-        tv.duration,
-        tv.processing_status
-       FROM track t
-       LEFT JOIN track_version tv ON tv.track_id = t.id
-       AND tv.version_number = (
-         SELECT MAX(version_number) FROM track_version WHERE track_id = t.id
-       )
-       ORDER BY t.created_at DESC
-       LIMIT ? OFFSET ?`
-    )
-    .bind(limit, offset)
-    .all<TrackWithLatestVersion>();
+  // public read access - no auth required
+  // get tracks first, then get latest versions separately
+  const tracks = await db
+    .select()
+    .from(schema.track)
+    .orderBy(desc(schema.track.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return results;
+  // get latest versions for each track
+  const trackIds = tracks.map((t) => t.id);
+  if (trackIds.length === 0) return [];
+
+  const latestVersions = await db
+    .select({
+      trackId: schema.trackVersion.trackId,
+      id: schema.trackVersion.id,
+      playbackKey: schema.trackVersion.playbackKey,
+      waveformKey: schema.trackVersion.waveformKey,
+      duration: schema.trackVersion.duration,
+      processingStatus: schema.trackVersion.processingStatus,
+    })
+    .from(schema.trackVersion)
+    .where(
+      sql`${schema.trackVersion.trackId} IN (${sql.join(trackIds.map((id) => sql`${id}`), sql`, `)}) AND ${schema.trackVersion.versionNumber} = (
+        SELECT MAX(version_number) FROM track_version WHERE track_id = ${schema.trackVersion.trackId}
+      )`
+    );
+
+  // create map for quick lookup
+  const versionMap = new Map(
+    latestVersions.map((v) => [v.trackId, v])
+  );
+
+  return tracks.map((t) => {
+    const version = versionMap.get(t.id);
+    return {
+      id: t.id,
+      uploader_id: t.uploaderId,
+      title: t.title,
+      description: t.description ?? null,
+      cover_key: t.coverKey ?? null,
+      is_downloadable: t.isDownloadable ? 1 : 0,
+      social_prompt: t.socialPrompt ?? null,
+      created_at: t.createdAt,
+      latest_version_id: version?.id ?? null,
+      playback_key: version?.playbackKey ?? null,
+      waveform_key: version?.waveformKey ?? null,
+      duration: version?.duration ?? null,
+      processing_status: (version?.processingStatus ?? null) as
+        | "pending"
+        | "processing"
+        | "complete"
+        | "failed"
+        | null,
+    };
+  });
 }
 
 export async function getTrackById(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   trackId: string
 ): Promise<TrackWithLatestVersion | null> {
-  const result = await db
-    .prepare(
-      `SELECT 
-        t.*,
-        tv.id as latest_version_id,
-        tv.playback_key,
-        tv.waveform_key,
-        tv.duration,
-        tv.processing_status
-       FROM track t
-       LEFT JOIN track_version tv ON tv.track_id = t.id
-       AND tv.version_number = (
-         SELECT MAX(version_number) FROM track_version WHERE track_id = t.id
-       )
-       WHERE t.id = ?`
-    )
-    .bind(trackId)
-    .first<TrackWithLatestVersion>();
+  // public read access - no auth required
+  const tracks = await db
+    .select()
+    .from(schema.track)
+    .where(eq(schema.track.id, trackId))
+    .limit(1);
 
-  return result;
+  const track = tracks[0];
+  if (!track) return null;
+
+  // get latest version
+  const latestVersions = await db
+    .select()
+    .from(schema.trackVersion)
+    .where(
+      sql`${schema.trackVersion.trackId} = ${trackId} AND ${schema.trackVersion.versionNumber} = (
+        SELECT MAX(version_number) FROM track_version WHERE track_id = ${trackId}
+      )`
+    )
+    .limit(1);
+
+  const version = latestVersions[0];
+
+  return {
+    id: track.id,
+    uploader_id: track.uploaderId,
+    title: track.title,
+    description: track.description ?? null,
+    cover_key: track.coverKey ?? null,
+    is_downloadable: track.isDownloadable ? 1 : 0,
+    social_prompt: track.socialPrompt ?? null,
+    created_at: track.createdAt,
+    latest_version_id: version?.id ?? null,
+    playback_key: version?.playbackKey ?? null,
+    waveform_key: version?.waveformKey ?? null,
+    duration: version?.duration ?? null,
+    processing_status: (version?.processingStatus ?? null) as
+      | "pending"
+      | "processing"
+      | "complete"
+      | "failed"
+      | null,
+  };
 }
 
 export async function createTrack(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   uploaderId: string,
   title: string,
-  description?: string
+  description: string | undefined,
+  context: AuthContext | null
 ): Promise<Track> {
+  // only uploaders and admins can create tracks
+  requireRole(context, ["uploader", "admin"]);
+  // user must be the uploader
+  if (context.userId !== uploaderId) {
+    throw new Error("Forbidden: You can only create tracks for yourself");
+  }
+
   const id = generateId();
 
-  await db
-    .prepare(
-      `INSERT INTO track (id, uploader_id, title, description) VALUES (?, ?, ?, ?)`
-    )
-    .bind(id, uploaderId, title, description ?? null)
-    .run();
+  await db.insert(schema.track).values({
+    id,
+    uploaderId,
+    title,
+    description: description ?? null,
+  });
 
   const result = await db
-    .prepare(`SELECT * FROM track WHERE id = ?`)
-    .bind(id)
-    .first<Track>();
+    .select()
+    .from(schema.track)
+    .where(eq(schema.track.id, id))
+    .limit(1);
 
-  return result!;
+  return mapTrack(result[0]!);
 }
 
 export async function deleteTrack(
-  db: D1Database,
-  trackId: string
+  db: DrizzleD1Database<typeof schema>,
+  trackId: string,
+  context: AuthContext | null
 ): Promise<void> {
-  await db.prepare(`DELETE FROM track WHERE id = ?`).bind(trackId).run();
+  // check ownership first
+  const track = await getTrackById(db, trackId);
+  if (!track) {
+    throw new Error("Track not found");
+  }
+  requireOwnershipOrAdmin(context, track.uploader_id);
+
+  await db.delete(schema.track).where(eq(schema.track.id, trackId));
 }
 
 // track version queries
 export async function getTrackVersions(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   trackId: string
 ): Promise<TrackVersion[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT * FROM track_version WHERE track_id = ? ORDER BY version_number DESC`
-    )
-    .bind(trackId)
-    .all<TrackVersion>();
+  // public read access - no auth required
+  const versions = await db
+    .select()
+    .from(schema.trackVersion)
+    .where(eq(schema.trackVersion.trackId, trackId))
+    .orderBy(desc(schema.trackVersion.versionNumber));
 
-  return results;
+  return versions.map(mapTrackVersion);
 }
 
 export async function createTrackVersion(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   trackId: string,
-  originalKey: string
+  originalKey: string,
+  context: AuthContext | null
 ): Promise<TrackVersion> {
+  // check track ownership
+  const track = await getTrackById(db, trackId);
+  if (!track) {
+    throw new Error("Track not found");
+  }
+  requireOwnershipOrAdmin(context, track.uploader_id);
+
   const id = generateId();
 
   // get next version number
   const latest = await db
-    .prepare(
-      `SELECT MAX(version_number) as max_version FROM track_version WHERE track_id = ?`
-    )
-    .bind(trackId)
-    .first<{ max_version: number | null }>();
+    .select({ maxVersion: max(schema.trackVersion.versionNumber) })
+    .from(schema.trackVersion)
+    .where(eq(schema.trackVersion.trackId, trackId))
+    .limit(1);
 
-  const versionNumber = (latest?.max_version ?? 0) + 1;
+  const versionNumber = (latest[0]?.maxVersion ?? 0) + 1;
 
-  await db
-    .prepare(
-      `INSERT INTO track_version (id, track_id, version_number, original_key, processing_status) 
-       VALUES (?, ?, ?, ?, 'pending')`
-    )
-    .bind(id, trackId, versionNumber, originalKey)
-    .run();
+  await db.insert(schema.trackVersion).values({
+    id,
+    trackId,
+    versionNumber,
+    originalKey,
+    processingStatus: "pending",
+  });
 
   const result = await db
-    .prepare(`SELECT * FROM track_version WHERE id = ?`)
-    .bind(id)
-    .first<TrackVersion>();
+    .select()
+    .from(schema.trackVersion)
+    .where(eq(schema.trackVersion.id, id))
+    .limit(1);
 
-  return result!;
+  return mapTrackVersion(result[0]!);
 }
 
 export async function updateTrackVersionStatus(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   versionId: string,
-  status: string,
-  playbackKey?: string,
-  waveformKey?: string,
-  duration?: number
+  status: "pending" | "processing" | "complete" | "failed",
+  playbackKey: string | undefined,
+  waveformKey: string | undefined,
+  duration: number | undefined
 ): Promise<void> {
+  // system operation - no auth required (called by worker)
   await db
-    .prepare(
-      `UPDATE track_version 
-       SET processing_status = ?, playback_key = ?, waveform_key = ?, duration = ?
-       WHERE id = ?`
-    )
-    .bind(
-      status,
-      playbackKey ?? null,
-      waveformKey ?? null,
-      duration ?? null,
-      versionId
-    )
-    .run();
+    .update(schema.trackVersion)
+    .set({
+      processingStatus: status,
+      playbackKey: playbackKey ?? null,
+      waveformKey: waveformKey ?? null,
+      duration: duration ?? null,
+    })
+    .where(eq(schema.trackVersion.id, versionId));
 }
 
 // play count queries
 export async function recordPlay(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   trackVersionId: string,
-  sessionId?: string,
-  userId?: string
+  sessionId: string | undefined,
+  userId: string | undefined
 ): Promise<void> {
+  // public write access - no auth required
   const id = generateId();
-  await db
-    .prepare(
-      `INSERT INTO play_count (id, track_version_id, session_id, user_id) VALUES (?, ?, ?, ?)`
-    )
-    .bind(id, trackVersionId, sessionId ?? null, userId ?? null)
-    .run();
+  await db.insert(schema.playCount).values({
+    id,
+    trackVersionId,
+    sessionId: sessionId ?? null,
+    userId: userId ?? null,
+  });
 }
 
 export async function getPlayCount(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   trackVersionId: string
 ): Promise<number> {
-  const result = await db
-    .prepare(
-      `SELECT COUNT(*) as count FROM play_count WHERE track_version_id = ?`
-    )
-    .bind(trackVersionId)
-    .first<{ count: number }>();
+  // public read access - no auth required
+  const results = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(schema.playCount)
+    .where(eq(schema.playCount.trackVersionId, trackVersionId));
 
-  return result?.count ?? 0;
+  return Number(results[0]?.count ?? 0);
 }
 
 // comment queries
 export async function getTrackComments(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   trackId: string
 ): Promise<CommentWithUser[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT c.*, u.name as user_name, u.image as user_image
-       FROM comment c
-       JOIN user u ON u.id = c.user_id
-       WHERE c.track_id = ?
-       ORDER BY c.created_at DESC`
-    )
-    .bind(trackId)
-    .all<CommentWithUser>();
+  // public read access - no auth required
+  const comments = await db
+    .select({
+      id: schema.comment.id,
+      track_id: schema.comment.trackId,
+      user_id: schema.comment.userId,
+      content: schema.comment.content,
+      timestamp_seconds: schema.comment.timestampSeconds,
+      created_at: schema.comment.createdAt,
+      updated_at: schema.comment.updatedAt,
+      user_name: schema.user.name,
+      user_image: schema.user.image,
+    })
+    .from(schema.comment)
+    .innerJoin(schema.user, eq(schema.user.id, schema.comment.userId))
+    .where(eq(schema.comment.trackId, trackId))
+    .orderBy(desc(schema.comment.createdAt));
 
-  return results;
+  return comments.map((c) => ({
+    id: c.id,
+    track_id: c.track_id,
+    user_id: c.user_id,
+    content: c.content,
+    timestamp_seconds: c.timestamp_seconds ?? null,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
+    user_name: c.user_name ?? null,
+    user_image: c.user_image ?? null,
+  }));
 }
 
 export async function createComment(
-  db: D1Database,
+  db: DrizzleD1Database<typeof schema>,
   trackId: string,
   userId: string,
   content: string,
-  timestampSeconds?: number
+  timestampSeconds: number | undefined,
+  context: AuthContext | null
 ): Promise<Comment> {
+  // any authenticated user can comment
+  if (!context?.userId || context.userId !== userId) {
+    throw new Error("Unauthorized: Must be logged in to comment");
+  }
+
   const id = generateId();
 
-  await db
-    .prepare(
-      `INSERT INTO comment (id, track_id, user_id, content, timestamp_seconds) 
-       VALUES (?, ?, ?, ?, ?)`
-    )
-    .bind(id, trackId, userId, content, timestampSeconds ?? null)
-    .run();
+  await db.insert(schema.comment).values({
+    id,
+    trackId,
+    userId,
+    content,
+    timestampSeconds: timestampSeconds ?? null,
+  });
 
   const result = await db
-    .prepare(`SELECT * FROM comment WHERE id = ?`)
-    .bind(id)
-    .first<Comment>();
+    .select()
+    .from(schema.comment)
+    .where(eq(schema.comment.id, id))
+    .limit(1);
 
-  return result!;
+  return mapComment(result[0]!);
 }
 
 export async function deleteComment(
-  db: D1Database,
-  commentId: string
+  db: DrizzleD1Database<typeof schema>,
+  commentId: string,
+  context: AuthContext | null
 ): Promise<void> {
-  await db.prepare(`DELETE FROM comment WHERE id = ?`).bind(commentId).run();
+  // get comment to check ownership
+  const comments = await db
+    .select()
+    .from(schema.comment)
+    .where(eq(schema.comment.id, commentId))
+    .limit(1);
+
+  const comment = comments[0];
+  if (!comment) {
+    throw new Error("Comment not found");
+  }
+
+  requireOwnershipOrAdmin(context, comment.userId);
+
+  await db.delete(schema.comment).where(eq(schema.comment.id, commentId));
 }
 
+// mapping helpers to convert drizzle records to app types
+function mapTrack(record: schema.TrackRecord): Track {
+  return {
+    id: record.id,
+    uploader_id: record.uploaderId,
+    title: record.title,
+    description: record.description ?? null,
+    cover_key: record.coverKey ?? null,
+    is_downloadable: record.isDownloadable ? 1 : 0,
+    social_prompt: record.socialPrompt ?? null,
+    created_at: record.createdAt,
+    updated_at: record.updatedAt,
+  };
+}
+
+function mapTrackVersion(record: schema.TrackVersionRecord): TrackVersion {
+  return {
+    id: record.id,
+    track_id: record.trackId,
+    version_number: record.versionNumber,
+    original_key: record.originalKey,
+    playback_key: record.playbackKey ?? null,
+    waveform_key: record.waveformKey ?? null,
+    duration: record.duration ?? null,
+    processing_status: record.processingStatus,
+    created_at: record.createdAt,
+  };
+}
+
+function mapComment(record: schema.CommentRecord): Comment {
+  return {
+    id: record.id,
+    track_id: record.trackId,
+    user_id: record.userId,
+    content: record.content,
+    timestamp_seconds: record.timestampSeconds ?? null,
+    created_at: record.createdAt,
+    updated_at: record.updatedAt,
+  };
+}
+
+function mapInviteCode(record: schema.InviteCodeRecord): InviteCode {
+  return {
+    id: record.id,
+    code: record.code,
+    role: record.role,
+    created_by: record.createdBy,
+    used_by: record.usedBy ?? null,
+    used_at: record.usedAt ?? null,
+    expires_at: record.expiresAt ?? null,
+    created_at: record.createdAt,
+  };
+}

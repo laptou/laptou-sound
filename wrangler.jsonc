@@ -2,9 +2,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "laptou-sound",
 	"compatibility_date": "2025-11-25",
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
+	"compatibility_flags": ["nodejs_compat"],
 	"main": "@tanstack/solid-start/server-entry",
 	"observability": {
 		"enabled": true
@@ -15,10 +13,6 @@
 	// d1 database for auth and application state
 	"d1_databases": [
 		{
-			"binding": "DB",
-			"database_name": "laptou-sound-db"
-		},
-		{
 			"binding": "laptou_sound_db",
 			"database_name": "laptou-sound-db",
 			"database_id": "0523bd7a-d231-44f1-aeb2-a99beb04b709"
@@ -27,8 +21,8 @@
 	// r2 bucket for audio files and assets
 	"r2_buckets": [
 		{
-			"binding": "R2",
-			"bucket_name": "laptou-sound-files"
+			"bucket_name": "laptou-sound-files",
+			"binding": "laptou_sound_files"
 		}
 	],
 	// queues for async audio processing

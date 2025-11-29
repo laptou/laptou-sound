@@ -5,6 +5,9 @@
 // 3. updates database with results
 
 import type { D1Database, R2Bucket, ExecutionContext, MessageBatch } from "@cloudflare/workers-types";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "../lib/db/schema";
+import { updateTrackVersionStatus } from "../lib/db";
 
 // message type from queue
 interface AudioProcessingMessage {
@@ -45,10 +48,13 @@ export default {
       } catch (error) {
         console.error(`Processing failed for ${message.body.versionId}:`, error);
         
-        // update status to failed
-        await env.DB.prepare(
-          `UPDATE track_version SET processing_status = 'failed' WHERE id = ?`
-        ).bind(message.body.versionId).run();
+        // update status to failed using Drizzle
+        const db = drizzle(env.DB, { schema });
+        await updateTrackVersionStatus(
+          db,
+          message.body.versionId,
+          "failed"
+        );
         
         // retry if we haven't exceeded retries
         message.retry();
@@ -61,10 +67,11 @@ async function processAudioMessage(
   msg: AudioProcessingMessage,
   env: Env
 ): Promise<void> {
+  // create drizzle instance
+  const db = drizzle(env.DB, { schema });
+
   // update status to processing
-  await env.DB.prepare(
-    `UPDATE track_version SET processing_status = 'processing' WHERE id = ?`
-  ).bind(msg.versionId).run();
+  await updateTrackVersionStatus(db, msg.versionId, "processing");
 
   // fetch original file from r2
   const original = await env.R2.get(msg.originalKey);
@@ -106,20 +113,15 @@ async function processAudioMessage(
   // in production, extract actual duration from audio metadata
   const estimatedDuration = estimateDuration(audioData.byteLength);
 
-  // update database with results
-  await env.DB.prepare(
-    `UPDATE track_version 
-     SET processing_status = 'complete', 
-         playback_key = ?, 
-         waveform_key = ?, 
-         duration = ? 
-     WHERE id = ?`
-  ).bind(
+  // update database with results using Drizzle
+  await updateTrackVersionStatus(
+    db,
+    msg.versionId,
+    "complete",
     msg.targetPlaybackKey,
     msg.targetWaveformKey,
-    Math.round(estimatedDuration),
-    msg.versionId
-  ).run();
+    Math.round(estimatedDuration)
+  );
 }
 
 // generate simulated waveform peaks

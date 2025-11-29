@@ -1,6 +1,9 @@
 // api route to check processing status of a track version
 import { createAPIFileRoute } from "@tanstack/solid-start/api";
 import type { D1Database } from "@cloudflare/workers-types";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "../../../lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export const APIRoute = createAPIFileRoute("/api/status/$versionId")({
   GET: async ({ params, context }) => {
@@ -16,28 +19,29 @@ export const APIRoute = createAPIFileRoute("/api/status/$versionId")({
       return Response.json({ error: "Version ID required" }, { status: 400 });
     }
 
-    const version = await db
-      .prepare(
-        `SELECT processing_status, playback_key, waveform_key, duration 
-         FROM track_version WHERE id = ?`
-      )
-      .bind(versionId)
-      .first<{
-        processing_status: string;
-        playback_key: string | null;
-        waveform_key: string | null;
-        duration: number | null;
-      }>();
+    // use Drizzle for database access
+    const drizzleDb = drizzle(db, { schema });
+    const versions = await drizzleDb
+      .select({
+        processingStatus: schema.trackVersion.processingStatus,
+        playbackKey: schema.trackVersion.playbackKey,
+        waveformKey: schema.trackVersion.waveformKey,
+        duration: schema.trackVersion.duration,
+      })
+      .from(schema.trackVersion)
+      .where(eq(schema.trackVersion.id, versionId))
+      .limit(1);
 
+    const version = versions[0];
     if (!version) {
       return Response.json({ error: "Version not found" }, { status: 404 });
     }
 
     return Response.json({
-      status: version.processing_status,
-      playbackKey: version.playback_key,
-      waveformKey: version.waveform_key,
-      duration: version.duration,
+      status: version.processingStatus,
+      playbackKey: version.playbackKey ?? null,
+      waveformKey: version.waveformKey ?? null,
+      duration: version.duration ?? null,
     });
   },
 });

@@ -5,23 +5,57 @@ globs: ["src/lib/auth*.ts", "src/routes/auth/**/*.tsx", "src/server/**/*.ts"]
 
 # Better Auth with TanStack Start (SolidJS)
 
+## IMPORTANT: Database Access Pattern
+
+**CRITICAL**: Better Auth uses **kysely-d1** for database access, NOT Drizzle ORM.
+
+- Better Auth manages its own tables: `user`, `session`, `account`, `verification`
+- Do NOT use Drizzle for Better Auth tables
+- Do NOT use raw D1 queries for Better Auth - use kysely-d1 via Better Auth's internal adapter
+
 ## Server-Side Auth Instance
 
 Create the auth instance in `src/lib/auth.ts`:
 
 ```typescript
 import { betterAuth } from "better-auth";
+import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
+import type { D1Database } from "@cloudflare/workers-types";
 
-export const auth = betterAuth({
-  database: {
-    dialect: new D1Dialect({ database: env.DB }),
-    type: "sqlite",
-  },
-  emailAndPassword: {
-    enabled: true,
-  },
-});
+export function createAuth(db: D1Database) {
+  // create kysely instance for better auth
+  const kysely = new Kysely<any>({
+    dialect: new D1Dialect({ database: db }),
+  });
+
+  return betterAuth({
+    database: {
+      provider: "sqlite",
+      url: "", // not used for d1
+    },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: false,
+    },
+    session: {
+      expiresIn: 60 * 60 * 24 * 7, // 7 days
+      updateAge: 60 * 60 * 24, // update session every day
+    },
+    // use kysely-d1 for database queries
+    advanced: {
+      database: {
+        async executeQuery({ query, params }) {
+          const result = await kysely.executeQuery({
+            query: query as any,
+            params: params || [],
+          });
+          return result.rows || [];
+        },
+      },
+    },
+  });
+}
 ```
 
 ## Client-Side Auth

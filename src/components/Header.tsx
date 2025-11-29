@@ -35,7 +35,7 @@ export default function Header() {
         <div class="flex items-center justify-between h-16">
           {/* logo */}
           <Link
-            href="/"
+            to="/"
             class="flex items-center gap-2 text-surface-900 dark:text-white hover:text-accent-600 dark:hover:text-accent-400 transition-colors"
           >
             <div class="p-2 bg-accent-500 rounded-xl">
@@ -47,7 +47,7 @@ export default function Header() {
           {/* desktop nav */}
           <nav class="hidden md:flex items-center gap-1">
             <Link
-              href="/"
+              to="/"
               class="btn-ghost text-sm"
               activeProps={{ class: "bg-surface-100 dark:bg-surface-800" }}
             >
@@ -56,7 +56,7 @@ export default function Header() {
 
             <Show when={isUploader()}>
               <Link
-                href="/upload"
+                to="/upload"
                 class="btn-ghost text-sm"
                 activeProps={{ class: "bg-surface-100 dark:bg-surface-800" }}
               >
@@ -67,7 +67,7 @@ export default function Header() {
 
             <Show when={isAdmin()}>
               <Link
-                href="/admin"
+                to="/admin"
                 class="btn-ghost text-sm"
                 activeProps={{ class: "bg-surface-100 dark:bg-surface-800" }}
               >
@@ -105,11 +105,11 @@ export default function Header() {
               }
             >
               <div class="hidden md:flex items-center gap-2">
-                <Link href="/settings" class="btn-icon btn-ghost">
+                <Link to="/settings" class="btn-icon btn-ghost">
                   <Settings class="w-5 h-5" />
                 </Link>
                 <Link
-                  href="/api/auth/signout"
+                  to="/api/auth/signout"
                   class="btn-icon btn-ghost text-red-500 hover:text-red-600"
                 >
                   <LogOut class="w-5 h-5" />

@@ -1,6 +1,6 @@
 // server functions for comment operations
 import { createServerFn } from "@tanstack/solid-start/server";
-import { getDB } from "./context";
+import { getDrizzleDB } from "./context";
 import { getSession } from "./auth";
 import {
   getTrackComments,
@@ -13,7 +13,7 @@ import {
 export const fetchComments = createServerFn({ method: "GET" })
   .validator((trackId: string) => trackId)
   .handler(async ({ data: trackId }) => {
-    const db = getDB();
+    const db = getDrizzleDB();
     return getTrackComments(db, trackId);
   });
 
@@ -25,11 +25,12 @@ export const addComment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const session = await getSession();
-    if (!session?.user) {
-      throw new Error("Unauthorized: Must be logged in to comment");
-    }
+    const db = getDrizzleDB();
 
-    const db = getDB();
+    // create auth context for authorization checks
+    const context = session
+      ? { userId: session.user.id, role: session.role }
+      : null;
 
     // verify track exists
     const track = await getTrackById(db, data.trackId);
@@ -42,7 +43,8 @@ export const addComment = createServerFn({ method: "POST" })
       data.trackId,
       session.user.id,
       data.content,
-      data.timestampSeconds
+      data.timestampSeconds,
+      context
     );
   });
 
@@ -51,28 +53,15 @@ export const removeComment = createServerFn({ method: "POST" })
   .validator((commentId: string) => commentId)
   .handler(async ({ data: commentId }) => {
     const session = await getSession();
-    if (!session?.user) {
-      throw new Error("Unauthorized");
-    }
+    const db = getDrizzleDB();
 
-    const db = getDB();
+    // create auth context for authorization checks
+    const context = session
+      ? { userId: session.user.id, role: session.role }
+      : null;
 
-    // get comment to check ownership
-    const comment = await db
-      .prepare(`SELECT * FROM comment WHERE id = ?`)
-      .bind(commentId)
-      .first<{ id: string; user_id: string }>();
-
-    if (!comment) {
-      throw new Error("Comment not found");
-    }
-
-    // check permission
-    if (comment.user_id !== session.user.id && session.role !== "admin") {
-      throw new Error("You can only delete your own comments");
-    }
-
-    await deleteComment(db, commentId);
+    // delete comment (authorization checked inside deleteComment)
+    await deleteComment(db, commentId, context);
 
     return { deleted: true };
   });

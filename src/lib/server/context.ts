@@ -1,6 +1,8 @@
 // cloudflare context helpers for server functions
 import { getRequestEvent } from "solid-js/web";
 import type { D1Database, R2Bucket, Queue } from "@cloudflare/workers-types";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "../db/schema";
 
 // cloudflare env bindings type
 export interface CloudflareEnv {
@@ -28,9 +30,14 @@ export function getCloudflareEnv(): CloudflareEnv {
   return env;
 }
 
-// get d1 database
+// get d1 database (raw d1 - only for better auth)
 export function getDB(): D1Database {
   return getCloudflareEnv().DB;
+}
+
+// get drizzle database instance (for all non-auth db access)
+export function getDrizzleDB() {
+  return drizzle(getDB(), { schema });
 }
 
 // get r2 bucket

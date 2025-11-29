@@ -1,11 +1,12 @@
 // server-side auth functions
 import { createServerFn } from "@tanstack/solid-start/server";
 import { getRequestEvent } from "solid-js/web";
-import { getDB } from "./context";
+import { getDB, getDrizzleDB } from "./context";
 import { getUserRole, setUserRole, useInviteCode } from "../db";
 import type { UserRole } from "../db/types";
 
 // get current session from request headers
+// note: session lookup uses raw D1 because Better Auth manages session table
 export const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const event = getRequestEvent();
   if (!event) return null;
@@ -19,9 +20,9 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
 
   if (!sessionToken) return null;
 
-  const db = getDB();
+  const db = getDB(); // raw D1 for Better Auth session lookup
 
-  // look up session
+  // look up session (Better Auth table - uses raw D1)
   const session = await db
     .prepare(
       `SELECT s.*, u.id as user_id, u.email, u.name, u.image 
@@ -41,8 +42,9 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
 
   if (!session) return null;
 
-  // get user role
-  const role = await getUserRole(db, session.user_id);
+  // get user role using Drizzle
+  const drizzleDb = getDrizzleDB();
+  const role = await getUserRole(drizzleDb, session.user_id);
 
   return {
     user: {
@@ -85,8 +87,8 @@ export const requireRole = createServerFn({ method: "GET" })
 export const applyInviteCode = createServerFn({ method: "POST" })
   .validator((data: { code: string; userId: string }) => data)
   .handler(async ({ data }) => {
-    const db = getDB();
-    const invite = await useInviteCode(db, data.code, data.userId);
+    const drizzleDb = getDrizzleDB();
+    const invite = await useInviteCode(drizzleDb, data.code, data.userId);
 
     if (!invite) {
       throw new Error("Invalid or expired invite code");
@@ -97,15 +99,15 @@ export const applyInviteCode = createServerFn({ method: "POST" })
 
 // helper to check if user can upload
 export async function canUpload(userId: string): Promise<boolean> {
-  const db = getDB();
-  const role = await getUserRole(db, userId);
+  const drizzleDb = getDrizzleDB();
+  const role = await getUserRole(drizzleDb, userId);
   return role === "uploader" || role === "admin";
 }
 
 // helper to check if user is admin
 export async function isAdmin(userId: string): Promise<boolean> {
-  const db = getDB();
-  const role = await getUserRole(db, userId);
+  const drizzleDb = getDrizzleDB();
+  const role = await getUserRole(drizzleDb, userId);
   return role === "admin";
 }
 
