@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+The stack for this project:
+- TanStack Start is our full-stack framework
+- Biome is our linter
+
+On the server side:
+- Use Better Auth (https://www.better-auth.com/llms.txt) for all authentication/authorization-related tasks
+- Use Drizzle ORM (see `llm-docs/drizzle.txt`) for interfacing with the database
+- Use Cloudflare D1 (see `llm-docs/cf/d1.txt`) as the database
+- Use Cloudflare R2 (see `llm-docs/cf/r2.txt`) as the object storage
+- Use Cloudflare Queues (see `llm-docs/cf/queues.txt`) as the message queue / job queue 
+
+On the client side:
+- Use Tailwind v4 for all client side styling
+- Use SolidJS for all client-side components
+
+If you don't know how something works, refer to the documentation so you can implement it properly instead of guessing. I have downloaded a lot of the relevant documentation into the `llm-docs` folder.
