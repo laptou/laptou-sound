@@ -2,9 +2,11 @@
 
 import { env } from "cloudflare:workers";
 import { createFileRoute } from "@tanstack/solid-router";
+import { commonMiddleware } from "@/lib/middleware";
 
 export const Route = createFileRoute("/files/$")({
 	server: {
+		middleware: commonMiddleware,
 		handlers: {
 			GET: async ({ params }) => {
 				const key = params._splat;

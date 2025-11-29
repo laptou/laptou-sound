@@ -9,8 +9,10 @@ import type { TrackVersion } from "@/db/schema";
 import { getPlayCount, recordPlay } from "@/server/plays";
 import { getTrack, getTrackVersions } from "@/server/tracks";
 
+import { wrapLoader } from "@/lib/loader-wrapper";
+
 export const Route = createFileRoute("/track/$trackId")({
-	loader: async ({ params }) => {
+	loader: wrapLoader("/track/$trackId", async ({ params }) => {
 		const [track, versions, playCount] = await Promise.all([
 			getTrack({ data: { trackId: params.trackId } }),
 			getTrackVersions({ data: { trackId: params.trackId } }),
@@ -22,7 +24,7 @@ export const Route = createFileRoute("/track/$trackId")({
 		}
 
 		return { track, versions, playCount: playCount.count };
-	},
+	}),
 	component: TrackDetailPage,
 });
 

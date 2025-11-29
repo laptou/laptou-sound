@@ -1,8 +1,8 @@
 // admin dashboard page
 
 import { createFileRoute } from "@tanstack/solid-router";
-import { Key, Music, Plus, Shield, Trash2, Users } from "lucide-solid";
-import { createSignal, For, Show } from "solid-js";
+import { AlertTriangle, Key, Music, Plus, Shield, Trash2, Users } from "lucide-solid";
+import { createEffect, createSignal, For, Show } from "solid-js";
 import type { InviteCode, Track, User } from "@/db/schema";
 import {
 	createInviteCode,
@@ -13,6 +13,8 @@ import {
 } from "@/server/admin";
 import { hasRole } from "@/server/auth";
 import { deleteTrack, getPublicTracks } from "@/server/tracks";
+import { wrapLoader } from "@/lib/loader-wrapper";
+import type { ErrorReport } from "@/lib/error-reporter";
 
 export const Route = createFileRoute("/_authed/admin")({
 	beforeLoad: async ({ context }) => {
@@ -20,26 +22,50 @@ export const Route = createFileRoute("/_authed/admin")({
 			throw new Error("Admin access required");
 		}
 	},
-	loader: async () => {
+	loader: wrapLoader("/_authed/admin", async () => {
 		const [inviteCodes, users, tracks] = await Promise.all([
 			getInviteCodes(),
 			getUsers(),
 			getPublicTracks(),
 		]);
 		return { inviteCodes, users, tracks };
-	},
+	}),
 	component: AdminDashboard,
 });
 
 function AdminDashboard() {
 	const data = Route.useLoaderData();
-	const [activeTab, setActiveTab] = createSignal<"codes" | "users" | "tracks">(
-		"codes",
-	);
+	const [activeTab, setActiveTab] = createSignal<
+		"codes" | "users" | "tracks" | "errors"
+	>("codes");
 	const [newCodeRole, setNewCodeRole] = createSignal<
 		"commenter" | "uploader" | "admin"
 	>("uploader");
 	const [isCreating, setIsCreating] = createSignal(false);
+	const [errors, setErrors] = createSignal<ErrorReport[]>([]);
+	const [loadingErrors, setLoadingErrors] = createSignal(false);
+
+	// load errors when errors tab is active
+	createEffect(() => {
+		if (activeTab() === "errors") {
+			loadErrors();
+		}
+	});
+
+	const loadErrors = async () => {
+		setLoadingErrors(true);
+		try {
+			const response = await fetch("/api/admin/errors");
+			if (response.ok) {
+				const data = await response.json();
+				setErrors(data.errors || []);
+			}
+		} catch (error) {
+			console.error("Failed to load errors:", error);
+		} finally {
+			setLoadingErrors(false);
+		}
+	};
 
 	const handleCreateCode = async () => {
 		setIsCreating(true);
@@ -132,6 +158,23 @@ function AdminDashboard() {
 					>
 						<Music class="w-4 h-4" />
 						Tracks
+					</button>
+					<button
+						type="button"
+						onClick={() => setActiveTab("errors")}
+						class={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+							activeTab() === "errors"
+								? "bg-violet-500 text-white"
+								: "bg-slate-700/50 text-gray-300 hover:bg-slate-700"
+						}`}
+					>
+						<AlertTriangle class="w-4 h-4" />
+						Errors
+						<Show when={errors().length > 0}>
+							<span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+								{errors().length}
+							</span>
+						</Show>
 					</button>
 				</div>
 
@@ -297,6 +340,91 @@ function AdminDashboard() {
 									)}
 								</For>
 							</div>
+						</Show>
+					</div>
+				</Show>
+
+				{/* errors tab */}
+				<Show when={activeTab() === "errors"}>
+					<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+						<div class="flex items-center justify-between mb-6">
+							<h2 class="text-xl font-semibold text-white">Tracked Errors</h2>
+							<button
+								type="button"
+								onClick={loadErrors}
+								disabled={loadingErrors()}
+								class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+							>
+								Refresh
+							</button>
+						</div>
+
+						<Show
+							when={!loadingErrors()}
+							fallback={
+								<p class="text-gray-400 text-center py-8">Loading errors...</p>
+							}
+						>
+							<Show
+								when={errors().length > 0}
+								fallback={
+									<p class="text-gray-400 text-center py-8">
+										No errors tracked yet
+									</p>
+								}
+							>
+								<div class="space-y-4">
+									<For each={errors()}>
+										{(error) => (
+											<div class="bg-slate-700/50 rounded-lg p-4 border border-red-500/20">
+												<div class="flex items-start justify-between mb-2">
+													<div class="flex-1">
+														<div class="flex items-center gap-3 mb-2">
+															<span class="text-red-400 font-semibold">
+																{error.error.name}
+															</span>
+															<span class="text-xs text-gray-400 bg-slate-600 px-2 py-1 rounded">
+																{error.count}x
+															</span>
+														</div>
+														<p class="text-gray-300 mb-2">{error.error.message}</p>
+														<div class="text-xs text-gray-500 space-y-1">
+															<p>
+																First seen:{" "}
+																{new Date(error.firstSeen).toLocaleString()}
+															</p>
+															<p>
+																Last seen:{" "}
+																{new Date(error.lastSeen).toLocaleString()}
+															</p>
+														</div>
+													</div>
+												</div>
+												<Show when={error.error.stack}>
+													<details class="mt-3">
+														<summary class="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
+															Show stack trace
+														</summary>
+														<pre class="mt-2 text-xs text-gray-500 bg-slate-800 p-3 rounded overflow-auto max-h-40">
+															{error.error.stack}
+														</pre>
+													</details>
+												</Show>
+												<Show when={error.context}>
+													<details class="mt-2">
+														<summary class="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
+															Show context
+														</summary>
+														<pre class="mt-2 text-xs text-gray-500 bg-slate-800 p-3 rounded overflow-auto">
+															{JSON.stringify(error.context, null, 2)}
+														</pre>
+													</details>
+												</Show>
+											</div>
+										)}
+									</For>
+								</div>
+							</Show>
 						</Show>
 					</div>
 				</Show>

@@ -121,8 +121,10 @@ Loaders simplify your data fetching logic dramatically. Check out more informati
 
 Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
 
+# Fixing local D1 database
 
+You can apply Drizzle migrations to the local D1 database like so:
 
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
+```bash
+bun wrangler d1 execute laptou-sound-db --file ./drizzle/migrations/0001_green_alex_wilder.sql
+```

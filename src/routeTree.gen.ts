@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HealthRouteImport } from './routes/health'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TrackTrackIdRouteImport } from './routes/track/$trackId'
@@ -20,6 +21,7 @@ import { Route as AuthedUploadRouteImport } from './routes/_authed/upload'
 import { Route as AuthedMyTracksRouteImport } from './routes/_authed/my-tracks'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAdminErrorsRouteImport } from './routes/api/admin/errors'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -29,6 +31,11 @@ const SignupRoute = SignupRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthRoute = HealthRouteImport.update({
+  id: '/health',
+  path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
@@ -75,9 +82,15 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminErrorsRoute = ApiAdminErrorsRouteImport.update({
+  id: '/api/admin/errors',
+  path: '/api/admin/errors',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRoute
@@ -86,10 +99,12 @@ export interface FileRoutesByFullPath {
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
   '/track/$trackId': typeof TrackTrackIdRoute
+  '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRoute
@@ -98,12 +113,14 @@ export interface FileRoutesByTo {
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
   '/track/$trackId': typeof TrackTrackIdRoute
+  '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
+  '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authed/admin': typeof AuthedAdminRoute
@@ -112,12 +129,14 @@ export interface FileRoutesById {
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
   '/track/$trackId': typeof TrackTrackIdRoute
+  '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/health'
     | '/login'
     | '/signup'
     | '/admin'
@@ -126,10 +145,12 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/files/$'
     | '/track/$trackId'
+    | '/api/admin/errors'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/health'
     | '/login'
     | '/signup'
     | '/admin'
@@ -138,11 +159,13 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/files/$'
     | '/track/$trackId'
+    | '/api/admin/errors'
     | '/api/auth/$'
   id:
     | '__root__'
     | '/'
     | '/_authed'
+    | '/health'
     | '/login'
     | '/signup'
     | '/_authed/admin'
@@ -151,17 +174,20 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/files/$'
     | '/track/$trackId'
+    | '/api/admin/errors'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
+  HealthRoute: typeof HealthRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
   ApiUploadRoute: typeof ApiUploadRoute
   FilesSplatRoute: typeof FilesSplatRoute
   TrackTrackIdRoute: typeof TrackTrackIdRoute
+  ApiAdminErrorsRoute: typeof ApiAdminErrorsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -179,6 +205,13 @@ declare module '@tanstack/solid-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/health': {
+      id: '/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof HealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed': {
@@ -244,6 +277,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/errors': {
+      id: '/api/admin/errors'
+      path: '/api/admin/errors'
+      fullPath: '/api/admin/errors'
+      preLoaderRoute: typeof ApiAdminErrorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -265,11 +305,13 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
+  HealthRoute: HealthRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
   ApiUploadRoute: ApiUploadRoute,
   FilesSplatRoute: FilesSplatRoute,
   TrackTrackIdRoute: TrackTrackIdRoute,
+  ApiAdminErrorsRoute: ApiAdminErrorsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

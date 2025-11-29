@@ -5,12 +5,13 @@ import { Music, Upload } from "lucide-solid";
 import { For, Show } from "solid-js";
 import TrackCard from "@/components/TrackCard";
 import { getPublicTracks } from "@/server/tracks";
+import { wrapLoader } from "@/lib/loader-wrapper";
 
 export const Route = createFileRoute("/")({
-	loader: async () => {
+	loader: wrapLoader("/", async () => {
 		const tracks = await getPublicTracks();
 		return { tracks };
-	},
+	}),
 	component: HomePage,
 });
 
