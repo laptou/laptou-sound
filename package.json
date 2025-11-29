@@ -14,20 +14,26 @@
 		"postinstall": "npm run cf-typegen"
 	},
 	"dependencies": {
+		"@kobalte/core": "^0.13.11",
 		"@tailwindcss/vite": "^4.0.6",
+		"@tanstack/router-plugin": "^1.139.11",
 		"@tanstack/solid-query": "^5.90.14",
 		"@tanstack/solid-query-devtools": "^5.91.1",
-		"@tanstack/router-plugin": "^1.139.11",
 		"@tanstack/solid-router": "^1.139.11",
 		"@tanstack/solid-router-devtools": "^1.139.11",
 		"@tanstack/solid-router-ssr-query": "^1.139.11",
 		"@tanstack/solid-start": "^1.139.11",
 		"better-auth": "^1.4.3",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
 		"drizzle-orm": "^0.44.7",
 		"kysely": "^0.28.8",
 		"kysely-d1": "^0.4.0",
 		"lucide-solid": "^0.544.0",
-		"solid-js": "^1.9.9"
+		"solid-js": "^1.9.9",
+		"solid-sonner": "^0.2.8",
+		"tailwind-merge": "^3.4.0",
+		"tailwindcss-animate": "^1.0.7"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "",
