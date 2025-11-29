@@ -1,0 +1,366 @@
+---
+description: TanStack Router core routing patterns for SolidJS
+globs: ["src/routes/**/*.tsx", "src/router.tsx", "src/routeTree.gen.ts"]
+---
+
+# TanStack Router with SolidJS
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/routing/routing-concepts
+
+## Core Concepts
+
+TanStack Router uses file-based routing where the file structure defines the route tree.
+All routes (except root) use `createFileRoute()` from `@tanstack/solid-router`.
+
+## File-Based Routing Structure
+
+```
+src/routes/
+├── __root.tsx          # root layout (createRootRouteWithContext)
+├── index.tsx           # / (home page)
+├── about.tsx           # /about
+├── track/
+│   ├── $trackId.tsx    # /track/:trackId (dynamic segment)
+│   ├── $trackId/
+│   │   └── settings.tsx # /track/:trackId/settings (nested)
+├── api/
+│   ├── upload.ts       # /api/upload (server route)
+│   └── files/
+│       └── $.ts        # /api/files/* (wildcard/splat)
+└── auth/
+    ├── login.tsx       # /auth/login
+    └── signup.tsx      # /auth/signup
+```
+
+## Route Naming Conventions
+
+| Pattern | Example File | URL Path |
+|---------|-------------|----------|
+| Basic | `about.tsx` | `/about` |
+| Index | `index.tsx` | `/` |
+| Dynamic | `$trackId.tsx` | `/track/:trackId` |
+| Nested | `track/$trackId/settings.tsx` | `/track/:trackId/settings` |
+| Wildcard/Splat | `$.ts` | `/*` (captures rest of path) |
+| Layout (pathless) | `_layout.tsx` | No URL impact, wraps children |
+| Non-nested | `posts_.$postId.edit.tsx` | Breaks out of parent layout |
+| Escaped chars | `my-script[.]js.ts` | `/my-script.js` |
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/routing/file-naming-conventions
+
+## Creating Routes
+
+### Basic Route
+
+```typescript
+// src/routes/about.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/about")({
+  component: AboutPage,
+});
+
+function AboutPage() {
+  return <div>About us</div>;
+}
+```
+
+### Route with Head/Meta
+
+```typescript
+// src/routes/about.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/about")({
+  head: () => ({
+    meta: [
+      { title: "About - My App" },
+      { name: "description", content: "Learn about our company" },
+    ],
+  }),
+  component: AboutPage,
+});
+```
+
+### Dynamic Route Parameters
+
+```typescript
+// src/routes/track/$trackId.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/track/$trackId")({
+  component: TrackPage,
+});
+
+function TrackPage() {
+  // access params - returns accessor in SolidJS
+  const params = Route.useParams();
+  
+  return <div>Track ID: {params().trackId}</div>;
+}
+```
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/guide/path-params
+
+### Wildcard/Splat Routes
+
+```typescript
+// src/routes/files/$.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/files/$")({
+  component: FilesPage,
+});
+
+function FilesPage() {
+  const params = Route.useParams();
+  // _splat contains the rest of the path
+  // e.g., /files/a/b/c -> params()._splat = "a/b/c"
+  return <div>Path: {params()._splat}</div>;
+}
+```
+
+## Root Route
+
+The root route wraps all other routes and is always rendered.
+
+```typescript
+// src/routes/__root.tsx
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Outlet,
+  Scripts,
+} from "@tanstack/solid-router";
+import { Suspense } from "solid-js";
+import { HydrationScript } from "solid-js/web";
+
+// optional: define context type for router
+export interface RouterContext {
+  // add shared context here
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+    ],
+    links: [
+      { rel: "stylesheet", href: "/styles.css" },
+    ],
+  }),
+  shellComponent: RootShell,
+});
+
+function RootShell() {
+  return (
+    <html lang="en">
+      <head>
+        <HydrationScript />
+      </head>
+      <body>
+        <HeadContent />
+        <Suspense fallback={<div>Loading...</div>}>
+          <Outlet />
+        </Suspense>
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+```
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/routing/routing-concepts#the-root-route
+
+## Navigation
+
+### Link Component
+
+```typescript
+import { Link } from "@tanstack/solid-router";
+
+function Nav() {
+  return (
+    <nav>
+      {/* basic link */}
+      <Link href="/about">About</Link>
+      
+      {/* link with params */}
+      <Link href="/track/$trackId" params={{ trackId: "123" }}>
+        View Track
+      </Link>
+      
+      {/* link with search params */}
+      <Link href="/search" search={{ q: "music", page: 1 }}>
+        Search
+      </Link>
+      
+      {/* active styles */}
+      <Link 
+        href="/about" 
+        activeProps={{ class: "active" }}
+        inactiveProps={{ class: "inactive" }}
+      >
+        About
+      </Link>
+    </nav>
+  );
+}
+```
+
+### Programmatic Navigation
+
+```typescript
+import { useNavigate } from "@tanstack/solid-router";
+
+function MyComponent() {
+  const navigate = useNavigate();
+  
+  const handleClick = () => {
+    // navigate to path
+    navigate({ to: "/about" });
+    
+    // navigate with params
+    navigate({ to: "/track/$trackId", params: { trackId: "123" } });
+    
+    // replace history (no back button)
+    navigate({ to: "/login", replace: true });
+  };
+}
+```
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/guide/navigation
+
+## Search Parameters
+
+```typescript
+// src/routes/search.tsx
+import { createFileRoute, useSearch } from "@tanstack/solid-router";
+
+// define search params schema
+type SearchParams = {
+  q?: string;
+  page?: number;
+  filter?: string;
+};
+
+export const Route = createFileRoute("/search")({
+  // validate and provide defaults
+  validateSearch: (search: Record<string, unknown>): SearchParams => ({
+    q: (search.q as string) || "",
+    page: Number(search.page) || 1,
+    filter: (search.filter as string) || "all",
+  }),
+  component: SearchPage,
+});
+
+function SearchPage() {
+  const search = Route.useSearch();
+  
+  return (
+    <div>
+      <p>Query: {search().q}</p>
+      <p>Page: {search().page}</p>
+    </div>
+  );
+}
+```
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/guide/search-params
+
+## Layout Routes
+
+### Pathless Layout Routes
+
+Use `_` prefix for layouts that don't add to the URL path.
+
+```typescript
+// src/routes/_layout.tsx - wraps all sibling routes
+import { createFileRoute, Outlet } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/_layout")({
+  component: LayoutComponent,
+});
+
+function LayoutComponent() {
+  return (
+    <div class="layout">
+      <nav>Sidebar</nav>
+      <main>
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+```
+
+### Non-Nested Routes (Break-out)
+
+Use `_` suffix on parent segment to break out of parent layout.
+
+```typescript
+// src/routes/posts_.$postId.edit.tsx
+// renders WITHOUT parent posts layout
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/posts/$postId/edit")({
+  component: PostEditor,
+});
+```
+
+## Protected Routes
+
+```typescript
+// src/routes/_authenticated.tsx
+import { createFileRoute, Outlet, redirect } from "@tanstack/solid-router";
+import { getSession } from "~/lib/server/auth";
+
+export const Route = createFileRoute("/_authenticated")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session?.user) {
+      throw redirect({ to: "/auth/login" });
+    }
+    return { session };
+  },
+  component: () => <Outlet />,
+});
+
+// child routes automatically protected:
+// src/routes/_authenticated/dashboard.tsx
+// src/routes/_authenticated/settings.tsx
+```
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/guide/authenticated-routes
+
+## Error Handling
+
+```typescript
+export const Route = createFileRoute("/track/$trackId")({
+  loader: async ({ params }) => {
+    const track = await fetchTrack(params.trackId);
+    if (!track) {
+      throw notFound();
+    }
+    return track;
+  },
+  errorComponent: ({ error }) => (
+    <div class="error">
+      <h1>Error loading track</h1>
+      <p>{error.message}</p>
+    </div>
+  ),
+  notFoundComponent: () => (
+    <div>Track not found</div>
+  ),
+  component: TrackPage,
+});
+```
+
+## Key Patterns
+
+1. **Always export `Route`** - The route tree generator looks for this export
+2. **Path must match file location** - The path in `createFileRoute("/path")` must match file location
+3. **Use accessors** - In SolidJS, `useParams()`, `useSearch()`, etc. return accessors (call them: `params()`)
+4. **Root uses different function** - Use `createRootRouteWithContext()` not `createFileRoute()`
+5. **Server routes use same file convention** - See tanstack-server-routes.mdc for API routes

@@ -1,0 +1,375 @@
+---
+description: TanStack Router data loading patterns for SolidJS
+globs: ["src/routes/**/*.tsx"]
+---
+
+# TanStack Router Data Loading
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/guide/data-loading
+
+## Core Concepts
+
+TanStack Router provides built-in data loading through route loaders. Data is fetched before rendering and cached automatically.
+
+## Basic Loader
+
+```typescript
+// src/routes/index.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+import { fetchTracks } from "~/lib/server/tracks";
+
+export const Route = createFileRoute("/")({
+  loader: async () => {
+    // runs on server during SSR, on client during navigation
+    return await fetchTracks({ data: { limit: 20 } });
+  },
+  component: HomePage,
+});
+
+function HomePage() {
+  // useLoaderData returns an accessor (call it to get value)
+  const tracks = Route.useLoaderData();
+  
+  return (
+    <For each={tracks()}>
+      {(track) => <div>{track.title}</div>}
+    </For>
+  );
+}
+```
+
+## Loader with Parameters
+
+```typescript
+// src/routes/track/$trackId.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+import { fetchTrack } from "~/lib/server/tracks";
+
+export const Route = createFileRoute("/track/$trackId")({
+  loader: async ({ params }) => {
+    // params.trackId is typed from the route path
+    return await fetchTrack({ data: params.trackId });
+  },
+  component: TrackPage,
+});
+
+function TrackPage() {
+  const track = Route.useLoaderData();
+  const params = Route.useParams();
+  
+  return (
+    <div>
+      <h1>{track()?.title}</h1>
+      <p>ID: {params().trackId}</p>
+    </div>
+  );
+}
+```
+
+## Loader with Search Parameters
+
+```typescript
+// src/routes/search.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+
+type SearchParams = {
+  q?: string;
+  page?: number;
+};
+
+export const Route = createFileRoute("/search")({
+  validateSearch: (search): SearchParams => ({
+    q: (search.q as string) || "",
+    page: Number(search.page) || 1,
+  }),
+  loader: async ({ search }) => {
+    // search params available in loader
+    return await searchTracks({
+      data: { query: search.q, page: search.page }
+    });
+  },
+  component: SearchPage,
+});
+```
+
+## beforeLoad - Pre-loader Logic
+
+`beforeLoad` runs before the loader and is used for:
+- Authentication checks
+- Redirects
+- Setting up route context
+
+```typescript
+// src/routes/upload.tsx
+import { createFileRoute, redirect } from "@tanstack/solid-router";
+import { getSession } from "~/lib/server/auth";
+
+export const Route = createFileRoute("/upload")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    
+    if (!session?.user) {
+      // redirect to login if not authenticated
+      throw redirect({ to: "/auth/login" });
+    }
+    
+    // return context that's available in loader and component
+    return { session };
+  },
+  loader: async ({ context }) => {
+    // context.session available from beforeLoad
+    return await fetchUserTracks({ 
+      data: { userId: context.session.user.id } 
+    });
+  },
+  component: UploadPage,
+});
+
+function UploadPage() {
+  // access context from beforeLoad
+  const { session } = Route.useRouteContext();
+  const tracks = Route.useLoaderData();
+  
+  return <div>Welcome, {session.user.name}</div>;
+}
+```
+
+## Error Handling
+
+```typescript
+import { createFileRoute, notFound } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/track/$trackId")({
+  loader: async ({ params }) => {
+    const track = await fetchTrack({ data: params.trackId });
+    
+    if (!track) {
+      // throw notFound to trigger notFoundComponent
+      throw notFound();
+    }
+    
+    return track;
+  },
+  // custom error component
+  errorComponent: ({ error }) => (
+    <div class="error">
+      <h1>Error loading track</h1>
+      <p>{error.message}</p>
+      <button onClick={() => window.location.reload()}>
+        Try again
+      </button>
+    </div>
+  ),
+  // not found component
+  notFoundComponent: () => (
+    <div class="not-found">
+      <h1>Track not found</h1>
+      <p>This track doesn't exist or has been removed.</p>
+    </div>
+  ),
+  component: TrackPage,
+});
+```
+
+## Pending/Loading States
+
+```typescript
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/tracks")({
+  loader: async () => {
+    // simulate slow load
+    await new Promise((r) => setTimeout(r, 1000));
+    return await fetchTracks();
+  },
+  // shown while loader is pending
+  pendingComponent: () => (
+    <div class="loading">
+      <Spinner />
+      <p>Loading tracks...</p>
+    </div>
+  ),
+  // minimum time to show pending state (ms)
+  pendingMinMs: 300,
+  // delay before showing pending state (ms)  
+  pendingMs: 200,
+  component: TracksPage,
+});
+```
+
+## Parallel Data Loading
+
+Load multiple data sources in parallel:
+
+```typescript
+export const Route = createFileRoute("/dashboard")({
+  loader: async () => {
+    // parallel fetching
+    const [tracks, stats, notifications] = await Promise.all([
+      fetchTracks(),
+      fetchStats(),
+      fetchNotifications(),
+    ]);
+    
+    return { tracks, stats, notifications };
+  },
+  component: DashboardPage,
+});
+
+function DashboardPage() {
+  const data = Route.useLoaderData();
+  
+  return (
+    <div>
+      <Stats data={data().stats} />
+      <TrackList tracks={data().tracks} />
+      <Notifications items={data().notifications} />
+    </div>
+  );
+}
+```
+
+## Deferred Data Loading
+
+For non-critical data, use deferred loading to not block initial render:
+
+```typescript
+import { createFileRoute, Await, defer } from "@tanstack/solid-router";
+import { Suspense } from "solid-js";
+
+export const Route = createFileRoute("/track/$trackId")({
+  loader: async ({ params }) => {
+    // critical data - awaited
+    const track = await fetchTrack({ data: params.trackId });
+    
+    // non-critical data - deferred (don't await)
+    const comments = defer(fetchComments({ data: params.trackId }));
+    const recommendations = defer(fetchRecommendations({ data: params.trackId }));
+    
+    return { track, comments, recommendations };
+  },
+  component: TrackPage,
+});
+
+function TrackPage() {
+  const data = Route.useLoaderData();
+  
+  return (
+    <div>
+      {/* critical data renders immediately */}
+      <h1>{data().track.title}</h1>
+      
+      {/* deferred data streams in */}
+      <Suspense fallback={<div>Loading comments...</div>}>
+        <Await promise={data().comments}>
+          {(comments) => (
+            <For each={comments}>
+              {(comment) => <Comment data={comment} />}
+            </For>
+          )}
+        </Await>
+      </Suspense>
+    </div>
+  );
+}
+```
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/guide/deferred-data-loading
+
+## Preloading
+
+Preload data before navigation for instant transitions:
+
+```typescript
+import { Link } from "@tanstack/solid-router";
+
+function TrackList(props: { tracks: Track[] }) {
+  return (
+    <For each={props.tracks}>
+      {(track) => (
+        <Link
+          to="/track/$trackId"
+          params={{ trackId: track.id }}
+          // preload on hover
+          preload="intent"
+        >
+          {track.title}
+        </Link>
+      )}
+    </For>
+  );
+}
+```
+
+Preload options:
+- `"intent"` - Preload when user hovers/focuses link
+- `"viewport"` - Preload when link enters viewport
+- `"render"` - Preload immediately when link renders
+- `false` - No preloading
+
+> Reference: https://tanstack.com/router/latest/docs/framework/solid/guide/preloading
+
+## Route Context
+
+Share data between parent and child routes:
+
+```typescript
+// src/routes/_layout.tsx
+import { createFileRoute, Outlet } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/_layout")({
+  beforeLoad: async () => {
+    const user = await fetchCurrentUser();
+    return { user };
+  },
+  component: LayoutComponent,
+});
+
+// src/routes/_layout/dashboard.tsx
+export const Route = createFileRoute("/_layout/dashboard")({
+  loader: async ({ context }) => {
+    // access parent's context
+    const userId = context.user.id;
+    return await fetchDashboardData({ data: userId });
+  },
+  component: DashboardPage,
+});
+
+function DashboardPage() {
+  // access context from any parent route
+  const { user } = Route.useRouteContext();
+  return <div>Welcome, {user.name}</div>;
+}
+```
+
+## Client-Side Data Fetching
+
+For data that should only load on client (not SSR):
+
+```typescript
+import { createResource, createSignal } from "solid-js";
+import { fetchAnalytics } from "~/lib/api";
+
+function AnalyticsDashboard() {
+  // createResource for client-side fetching
+  const [analytics] = createResource(() => fetchAnalytics());
+  
+  return (
+    <Suspense fallback={<Spinner />}>
+      <Show when={analytics()}>
+        {(data) => <AnalyticsChart data={data()} />}
+      </Show>
+    </Suspense>
+  );
+}
+```
+
+## Key Patterns
+
+1. **Use `loader` for critical data** - Data needed for initial render
+2. **Use `beforeLoad` for auth/redirects** - Check access before loading data
+3. **Use `defer` for non-critical data** - Don't block render for optional data
+4. **Use preloading for perceived performance** - Load data before user navigates
+5. **Use `createResource` for client-only data** - Analytics, real-time data
+6. **Access loader data with `Route.useLoaderData()`** - Returns an accessor in SolidJS
+7. **Access route context with `Route.useRouteContext()`** - For data from parent routes

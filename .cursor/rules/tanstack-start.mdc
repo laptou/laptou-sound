@@ -1,125 +1,152 @@
 ---
-description: TanStack Start with SolidJS patterns and best practices
+description: TanStack Start with SolidJS - overview and project structure
 globs: ["src/**/*.tsx", "src/**/*.ts", "vite.config.ts"]
+alwaysApply: true
 ---
 
 # TanStack Start with SolidJS
+
+> Primary Reference: https://tanstack.com/start/latest/docs/framework/solid
+
+## Documentation Structure
+
+This project uses TanStack Start (full-stack framework) with TanStack Router.
+Documentation is split across multiple files for focused reference:
+
+| File | When to Reference |
+|------|-------------------|
+| `tanstack-router.mdc` | Creating page routes, navigation, path/search params |
+| `tanstack-server-functions.mdc` | Using `createServerFn` for server-side logic |
+| `tanstack-server-routes.mdc` | Creating API endpoints (⚠️ NOT createAPIFileRoute) |
+| `tanstack-data-loading.mdc` | Route loaders, beforeLoad, preloading |
+
+## ⚠️ Critical Corrections
+
+### `createAPIFileRoute` DOES NOT EXIST
+
+This function is **not real**. Server routes use `createFileRoute` with a `server` property:
+
+```typescript
+// ❌ WRONG - this import/function does not exist
+import { createAPIFileRoute } from "@tanstack/solid-start/api";
+
+// ✅ CORRECT - use createFileRoute with server property
+import { createFileRoute, json } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/api/data")({
+  server: {
+    handler: {
+      GET: async ({ request, params, context }) => {
+        return json({ data: "value" });
+      },
+    },
+  },
+});
+```
+
+See `tanstack-server-routes.mdc` for complete documentation.
 
 ## Project Structure
 
 ```
 src/
-├── components/          # Reusable UI components
-├── lib/                 # Utilities, auth, db helpers
-├── routes/              # File-based routing
-│   ├── __root.tsx       # Root layout
-│   ├── index.tsx        # Home page (/)
-│   └── auth/
-│       └── login.tsx    # /auth/login
-├── router.tsx           # Router configuration
-├── routeTree.gen.ts     # Auto-generated route tree
-└── styles.css           # Global styles
+├── components/          # reusable UI components
+├── lib/
+│   ├── auth.ts          # auth configuration
+│   ├── auth-client.ts   # client auth hooks
+│   ├── db/              # database schema and helpers
+│   └── server/          # server functions organized by feature
+│       ├── auth.ts
+│       ├── context.ts   # getCloudflareContext helpers
+│       └── tracks.ts
+├── routes/              # file-based routing
+│   ├── __root.tsx       # root layout (createRootRouteWithContext)
+│   ├── index.tsx        # home page (/)
+│   ├── api/             # server routes
+│   │   ├── upload.ts    # /api/upload
+│   │   └── files/
+│   │       └── $.ts     # /api/files/* (wildcard)
+│   ├── auth/
+│   │   ├── login.tsx    # /auth/login
+│   │   └── signup.tsx   # /auth/signup
+│   └── track/
+│       └── $trackId.tsx # /track/:trackId
+├── router.tsx           # router configuration
+├── routeTree.gen.ts     # auto-generated route tree (DO NOT EDIT)
+└── styles.css           # global styles
 ```
 
-## Creating Routes
+## Core Imports
 
 ```typescript
-// src/routes/track/$trackId.tsx
+// page routes
+import { createFileRoute, Link, Outlet } from "@tanstack/solid-router";
+import { createRootRouteWithContext } from "@tanstack/solid-router";
+
+// server functions
+import { createServerFn } from "@tanstack/solid-start/server";
+
+// cloudflare integration
+import { getCloudflareContext } from "@tanstack/solid-start/cloudflare";
+
+// navigation
+import { redirect, notFound } from "@tanstack/solid-router";
+
+// response helpers (for server routes)
+import { json } from "@tanstack/solid-router";
+```
+
+## Quick Reference
+
+### Page Route
+
+```typescript
+// src/routes/about.tsx
 import { createFileRoute } from "@tanstack/solid-router";
 
-export const Route = createFileRoute("/track/$trackId")({
-  // data loading
-  loader: async ({ params }) => {
-    return await getTrack({ data: params.trackId });
-  },
-  // route component
-  component: TrackPage,
+export const Route = createFileRoute("/about")({
+  head: () => ({
+    meta: [{ title: "About - My App" }],
+  }),
+  component: AboutPage,
 });
 
-function TrackPage() {
-  const { trackId } = Route.useParams();
-  const track = Route.useLoaderData();
-  
-  return <div>{track().title}</div>;
+function AboutPage() {
+  return <div>About us</div>;
 }
 ```
 
-## Server Functions
-
-Server functions run on the server and can be called from client components:
+### Route with Loader
 
 ```typescript
-import { createServerFn } from "@tanstack/solid-start/server";
-import { getCloudflareContext } from "@tanstack/solid-start/server";
+// src/routes/index.tsx
+import { createFileRoute } from "@tanstack/solid-router";
+import { fetchTracks } from "~/lib/server/tracks";
 
-// GET function
-export const getTracks = createServerFn({ method: "GET" }).handler(async () => {
-  const { env } = await getCloudflareContext();
-  const { results } = await env.DB.prepare(`SELECT * FROM track`).all();
-  return results;
-});
-
-// POST function with validation
-export const createTrack = createServerFn({ method: "POST" })
-  .validator((data: { title: string; description?: string }) => data)
-  .handler(async ({ data }) => {
-    const { env } = await getCloudflareContext();
-    // ... create track
-    return { id: newId };
-  });
-```
-
-## Using Server Functions in Components
-
-```typescript
-import { createResource, Suspense } from "solid-js";
-import { getTracks, createTrack } from "~/lib/server/tracks";
-
-function TrackList() {
-  const [tracks] = createResource(getTracks);
-  
-  const handleCreate = async () => {
-    const result = await createTrack({ data: { title: "New Track" } });
-  };
-  
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <For each={tracks()}>{(track) => <TrackCard track={track} />}</For>
-    </Suspense>
-  );
-}
-```
-
-## Route Loaders
-
-Use loaders for data that should be fetched before rendering:
-
-```typescript
 export const Route = createFileRoute("/")({
   loader: async () => {
-    // this runs on server during SSR
-    return await getTracks();
+    return fetchTracks({ data: { limit: 20 } });
   },
   component: HomePage,
 });
 
 function HomePage() {
   const tracks = Route.useLoaderData();
-  // tracks is already loaded, no loading state needed
-  return <For each={tracks()}>{(track) => <TrackCard track={track} />}</For>;
+  return <For each={tracks()}>{(t) => <div>{t.title}</div>}</For>;
 }
 ```
 
-## Protected Routes with beforeLoad
+### Protected Route
 
 ```typescript
-import { redirect } from "@tanstack/solid-router";
-import { getSession } from "~/lib/auth";
+// src/routes/upload.tsx
+import { createFileRoute, redirect } from "@tanstack/solid-router";
+import { getSession } from "~/lib/server/auth";
 
 export const Route = createFileRoute("/upload")({
   beforeLoad: async () => {
     const session = await getSession();
-    if (!session) {
+    if (!session?.user) {
       throw redirect({ to: "/auth/login" });
     }
     return { session };
@@ -129,99 +156,74 @@ export const Route = createFileRoute("/upload")({
 
 function UploadPage() {
   const { session } = Route.useRouteContext();
-  // session is guaranteed to exist here
+  // session is guaranteed to exist
 }
 ```
 
-## API Routes
-
-Create API endpoints for webhooks, file serving, etc:
+### Server Function
 
 ```typescript
-// src/routes/api/files/$key.ts
-import { createAPIFileRoute } from "@tanstack/solid-start/api";
-import { getCloudflareContext } from "@tanstack/solid-start/server";
+// src/lib/server/tracks.ts
+import { createServerFn } from "@tanstack/solid-start/server";
 
-export const APIRoute = createAPIFileRoute("/api/files/$key")({
-  GET: async ({ params }) => {
-    const { env } = await getCloudflareContext();
-    const file = await env.R2.get(params.key);
-    
-    if (!file) {
-      return new Response("Not found", { status: 404 });
-    }
-    
-    return new Response(file.body, {
-      headers: { "Content-Type": file.httpMetadata?.contentType || "" },
-    });
+export const fetchTracks = createServerFn({ method: "GET" })
+  .validator((data?: { limit?: number }) => data ?? {})
+  .handler(async ({ data }) => {
+    const db = getDrizzleDB();
+    return db.select().from(tracks).limit(data.limit ?? 20);
+  });
+```
+
+### Server Route (API Endpoint)
+
+```typescript
+// src/routes/api/health.ts
+import { createFileRoute, json } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/api/health")({
+  server: {
+    handler: {
+      GET: async () => {
+        return json({ status: "ok" });
+      },
+    },
   },
 });
 ```
 
-## Head/Meta Management
+## SolidJS Patterns
+
+Remember: TanStack Router with SolidJS uses **accessors** (functions):
 
 ```typescript
-export const Route = createFileRoute("/track/$trackId")({
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: loaderData?.title ?? "Track" },
-      { name: "description", content: loaderData?.description },
-    ],
-  }),
-  component: TrackPage,
-});
-```
-
-## Error Boundaries
-
-```typescript
-export const Route = createFileRoute("/track/$trackId")({
-  errorComponent: ({ error }) => (
-    <div class="error">
-      <h1>Error loading track</h1>
-      <p>{error.message}</p>
-    </div>
-  ),
-  component: TrackPage,
-});
-```
-
-## SolidJS Patterns with TanStack
-
-```typescript
-import { createSignal, createEffect, Show, For } from "solid-js";
-
-function Component() {
-  // reactive state
-  const [count, setCount] = createSignal(0);
+function MyComponent() {
+  // these return accessors, must call to get value
+  const params = Route.useParams();
+  const search = Route.useSearch();
+  const data = Route.useLoaderData();
   
-  // effects
-  createEffect(() => {
-    console.log("Count changed:", count());
-  });
+  // access values
+  console.log(params().trackId);  // ✅ call the accessor
+  console.log(params.trackId);     // ❌ undefined (it's a function)
   
-  return (
-    <div>
-      {/* conditional rendering */}
-      <Show when={count() > 0} fallback={<p>No items</p>}>
-        <p>Count: {count()}</p>
-      </Show>
-      
-      {/* list rendering */}
-      <For each={items()}>
-        {(item, index) => <div>{index()}: {item.name}</div>}
-      </For>
-    </div>
-  );
+  return <div>{data()?.title}</div>;
 }
 ```
 
+## Execution Model
+
+> Reference: https://tanstack.com/start/latest/docs/framework/solid/guide/execution-model
+
+- **SSR**: `loader` and `beforeLoad` run on server during initial request
+- **Client Navigation**: `loader` and `beforeLoad` run on client
+- **Server Functions**: Always run on server, serialized over network
+- **Components**: Run on both server (SSR) and client (hydration/SPA)
+
 ## Key Patterns
 
-1. Use `createFileRoute` for all route definitions
-2. Use `createServerFn` for server-side logic
-3. Access Cloudflare bindings via `getCloudflareContext()`
-4. Use `loader` for data needed at render time
-5. Use `beforeLoad` for authentication checks
-6. Use `createResource` for client-side data fetching
-7. Prefer SolidJS primitives (`createSignal`, `Show`, `For`) over React patterns
+1. **Export `Route`** - Required export name for route tree generation
+2. **Path must match file** - `createFileRoute("/path")` must match file location
+3. **Use accessors** - All hooks return functions in SolidJS
+4. **Server functions for mutations** - Use `createServerFn` for database operations
+5. **Server routes for raw HTTP** - Use `createFileRoute` + `server` property for APIs
+6. **Organize server logic** - Put server functions in `src/lib/server/`

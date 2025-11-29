@@ -1,7 +1,7 @@
 // better auth api handler - catches all /api/auth/* routes
 
 import type { D1Database } from "@cloudflare/workers-types";
-import { createAPIFileRoute } from "@tanstack/solid-start/api";
+import { createFileRoute } from "@tanstack/solid-router";
 import { betterAuth } from "better-auth";
 
 // create auth instance for this request
@@ -34,13 +34,17 @@ async function handleAuth(request: Request, env: any) {
 	return auth.handler(request);
 }
 
-export const APIRoute = createAPIFileRoute("/api/auth/$")({
-	GET: async ({ request, context }) => {
-		const env = (context as any).cloudflare?.env;
-		return handleAuth(request, env);
-	},
-	POST: async ({ request, context }) => {
-		const env = (context as any).cloudflare?.env;
-		return handleAuth(request, env);
+export const Route = createFileRoute("/api/auth/$")({
+	server: {
+		handler: {
+			GET: async ({ request, context }) => {
+				const env = (context as any).cloudflare?.env;
+				return handleAuth(request, env);
+			},
+			POST: async ({ request, context }) => {
+				const env = (context as any).cloudflare?.env;
+				return handleAuth(request, env);
+			},
+		},
 	},
 });
