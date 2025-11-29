@@ -29,7 +29,7 @@
 	"queues": {
 		"producers": [
 			{
-				"binding": "AUDIO_QUEUE",
+				"binding": "laptou_sound_audio_processing_queue",
 				"queue": "audio-processing"
 			}
 		],
