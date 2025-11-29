@@ -15,16 +15,16 @@ export default defineConfig({
 		}),
 		tailwindcss(),
 		cloudflare({ viteEnvironment: { name: "ssr" } }),
-		tanstackStart({ }),
+		tanstackStart(),
 		solid({ ssr: true }),
 	],
-	ssr: {
+	// ssr: {
 		
-		// external: ["cloudflare:workers"],
-	},
-	// build: {
-	// 	rollupOptions: {
-	// 		external: ["cloudflare:workers"],
-	// 	},
+	// 	// external: ["cloudflare:workers"],
 	// },
+	// // build: {
+	// // 	rollupOptions: {
+	// // 		external: ["cloudflare:workers"],
+	// // 	},
+	// // },
 });

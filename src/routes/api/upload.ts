@@ -6,11 +6,9 @@ import { desc, eq } from "drizzle-orm";
 import { getDb, tracks, trackVersions } from "@/db";
 import { createAuth } from "@/lib/auth";
 import { getOriginalKey } from "@/server/files";
-import { commonMiddleware } from "@/lib/middleware";
 
 export const Route = createFileRoute("/api/upload")({
 	server: {
-		middleware: commonMiddleware,
 		handlers: {
 			POST: async ({ request }) => {
 				const auth = createAuth();

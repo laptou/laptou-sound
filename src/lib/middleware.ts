@@ -5,7 +5,7 @@ import { logInfo, logError, logWarn, reportError } from "./logger";
 import { trackError } from "./error-reporter";
 
 // request/response logging middleware
-export const requestLogger = createMiddleware().handler(async ({ next, request }) => {
+export const requestLogger = createMiddleware().server(async ({ next, request }) => {
 	const startTime = Date.now();
 	const timestamp = new Date().toISOString();
 	const url = new URL(request.url);
@@ -19,24 +19,24 @@ export const requestLogger = createMiddleware().handler(async ({ next, request }
 	});
 
 	try {
-		const response = await next();
+		const result = await next();
 		const duration = Date.now() - startTime;
 
 		logInfo(`Completed ${request.method} ${url.pathname}`, {
 			method: request.method,
 			path: url.pathname,
-			status: response.status,
+			status: result.response.status,
 			duration: `${duration}ms`,
 			timestamp: new Date().toISOString(),
 		});
 
 		// add debug headers in development
 		if (process.env.NODE_ENV === "development") {
-			response.headers.set("X-Debug-Duration", `${duration}ms`);
-			response.headers.set("X-Debug-Timestamp", timestamp);
+			result.response.headers.set("X-Debug-Duration", `${duration}ms`);
+			result.response.headers.set("X-Debug-Timestamp", timestamp);
 		}
 
-		return response;
+		return result;
 	} catch (error) {
 		const duration = Date.now() - startTime;
 		const err = error instanceof Error ? error : new Error(String(error));
@@ -67,7 +67,7 @@ export const requestLogger = createMiddleware().handler(async ({ next, request }
 });
 
 // error handling middleware
-export const errorHandler = createMiddleware().handler(async ({ next, request }) => {
+export const errorHandler = createMiddleware().server(async ({ next, request }) => {
 	try {
 		return await next();
 	} catch (error) {
@@ -94,7 +94,7 @@ export const errorHandler = createMiddleware().handler(async ({ next, request })
 });
 
 // performance monitoring middleware
-export const performanceMonitor = createMiddleware().handler(async ({ next, request }) => {
+export const performanceMonitor = createMiddleware().server(async ({ next, request }) => {
 	const startTime = Date.now();
 	const url = new URL(request.url);
 

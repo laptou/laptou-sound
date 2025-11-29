@@ -7,10 +7,10 @@ import {
 	Scripts,
 } from "@tanstack/solid-router";
 import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
-import { onMount, Suspense } from "solid-js";
+import { onMount, Suspense, type JSX } from "solid-js";
 import { HydrationScript } from "solid-js/web";
+import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 
-import Header from "../components/Header";
 import { initializeTheme } from "../lib/theme";
 
 import styleCss from "../styles.css?url";
@@ -45,27 +45,32 @@ export const Route = createRootRouteWithContext()({
 		],
 		title: "laptou sound",
 	}),
-	shellComponent: RootComponent,
+	shellComponent: RootDocument,
+	// errorComponent: (props) => {
+	// 	return (
+	// 		<RootDocument>
+	// 			<ErrorBoundary {...props} />
+	// 		</RootDocument>
+	// 	);
+	// },
 });
 
-function RootComponent() {
-	onMount(() => {
-		initializeTheme();
-	});
+function RootDocument() {
+	// onMount(() => {
+	// 	initializeTheme();
+	// });
 
 	return (
-		<html class="dark">
+		<html>
 			<head>
 				<HydrationScript />
 			</head>
 			<body class="min-h-screen">
 				<HeadContent />
 				<Suspense>
-					<Header />
-					<main>
-						<Outlet />
-					</main>
+					<Outlet />
 					<TanStackRouterDevtools position="bottom-right" />
+					<SolidQueryDevtools buttonPosition="bottom-left" />
 				</Suspense>
 				<Scripts />
 			</body>

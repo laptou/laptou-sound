@@ -10,16 +10,19 @@ import { wrapLoader } from "@/lib/loader-wrapper";
 export const Route = createFileRoute("/")({
 	loader: wrapLoader("/", async () => {
 		const tracks = await getPublicTracks();
+		console.log("tracks", tracks);
 		return { tracks };
 	}),
 	component: HomePage,
+	// ssr: 'data-only', // or false
+
 });
 
 function HomePage() {
 	const data = Route.useLoaderData();
 
 	return (
-		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+		<div data-hi="hi" class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
 			{/* hero section */}
 			<section class="relative py-20 px-6 text-center overflow-hidden">
 				<div class="absolute inset-0 bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10" />

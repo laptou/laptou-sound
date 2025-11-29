@@ -3,11 +3,9 @@
 
 import { createFileRoute } from "@tanstack/solid-router";
 import { createAuth } from "@/lib/auth";
-import { commonMiddleware } from "@/lib/middleware";
 
 export const Route = createFileRoute("/api/auth/$")({
 	server: {
-		middleware: commonMiddleware,
 		handlers: {
 			GET: async ({ request }) => {
 				const auth = createAuth();

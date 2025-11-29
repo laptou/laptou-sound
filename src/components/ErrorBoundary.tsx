@@ -2,52 +2,33 @@
 // note: tanstack router handles route-level errors via errorComponent
 // this is for catching errors outside of routes
 
-import { Show, createSignal, onError } from "solid-js";
-import { reportError } from "@/lib/logger";
+import { ErrorBoundary, Show, createSignal } from "solid-js";
 
-interface ErrorBoundaryProps {
+interface AppErrorBoundaryProps {
 	children: import("solid-js").JSX.Element;
-	fallback?: (error: Error, reset: () => void) => import("solid-js").JSX.Element;
+	fallback?: (
+		error: Error,
+		reset: () => void,
+	) => import("solid-js").JSX.Element;
 }
 
 // simple error boundary using solid-js error handling
-export function ErrorBoundary(props: ErrorBoundaryProps) {
-	const [error, setError] = createSignal<Error | null>(null);
-
-	onError((err) => {
-		setError(err);
-		reportError(err, {
-			component: "ErrorBoundary",
-			location: typeof window !== "undefined" ? window.location.href : undefined,
-		});
-	});
-
-	const reset = () => {
-		setError(null);
-	};
-
+export function AppErrorBoundary(props: AppErrorBoundaryProps) {
 	return (
-		<Show
-			when={!error()}
-			fallback={
-				props.fallback ? (
-					props.fallback(error()!, reset)
-				) : (
-					<ErrorFallback error={error()!} reset={reset} />
-				)
-			}
+		<ErrorBoundary
+			fallback={(error, reset) => <AppErrorFallback error={error} reset={reset} />}
 		>
 			{props.children}
-		</Show>
+		</ErrorBoundary>
 	);
 }
 
-interface ErrorFallbackProps {
+interface AppErrorFallbackProps {
 	error: Error;
 	reset: () => void;
 }
 
-function ErrorFallback(props: ErrorFallbackProps) {
+function AppErrorFallback(props: AppErrorFallbackProps) {
 	const [showDetails, setShowDetails] = createSignal(false);
 
 	return (
@@ -122,4 +103,3 @@ function ErrorFallback(props: ErrorFallbackProps) {
 		</div>
 	);
 }
-

@@ -9,7 +9,8 @@ export function RouteError(props: ErrorComponentProps) {
 
 	// log route error
 	const errorContext = {
-		route: props.routeId,
+		route: props.error,
+		info: props.info,
 		location: typeof window !== "undefined" ? window.location.href : undefined,
 	};
 
