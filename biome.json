@@ -6,7 +6,16 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": [
+			"src/**/*.ts",
+			"src/**/*.tsx",
+			"**/*.config.ts",
+			"vite.config.ts",
+			"!src/**/*.gen.ts",
+			"!node_modules/**/*",
+			"!.direnv/**/*"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -15,7 +24,8 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true
+			"recommended": true,
+			"a11y": "info"
 		}
 	},
 	"javascript": {

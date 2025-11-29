@@ -1,13 +1,20 @@
 {
-	"version": "7",
-	"dialect": "sqlite",
-	"entries": [
-		{
-			"idx": 0,
-			"version": "6",
-			"when": 1764399986741,
-			"tag": "0000_mysterious_naoko",
-			"breakpoints": true
-		}
-	]
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1764399986741,
+      "tag": "0000_mysterious_naoko",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1764402016494,
+      "tag": "0001_green_alex_wilder",
+      "breakpoints": true
+    }
+  ]
 }

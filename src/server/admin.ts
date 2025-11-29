@@ -3,7 +3,7 @@
 import { createServerFn } from "@tanstack/solid-start";
 import { getRequest } from "@tanstack/solid-start/server";
 import { desc, eq } from "drizzle-orm";
-import { getDb, inviteCodes, type NewInviteCode, tracks, users } from "@/db";
+import { getDb, inviteCodes, type NewInviteCode, tracks, user } from "@/db";
 import { createAuth } from "@/lib/auth";
 import { hasRole } from "./auth";
 
@@ -127,7 +127,7 @@ export const getUsers = createServerFn({ method: "GET" }).handler(async () => {
 	}
 
 	const db = getDb();
-	const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+	const allUsers = await db.select().from(user).orderBy(desc(user.createdAt));
 
 	return allUsers;
 });
@@ -158,9 +158,9 @@ export const updateUserRole = createServerFn({ method: "POST" })
 
 		const db = getDb();
 		await db
-			.update(users)
+			.update(user)
 			.set({ role: data.role, updatedAt: new Date() })
-			.where(eq(users.id, data.userId));
+			.where(eq(user.id, data.userId));
 
 		return { success: true };
 	});

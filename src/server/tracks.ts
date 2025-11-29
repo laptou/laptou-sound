@@ -296,7 +296,7 @@ export const uploadTrackVersion = createServerFn({ method: "POST" }).handler(
 		});
 
 		// enqueue processing job
-		const queue = env.AUDIO_QUEUE;
+		const queue = env.laptou_sound_audio_processing_queue;
 		await queue.send({
 			type: "process_audio",
 			trackId,

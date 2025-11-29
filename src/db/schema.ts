@@ -2,68 +2,10 @@
 // uses drizzle orm with cloudflare d1 (sqlite)
 
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { session, user } from "./auth-schema.gen";
 
-// better auth managed tables
-export const users = sqliteTable("users", {
-	id: text("id").primaryKey(),
-	email: text("email").notNull().unique(),
-	emailVerified: integer("email_verified", { mode: "boolean" })
-		.notNull()
-		.default(false),
-	name: text("name").notNull(),
-	image: text("image"),
-	role: text("role", { enum: ["commenter", "uploader", "admin"] })
-		.notNull()
-		.default("commenter"),
-	inviteCodeUsed: text("invite_code_used"),
-	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-});
-
-export const sessions = sqliteTable("sessions", {
-	id: text("id").primaryKey(),
-	userId: text("user_id")
-		.notNull()
-		.references(() => users.id, { onDelete: "cascade" }),
-	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-	token: text("token").notNull().unique(),
-	ipAddress: text("ip_address"),
-	userAgent: text("user_agent"),
-	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-});
-
-export const accounts = sqliteTable("accounts", {
-	id: text("id").primaryKey(),
-	userId: text("user_id")
-		.notNull()
-		.references(() => users.id, { onDelete: "cascade" }),
-	accountId: text("account_id").notNull(),
-	providerId: text("provider_id").notNull(),
-	accessToken: text("access_token"),
-	refreshToken: text("refresh_token"),
-	accessTokenExpiresAt: integer("access_token_expires_at", {
-		mode: "timestamp",
-	}),
-	refreshTokenExpiresAt: integer("refresh_token_expires_at", {
-		mode: "timestamp",
-	}),
-	scope: text("scope"),
-	password: text("password"),
-	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-});
-
-export const verifications = sqliteTable("verifications", {
-	id: text("id").primaryKey(),
-	identifier: text("identifier").notNull(),
-	value: text("value").notNull(),
-	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-});
-
-// application tables
+export { user, session };
+export { account, verification } from "./auth-schema.gen";
 
 export const tracks = sqliteTable(
 	"tracks",
@@ -71,7 +13,7 @@ export const tracks = sqliteTable(
 		id: text("id").primaryKey(),
 		ownerId: text("owner_id")
 			.notNull()
-			.references(() => users.id, { onDelete: "cascade" }),
+			.references(() => user.id, { onDelete: "cascade" }),
 		title: text("title").notNull(),
 		description: text("description"),
 		isPublic: integer("is_public", { mode: "boolean" }).notNull().default(true),
@@ -128,7 +70,7 @@ export const plays = sqliteTable(
 		versionId: text("version_id").references(() => trackVersions.id, {
 			onDelete: "set null",
 		}),
-		userId: text("user_id").references(() => users.id, {
+		userId: text("user_id").references(() => user.id, {
 			onDelete: "set null",
 		}),
 		ipHash: text("ip_hash"), // hashed ip for anonymous tracking
@@ -150,7 +92,7 @@ export const comments = sqliteTable(
 			.references(() => tracks.id, { onDelete: "cascade" }),
 		userId: text("user_id")
 			.notNull()
-			.references(() => users.id, { onDelete: "cascade" }),
+			.references(() => user.id, { onDelete: "cascade" }),
 		content: text("content").notNull(),
 		createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 	},
@@ -167,10 +109,10 @@ export const inviteCodes = sqliteTable(
 		code: text("code").notNull().unique(),
 		createdBy: text("created_by")
 			.notNull()
-			.references(() => users.id, { onDelete: "cascade" }),
+			.references(() => user.id, { onDelete: "cascade" }),
 		// role to assign when code is used
 		role: text("role", { enum: ["commenter", "uploader", "admin"] }).notNull(),
-		usedBy: text("used_by").references(() => users.id, {
+		usedBy: text("used_by").references(() => user.id, {
 			onDelete: "set null",
 		}),
 		createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
@@ -183,9 +125,9 @@ export const inviteCodes = sqliteTable(
 );
 
 // type exports for convenience
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-export type Session = typeof sessions.$inferSelect;
+export type User = typeof user.$inferSelect;
+export type NewUser = typeof user.$inferInsert;
+export type Session = typeof session.$inferSelect;
 export type Track = typeof tracks.$inferSelect;
 export type NewTrack = typeof tracks.$inferInsert;
 export type TrackVersion = typeof trackVersions.$inferSelect;
@@ -193,4 +135,5 @@ export type NewTrackVersion = typeof trackVersions.$inferInsert;
 export type Play = typeof plays.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type InviteCode = typeof inviteCodes.$inferSelect;
+export type NewInviteCode = typeof inviteCodes.$inferInsert;
 export type UserRole = "commenter" | "uploader" | "admin";

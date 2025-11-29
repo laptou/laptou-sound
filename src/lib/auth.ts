@@ -16,10 +16,10 @@ export function createAuth() {
 		database: drizzleAdapter(db, {
 			provider: "sqlite",
 			schema: {
-				user: schema.users,
-				session: schema.sessions,
-				account: schema.accounts,
-				verification: schema.verifications,
+				user: schema.user,
+				session: schema.session,
+				account: schema.account,
+				verification: schema.verification,
 			},
 		}),
 		emailAndPassword: {
