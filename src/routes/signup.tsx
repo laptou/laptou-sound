@@ -1,8 +1,10 @@
 // signup page
 
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
-import { createSignal, Show } from "solid-js";
-import { signUp } from "@/lib/auth-client";
+import { Show } from "solid-js";
+import { useMutation } from "@tanstack/solid-query";
+import { createForm } from "@tanstack/solid-form";
+import { signupMutationOptions } from "@/lib/auth-queries";
 
 export const Route = createFileRoute("/signup")({
 	component: SignupPage,
@@ -10,49 +12,45 @@ export const Route = createFileRoute("/signup")({
 
 function SignupPage() {
 	const navigate = useNavigate();
-	const [name, setName] = createSignal("");
-	const [email, setEmail] = createSignal("");
-	const [password, setPassword] = createSignal("");
-	const [confirmPassword, setConfirmPassword] = createSignal("");
-	const [inviteCode, setInviteCode] = createSignal("");
-	const [error, setError] = createSignal<string | null>(null);
-	const [loading, setLoading] = createSignal(false);
 
-	const handleSignup = async (e: Event) => {
-		e.preventDefault();
-		setError(null);
+	const signup = useMutation(() => signupMutationOptions());
 
-		if (password() !== confirmPassword()) {
-			setError("Passwords do not match");
-			return;
-		}
-
-		if (password().length < 8) {
-			setError("Password must be at least 8 characters");
-			return;
-		}
-
-		setLoading(true);
-
-		try {
-			const result = await signUp.email({
-				email: email(),
-				password: password(),
-				name: name(),
-				// invite code will be handled by server-side logic
-			});
-
-			if (result.error) {
-				setError(result.error.message || "Signup failed");
-			} else {
+	const form = createForm(() => ({
+		defaultValues: {
+			name: "",
+			email: "",
+			password: "",
+			confirmPassword: "",
+			inviteCode: "",
+		},
+		validators: {
+			onSubmit: ({ value }) => {
+				if (value.password !== value.confirmPassword) {
+					return {
+						fields: {
+							confirmPassword: "Passwords do not match",
+						},
+					};
+				}
+				return undefined;
+			},
+		},
+		onSubmit: async ({ value }) => {
+			try {
+				await signup.mutateAsync({
+					email: value.email,
+					password: value.password,
+					name: value.name,
+				});
 				navigate({ to: "/" });
+			} catch {
+				// error is handled by mutation state
 			}
-		} catch {
-			setError("An unexpected error occurred");
-		} finally {
-			setLoading(false);
-		}
-	};
+		},
+	}));
+
+	const error = () => signup.error?.message || null;
+	const loading = () => signup.isPending;
 
 	return (
 		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 py-12">
@@ -69,109 +67,201 @@ function SignupPage() {
 						</div>
 					</Show>
 
-					<form onSubmit={handleSignup} class="space-y-4">
-						<div>
-							<label
-								for="name"
-								class="block text-sm font-medium text-gray-300 mb-2"
-							>
-								Name
-							</label>
-							<input
-								id="name"
-								type="text"
-								value={name()}
-								onInput={(e) => setName(e.currentTarget.value)}
-								required
-								class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-								placeholder="Your name"
-							/>
-						</div>
-
-						<div>
-							<label
-								for="email"
-								class="block text-sm font-medium text-gray-300 mb-2"
-							>
-								Email
-							</label>
-							<input
-								id="email"
-								type="email"
-								value={email()}
-								onInput={(e) => setEmail(e.currentTarget.value)}
-								required
-								class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-								placeholder="you@example.com"
-							/>
-						</div>
-
-						<div>
-							<label
-								for="password"
-								class="block text-sm font-medium text-gray-300 mb-2"
-							>
-								Password
-							</label>
-							<input
-								id="password"
-								type="password"
-								value={password()}
-								onInput={(e) => setPassword(e.currentTarget.value)}
-								required
-								minLength={8}
-								class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-								placeholder="••••••••"
-							/>
-						</div>
-
-						<div>
-							<label
-								for="confirmPassword"
-								class="block text-sm font-medium text-gray-300 mb-2"
-							>
-								Confirm Password
-							</label>
-							<input
-								id="confirmPassword"
-								type="password"
-								value={confirmPassword()}
-								onInput={(e) => setConfirmPassword(e.currentTarget.value)}
-								required
-								class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-								placeholder="••••••••"
-							/>
-						</div>
-
-						<div>
-							<label
-								for="inviteCode"
-								class="block text-sm font-medium text-gray-300 mb-2"
-							>
-								Invite Code{" "}
-								<span class="text-gray-500 font-normal">(optional)</span>
-							</label>
-							<input
-								id="inviteCode"
-								type="text"
-								value={inviteCode()}
-								onInput={(e) => setInviteCode(e.currentTarget.value)}
-								class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-								placeholder="Enter invite code for uploader access"
-							/>
-							<p class="mt-1 text-xs text-gray-500">
-								Without an invite code, you'll be able to comment but not
-								upload.
-							</p>
-						</div>
-
-						<button
-							type="submit"
-							disabled={loading()}
-							class="w-full py-3 px-4 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							void form.handleSubmit();
+						}}
+						class="space-y-4"
+					>
+						<form.Field
+							name="name"
+							validators={{
+								onChange: ({ value }) =>
+									!value || value.trim().length === 0
+										? "Name is required"
+										: undefined,
+							}}
 						>
-							{loading() ? "Creating account..." : "Create Account"}
-						</button>
+							{(field) => (
+								<div>
+									<label
+										for={field().name}
+										class="block text-sm font-medium text-gray-300 mb-2"
+									>
+										Name
+									</label>
+									<input
+										id={field().name}
+										name={field().name}
+										type="text"
+										value={field().state.value}
+										onInput={(e) => field().handleChange(e.currentTarget.value)}
+										onBlur={field().handleBlur}
+										required
+										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+										placeholder="Your name"
+									/>
+									<Show when={field().state.meta.errors.length > 0}>
+										<p class="mt-1 text-sm text-red-400">
+											{field().state.meta.errors[0]}
+										</p>
+									</Show>
+								</div>
+							)}
+						</form.Field>
+
+						<form.Field
+							name="email"
+							validators={{
+								onChange: ({ value }) =>
+									!value || !value.includes("@")
+										? "Please enter a valid email"
+										: undefined,
+							}}
+						>
+							{(field) => (
+								<div>
+									<label
+										for={field().name}
+										class="block text-sm font-medium text-gray-300 mb-2"
+									>
+										Email
+									</label>
+									<input
+										id={field().name}
+										name={field().name}
+										type="email"
+										value={field().state.value}
+										onInput={(e) => field().handleChange(e.currentTarget.value)}
+										onBlur={field().handleBlur}
+										required
+										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+										placeholder="you@example.com"
+									/>
+									<Show when={field().state.meta.errors.length > 0}>
+										<p class="mt-1 text-sm text-red-400">
+											{field().state.meta.errors[0]}
+										</p>
+									</Show>
+								</div>
+							)}
+						</form.Field>
+
+						<form.Field
+							name="password"
+							validators={{
+								onChange: ({ value }) =>
+									!value || value.length < 8
+										? "Password must be at least 8 characters"
+										: undefined,
+							}}
+						>
+							{(field) => (
+								<div>
+									<label
+										for={field().name}
+										class="block text-sm font-medium text-gray-300 mb-2"
+									>
+										Password
+									</label>
+									<input
+										id={field().name}
+										name={field().name}
+										type="password"
+										value={field().state.value}
+										onInput={(e) => field().handleChange(e.currentTarget.value)}
+										onBlur={field().handleBlur}
+										required
+										minLength={8}
+										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+										placeholder="••••••••"
+									/>
+									<Show when={field().state.meta.errors.length > 0}>
+										<p class="mt-1 text-sm text-red-400">
+											{field().state.meta.errors[0]}
+										</p>
+									</Show>
+								</div>
+							)}
+						</form.Field>
+
+						<form.Field name="confirmPassword">
+							{(field) => (
+								<div>
+									<label
+										for={field().name}
+										class="block text-sm font-medium text-gray-300 mb-2"
+									>
+										Confirm Password
+									</label>
+									<input
+										id={field().name}
+										name={field().name}
+										type="password"
+										value={field().state.value}
+										onInput={(e) => field().handleChange(e.currentTarget.value)}
+										onBlur={field().handleBlur}
+										required
+										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+										placeholder="••••••••"
+									/>
+									<Show when={field().state.meta.errors.length > 0}>
+										<p class="mt-1 text-sm text-red-400">
+											{field().state.meta.errors[0]}
+										</p>
+									</Show>
+								</div>
+							)}
+						</form.Field>
+
+						<form.Field name="inviteCode">
+							{(field) => (
+								<div>
+									<label
+										for={field().name}
+										class="block text-sm font-medium text-gray-300 mb-2"
+									>
+										Invite Code{" "}
+										<span class="text-gray-500 font-normal">(optional)</span>
+									</label>
+									<input
+										id={field().name}
+										name={field().name}
+										type="text"
+										value={field().state.value}
+										onInput={(e) => field().handleChange(e.currentTarget.value)}
+										onBlur={field().handleBlur}
+										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+										placeholder="Enter invite code for uploader access"
+									/>
+									<p class="mt-1 text-xs text-gray-500">
+										Without an invite code, you'll be able to comment but not
+										upload.
+									</p>
+								</div>
+							)}
+						</form.Field>
+
+						<form.Subscribe
+							selector={(state) => ({
+								canSubmit: state.canSubmit,
+								isSubmitting: state.isSubmitting,
+							})}
+						>
+							{(state) => (
+								<button
+									type="submit"
+									disabled={!state().canSubmit || loading()}
+									class="w-full py-3 px-4 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									{loading() || state().isSubmitting
+										? "Creating account..."
+										: "Create Account"}
+								</button>
+							)}
+						</form.Subscribe>
 					</form>
 
 					<div class="mt-6 text-center">
