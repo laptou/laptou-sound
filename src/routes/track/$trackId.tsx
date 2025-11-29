@@ -1,0 +1,214 @@
+// track detail page with waveform player, versioning, and download
+
+import { createFileRoute } from "@tanstack/solid-router";
+import { Download } from "lucide-solid";
+import { createMemo, createSignal, For, Show } from "solid-js";
+import SocialPromptModal from "@/components/SocialPromptModal";
+import WaveformPlayer from "@/components/WaveformPlayer";
+import type { TrackVersion } from "@/db/schema";
+import { getPlayCount, recordPlay } from "@/server/plays";
+import { getTrack, getTrackVersions } from "@/server/tracks";
+
+export const Route = createFileRoute("/track/$trackId")({
+	loader: async ({ params }) => {
+		const [track, versions, playCount] = await Promise.all([
+			getTrack({ data: { trackId: params.trackId } }),
+			getTrackVersions({ data: { trackId: params.trackId } }),
+			getPlayCount({ data: { trackId: params.trackId } }),
+		]);
+
+		if (!track) {
+			throw new Error("Track not found");
+		}
+
+		return { track, versions, playCount: playCount.count };
+	},
+	component: TrackDetailPage,
+});
+
+function TrackDetailPage() {
+	const data = Route.useLoaderData();
+	const [selectedVersion, setSelectedVersion] =
+		createSignal<TrackVersion | null>(() => {
+			// select the latest complete version
+			const versions = data().versions;
+			return versions.find((v) => v.processingStatus === "complete") ?? null;
+		});
+	const [showSocialPrompt, setShowSocialPrompt] = createSignal(false);
+
+	const socialLinks = createMemo(() => {
+		const links = data().track.socialLinks;
+		if (!links) return null;
+		try {
+			return JSON.parse(links) as {
+				instagram?: string;
+				soundcloud?: string;
+				tiktok?: string;
+			};
+		} catch {
+			return null;
+		}
+	});
+
+	const handlePlay = async () => {
+		const version = selectedVersion();
+		if (version) {
+			await recordPlay({
+				data: {
+					trackId: data().track.id,
+					versionId: version.id,
+				},
+			});
+		}
+	};
+
+	const handleDownloadClick = () => {
+		const track = data().track;
+		if (track.socialPromptEnabled && socialLinks()) {
+			setShowSocialPrompt(true);
+		} else {
+			initiateDownload();
+		}
+	};
+
+	const initiateDownload = () => {
+		const version = selectedVersion();
+		if (!version?.originalKey) return;
+
+		const link = document.createElement("a");
+		link.href = `/files/${version.originalKey}`;
+		link.download = `${data().track.title} v${version.versionNumber}`;
+		link.click();
+		setShowSocialPrompt(false);
+	};
+
+	const getStreamUrl = (version: TrackVersion) => {
+		if (!version.streamKey) return "";
+		return `/files/${version.streamKey}`;
+	};
+
+	const getWaveformUrl = (version: TrackVersion) => {
+		if (!version.waveformKey) return "";
+		return `/files/${version.waveformKey}`;
+	};
+
+	const formatPlayCount = (count: number) => {
+		if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+		if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+		return count.toString();
+	};
+
+	return (
+		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
+			<div class="max-w-4xl mx-auto">
+				{/* track header */}
+				<div class="mb-8">
+					<h1 class="text-4xl font-bold text-white mb-2">
+						{data().track.title}
+					</h1>
+					<Show when={data().track.description}>
+						<p class="text-gray-400 text-lg mb-4">{data().track.description}</p>
+					</Show>
+					<div class="flex items-center gap-4 text-sm text-gray-400">
+						<span>{formatPlayCount(data().playCount)} plays</span>
+						<span>•</span>
+						<span>{new Date(data().track.createdAt).toLocaleDateString()}</span>
+					</div>
+				</div>
+
+				{/* waveform player */}
+				<Show
+					when={selectedVersion()}
+					fallback={
+						<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
+							<p class="text-gray-400">No playable version available yet.</p>
+							<p class="text-gray-500 text-sm mt-2">
+								The track may still be processing.
+							</p>
+						</div>
+					}
+				>
+					{(version) => (
+						<WaveformPlayer
+							streamUrl={getStreamUrl(version())}
+							waveformUrl={getWaveformUrl(version())}
+							title={data().track.title}
+							artist="Artist"
+							duration={version().duration ?? undefined}
+							onPlay={handlePlay}
+						/>
+					)}
+				</Show>
+
+				{/* actions */}
+				<div class="mt-6 flex items-center gap-4">
+					<Show when={data().track.allowDownload && selectedVersion()}>
+						<button
+							type="button"
+							onClick={handleDownloadClick}
+							class="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+						>
+							<Download class="w-4 h-4" />
+							Download
+						</button>
+					</Show>
+				</div>
+
+				{/* version selector */}
+				<Show when={data().versions.length > 1}>
+					<div class="mt-6">
+						<h3 class="text-white font-medium mb-3">Versions</h3>
+						<div class="flex flex-wrap gap-2">
+							<For each={data().versions}>
+								{(version) => (
+									<button
+										type="button"
+										onClick={() => setSelectedVersion(version)}
+										disabled={version.processingStatus !== "complete"}
+										class={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+											selectedVersion()?.id === version.id
+												? "bg-violet-500 text-white"
+												: version.processingStatus === "complete"
+													? "bg-slate-700 text-gray-300 hover:bg-slate-600"
+													: "bg-slate-800 text-gray-500 cursor-not-allowed"
+										}`}
+									>
+										v{version.versionNumber}
+										<Show when={version.processingStatus !== "complete"}>
+											<span class="ml-2 text-xs opacity-70">
+												({version.processingStatus})
+											</span>
+										</Show>
+									</button>
+								)}
+							</For>
+						</div>
+					</div>
+				</Show>
+
+				{/* track info */}
+				<div class="mt-8 grid grid-cols-2 gap-4 text-sm">
+					<div class="bg-slate-800/30 rounded-lg p-4">
+						<span class="text-gray-500">Uploaded</span>
+						<p class="text-white">
+							{new Date(data().track.createdAt).toLocaleDateString()}
+						</p>
+					</div>
+					<div class="bg-slate-800/30 rounded-lg p-4">
+						<span class="text-gray-500">Versions</span>
+						<p class="text-white">{data().versions.length}</p>
+					</div>
+				</div>
+			</div>
+
+			{/* social prompt modal */}
+			<SocialPromptModal
+				isOpen={showSocialPrompt()}
+				onClose={() => setShowSocialPrompt(false)}
+				onDownload={initiateDownload}
+				artistName="the artist"
+				socialLinks={socialLinks()}
+			/>
+		</div>
+	);
+}

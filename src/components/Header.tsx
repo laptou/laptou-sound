@@ -1,82 +1,127 @@
+// main navigation header
+
 import { Link } from "@tanstack/solid-router";
-import { Globe, Home, Menu, X } from "lucide-solid";
-import { createSignal } from "solid-js";
+import { Music, Shield, Upload, User } from "lucide-solid";
+import { createSignal, onMount, Show } from "solid-js";
+import { getSession } from "@/server/auth";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
-	const [isOpen, setIsOpen] = createSignal(false);
-	const [_groupedExpanded, _setGroupedExpanded] = createSignal<
-		Record<string, boolean>
-	>({});
+	const [user, setUser] = createSignal<{
+		id: string;
+		email: string;
+		role: string;
+	} | null>(null);
+
+	onMount(async () => {
+		try {
+			const session = await getSession();
+			if (session?.user) {
+				setUser({
+					id: session.user.id,
+					email: session.user.email,
+					role: session.user.role as string,
+				});
+			}
+		} catch {
+			// not logged in
+		}
+	});
+
+	const isUploader = () => {
+		const role = user()?.role;
+		return role === "uploader" || role === "admin";
+	};
+
+	const isAdmin = () => user()?.role === "admin";
 
 	return (
-		<>
-			<header class="p-4 flex items-center bg-gray-800 text-white shadow-lg">
-				<button
-					onClick={() => setIsOpen(true)}
-					class="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-					aria-label="Open menu"
+		<header class="sticky top-0 z-40 backdrop-blur-lg bg-slate-900/80 border-b border-slate-800">
+			<div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+				{/* logo */}
+				<Link
+					to="/"
+					class="flex items-center gap-3 text-white hover:opacity-90 transition-opacity"
 				>
-					<Menu size={24} />
-				</button>
-				<h1 class="ml-4 text-xl font-semibold">
-					<Link to="/">
-						<img
-							src="/tanstack-word-logo-white.svg"
-							alt="TanStack Logo"
-							class="h-10"
-						/>
-					</Link>
-				</h1>
-			</header>
+					<div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+						<Music class="w-5 h-5 text-white" />
+					</div>
+					<span class="text-xl font-bold hidden sm:block">
+						<span class="text-violet-400">laptou</span>
+						<span class="text-gray-300 ml-1">sound</span>
+					</span>
+				</Link>
 
-			<aside
-				class={`fixed top-0 left-0 h-full w-80 bg-gray-900 text-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
-					isOpen() ? "translate-x-0" : "-translate-x-full"
-				}`}
-			>
-				<div class="flex items-center justify-between p-4 border-b border-gray-700">
-					<h2 class="text-xl font-bold">Navigation</h2>
-					<button
-						onClick={() => setIsOpen(false)}
-						class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-						aria-label="Close menu"
+				{/* nav */}
+				<nav class="flex items-center gap-2">
+					<Show when={isUploader()}>
+						<Link
+							to="/upload"
+							class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
+							activeProps={{
+								class:
+									"flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-violet-500/20 rounded-lg",
+							}}
+						>
+							<Upload class="w-4 h-4" />
+							<span class="hidden sm:inline">Upload</span>
+						</Link>
+					</Show>
+
+					<Show when={isUploader()}>
+						<Link
+							to="/my-tracks"
+							class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
+							activeProps={{
+								class:
+									"flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-violet-500/20 rounded-lg",
+							}}
+						>
+							<Music class="w-4 h-4" />
+							<span class="hidden sm:inline">My Tracks</span>
+						</Link>
+					</Show>
+
+					<Show when={isAdmin()}>
+						<Link
+							to="/admin"
+							class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
+							activeProps={{
+								class:
+									"flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-violet-500/20 rounded-lg",
+							}}
+						>
+							<Shield class="w-4 h-4" />
+							<span class="hidden sm:inline">Admin</span>
+						</Link>
+					</Show>
+
+					<ThemeToggle />
+
+					<Show
+						when={user()}
+						fallback={
+							<Link
+								to="/login"
+								class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-violet-500/25"
+							>
+								<User class="w-4 h-4" />
+								<span>Sign In</span>
+							</Link>
+						}
 					>
-						<X size={24} />
-					</button>
-				</div>
-
-				<nav class="flex-1 p-4 overflow-y-auto">
-					<Link
-						to="/"
-						onClick={() => setIsOpen(false)}
-						class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-						activeProps={{
-							class:
-								"flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2",
-						}}
-					>
-						<Home size={20} />
-						<span class="font-medium">Home</span>
-					</Link>
-
-					{/* Demo Links Start */}
-
-					<Link
-						to="/demo/start/server-funcs"
-						onClick={() => setIsOpen(false)}
-						class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-						activeProps={{
-							class:
-								"flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2",
-						}}
-					>
-						<Globe size={20} />
-						<span class="font-medium">Start - Server Functions</span>
-					</Link>
-
-					{/* Demo Links End */}
+						<Link
+							to="/login"
+							class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
+						>
+							<User class="w-4 h-4" />
+							<span class="hidden sm:inline truncate max-w-[100px]">
+								{user()?.email}
+							</span>
+						</Link>
+					</Show>
 				</nav>
-			</aside>
-		</>
+			</div>
+		</header>
 	);
 }

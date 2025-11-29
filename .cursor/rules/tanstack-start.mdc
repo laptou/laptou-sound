@@ -1,0 +1,208 @@
+---
+description: Rules for using TanStack Start with SolidJS
+globs:
+  - src/routes/**
+  - src/server/**
+  - src/components/**
+---
+# TanStack Start with SolidJS
+
+## Accessing Cloudflare Bindings
+
+Always use the simple import:
+
+```typescript
+import { env } from "cloudflare:workers";
+
+// then access bindings directly
+const db = env.laptou_sound_db;
+const bucket = env.laptou_sound_files;
+const queue = env.AUDIO_QUEUE;
+```
+
+## Server Functions
+
+Use `createServerFn` for RPC-style server calls:
+
+```typescript
+import { createServerFn } from "@tanstack/solid-start";
+import { getRequest } from "@tanstack/solid-start/server";
+
+export const getTracks = createServerFn({ method: "GET" }).handler(async () => {
+  // server-side code here
+  return { tracks: [] };
+});
+
+// with input validation using inputValidator()
+export const createTrack = createServerFn({ method: "POST" })
+  .inputValidator((data: { title: string; description?: string }) => data)
+  .handler(async ({ data }) => {
+    // data is typed and validated
+    return { id: "...", title: data.title };
+  });
+```
+
+**Note**: Use `.inputValidator()` for input validation.
+
+## Server Routes
+
+**IMPORTANT**: There is NO `createAPIFileRoute` function. Use `createFileRoute` with `server` property:
+
+```typescript
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/api/example")({
+  server: {
+    handlers: {
+      GET: async ({ request, params }) => {
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+      POST: async ({ request }) => {
+        const body = await request.json();
+        return new Response(JSON.stringify({ received: body }));
+      },
+    },
+  },
+});
+```
+
+## Wildcard Routes
+
+For catch-all routes like auth handlers:
+
+```typescript
+// src/routes/api/auth/$.ts
+import { createFileRoute } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/api/auth/$")({
+  server: {
+    handlers: {
+      GET: async ({ request, params }) => {
+        // params._splat contains the wildcard portion
+        return handleAuth(request);
+      },
+      POST: async ({ request }) => {
+        return handleAuth(request);
+      },
+    },
+  },
+});
+```
+
+## Route Protection with beforeLoad
+
+```typescript
+import { createFileRoute, redirect } from "@tanstack/solid-router";
+
+export const Route = createFileRoute("/_authed")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session) {
+      throw redirect({ to: "/login" });
+    }
+    // return data available to child routes
+    return { user: session.user };
+  },
+});
+```
+
+## Accessing Route Context in Components
+
+```typescript
+function ProtectedPage() {
+  const context = Route.useRouteContext();
+  
+  return (
+    <div>
+      <h1>Welcome, {context().user.name}</h1>
+    </div>
+  );
+}
+```
+
+## Data Loading
+
+Use `loader` for route data:
+
+```typescript
+export const Route = createFileRoute("/tracks")({
+  loader: async () => {
+    return getTracks();
+  },
+  component: TracksPage,
+});
+
+function TracksPage() {
+  const tracks = Route.useLoaderData();
+  
+  return (
+    <For each={tracks()}>
+      {(track) => <TrackCard track={track} />}
+    </For>
+  );
+}
+```
+
+## File Structure
+
+```
+src/routes/
+├── __root.tsx          # root layout
+├── index.tsx           # /
+├── login.tsx           # /login
+├── signup.tsx          # /signup
+├── _authed.tsx         # layout for authenticated routes (pathless)
+├── _authed/
+│   ├── upload.tsx      # /upload
+│   ├── my-tracks.tsx   # /my-tracks
+│   └── admin.tsx       # /admin
+├── track/
+│   └── $trackId.tsx    # /track/:trackId
+└── api/
+    └── auth/
+        └── $.ts        # /api/auth/* (server route)
+```
+
+## Response Helpers
+
+```typescript
+import { json } from "@tanstack/solid-start";
+
+// in server handlers
+return json({ data: result });
+return json({ error: "Not found" }, { status: 404 });
+```
+
+## Getting Request Info in Server Functions
+
+Use `getRequest` from `@tanstack/solid-start/server` to access the current request:
+
+```typescript
+import { getRequest } from "@tanstack/solid-start/server";
+
+export const myServerFn = createServerFn({ method: "GET" }).handler(async () => {
+  const request = getRequest();
+  const headers = request.headers;
+  const url = new URL(request.url);
+  // ...
+});
+```
+
+**IMPORTANT**: The function is `getRequest`, NOT `getWebRequest`. There is no `getWebRequest` function.
+
+Other useful request utilities from `@tanstack/solid-start/server`:
+
+```typescript
+import {
+  getRequest,
+  getRequestHeaders,
+  getRequestHeader,
+  getRequestIP,
+  getRequestHost,
+  getRequestUrl,
+  getCookie,
+  setCookie,
+} from "@tanstack/solid-start/server";
+```

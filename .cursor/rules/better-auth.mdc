@@ -1,0 +1,147 @@
+---
+description: Rules for implementing authentication with Better Auth
+globs:
+  - src/lib/auth*.ts
+  - src/routes/**/auth/**
+  - src/routes/login.tsx
+  - src/routes/signup.tsx
+---
+# Better Auth Integration
+
+## Server Setup
+
+Create the auth instance in `src/lib/auth.ts`:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { magicLink } from "better-auth/plugins";
+import { env } from "cloudflare:workers";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "@/db/schema";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(drizzle(env.laptou_sound_db), {
+    provider: "sqlite",
+    schema,
+  }),
+  emailAndPassword: {
+    enabled: true,
+  },
+  plugins: [
+    magicLink({
+      sendMagicLink: async ({ email, url }) => {
+        // implement email sending here
+        console.log(`Magic link for ${email}: ${url}`);
+      },
+    }),
+  ],
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "commenter",
+        input: false, // not settable by user during signup
+      },
+      inviteCodeUsed: {
+        type: "string",
+        required: false,
+      },
+    },
+  },
+});
+```
+
+## Client Setup
+
+Create the auth client in `src/lib/auth-client.ts`:
+
+```typescript
+import { createAuthClient } from "better-auth/solid";
+import { magicLinkClient } from "better-auth/client/plugins";
+
+export const authClient = createAuthClient({
+  baseURL: import.meta.env.VITE_BETTER_AUTH_URL,
+  plugins: [magicLinkClient()],
+});
+
+export const { signIn, signUp, signOut, useSession } = authClient;
+```
+
+## Auth API Route
+
+**CRITICAL**: Do NOT use `createAPIFileRoute` - it does not exist in TanStack Start.
+
+Use the standard server route pattern with `createFileRoute`:
+
+```typescript
+// src/routes/api/auth/$.ts
+import { createFileRoute } from "@tanstack/solid-router";
+import { auth } from "@/lib/auth";
+
+export const Route = createFileRoute("/api/auth/$")({
+  server: {
+    handlers: {
+      GET: async ({ request }) => {
+        return auth.handler(request);
+      },
+      POST: async ({ request }) => {
+        return auth.handler(request);
+      },
+    },
+  },
+});
+```
+
+## Session Access in Server Functions
+
+```typescript
+import { createServerFn } from "@tanstack/solid-start";
+import { getRequest } from "@tanstack/solid-start/server";
+import { createAuth } from "@/lib/auth";
+
+export const getSession = createServerFn({ method: "GET" }).handler(async () => {
+  const request = getRequest();
+  const auth = createAuth();
+  const session = await auth.api.getSession({ headers: request.headers });
+  return session;
+});
+```
+
+**IMPORTANT**: Use `getRequest` (not `getWebRequest`) to get the current request.
+
+## Route Protection
+
+Use `beforeLoad` in route definitions:
+
+```typescript
+import { createFileRoute, redirect } from "@tanstack/solid-router";
+import { getSession } from "@/server/auth";
+
+export const Route = createFileRoute("/_authed")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session) {
+      throw redirect({ to: "/login" });
+    }
+    return { user: session.user };
+  },
+});
+```
+
+## User Roles
+
+Three roles exist: `commenter`, `uploader`, `admin`
+
+- commenter: can view and comment on tracks
+- uploader: can upload tracks and manage their own content
+- admin: full access including invite code generation and content deletion
+
+Check role in server functions:
+
+```typescript
+const session = await getSession();
+if (session?.user.role !== "admin") {
+  throw new Error("Unauthorized");
+}
+```

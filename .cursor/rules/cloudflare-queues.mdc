@@ -1,0 +1,159 @@
+---
+description: Rules for using Cloudflare Queues for async job processing
+globs:
+  - src/server/queue*.ts
+  - src/worker*.ts
+---
+# Cloudflare Queues for Audio Processing
+
+## Queue Configuration
+
+Already configured in `wrangler.jsonc`:
+
+```jsonc
+{
+  "queues": {
+    "producers": [
+      {
+        "binding": "AUDIO_QUEUE",
+        "queue": "audio-processing"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "audio-processing",
+        "max_batch_size": 1,
+        "max_retries": 3,
+        "dead_letter_queue": "audio-processing-dlq"
+      }
+    ]
+  }
+}
+```
+
+## Sending Messages to Queue
+
+```typescript
+import { env } from "cloudflare:workers";
+
+interface AudioProcessingJob {
+  type: "process_audio";
+  trackId: string;
+  versionId: string;
+  originalKey: string;
+}
+
+export async function enqueueAudioProcessing(job: AudioProcessingJob) {
+  const queue = env.AUDIO_QUEUE;
+  await queue.send(job);
+}
+```
+
+## Queue Consumer
+
+The queue consumer runs as part of the worker. Add a `queue` handler export:
+
+```typescript
+// src/worker.ts or add to server entry
+import { env } from "cloudflare:workers";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "@/db/schema";
+
+interface AudioProcessingJob {
+  type: "process_audio";
+  trackId: string;
+  versionId: string;
+  originalKey: string;
+}
+
+export default {
+  async queue(batch: MessageBatch<AudioProcessingJob>) {
+    for (const message of batch.messages) {
+      try {
+        await processAudioJob(message.body);
+        message.ack();
+      } catch (error) {
+        console.error("Failed to process audio job:", error);
+        message.retry();
+      }
+    }
+  },
+};
+
+async function processAudioJob(job: AudioProcessingJob) {
+  const bucket = env.laptou_sound_files;
+  const db = drizzle(env.laptou_sound_db, { schema });
+  
+  // update status to processing
+  await db.update(schema.trackVersions)
+    .set({ processingStatus: "processing" })
+    .where(eq(schema.trackVersions.id, job.versionId));
+  
+  // get original file
+  const original = await bucket.get(job.originalKey);
+  if (!original) {
+    throw new Error("Original file not found");
+  }
+  
+  // process audio (128kbps transcoding + waveform generation)
+  // note: actual ffmpeg processing would require workers ai or external service
+  const streamKey = `tracks/${job.trackId}/versions/${job.versionId}/stream.mp3`;
+  const waveformKey = `tracks/${job.trackId}/versions/${job.versionId}/waveform.json`;
+  
+  // for now, copy original as stream (real implementation needs transcoding)
+  await bucket.put(streamKey, original.body, {
+    httpMetadata: { contentType: "audio/mpeg" },
+  });
+  
+  // generate waveform data (simplified - real implementation needs audio analysis)
+  const waveformData = JSON.stringify({ peaks: [] });
+  await bucket.put(waveformKey, waveformData, {
+    httpMetadata: { contentType: "application/json" },
+  });
+  
+  // update status to complete
+  await db.update(schema.trackVersions)
+    .set({ 
+      processingStatus: "complete",
+      streamKey,
+      waveformKey,
+    })
+    .where(eq(schema.trackVersions.id, job.versionId));
+}
+```
+
+## Job Message Types
+
+```typescript
+// src/types/queue.ts
+export type QueueMessage = 
+  | AudioProcessingJob
+  | DeleteTrackJob;
+
+export interface AudioProcessingJob {
+  type: "process_audio";
+  trackId: string;
+  versionId: string;
+  originalKey: string;
+}
+
+export interface DeleteTrackJob {
+  type: "delete_track";
+  trackId: string;
+}
+```
+
+## Error Handling
+
+- Jobs retry up to 3 times (configured in wrangler.jsonc)
+- Failed jobs go to dead letter queue `audio-processing-dlq`
+- Update track version status to "failed" on permanent failure:
+
+```typescript
+async function handlePermanentFailure(job: AudioProcessingJob) {
+  const db = drizzle(env.laptou_sound_db, { schema });
+  await db.update(schema.trackVersions)
+    .set({ processingStatus: "failed" })
+    .where(eq(schema.trackVersions.id, job.versionId));
+}
+```
