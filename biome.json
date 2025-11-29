@@ -29,10 +29,8 @@
 		}
 	},
 	"html": {
-
-    "experimentalFullSupportEnabled": true
-
-  },
+		"experimentalFullSupportEnabled": true
+	},
 	"assist": {
 		"enabled": true,
 		"actions": {

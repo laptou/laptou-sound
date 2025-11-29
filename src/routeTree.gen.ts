@@ -8,306 +8,306 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as UploadRouteImport } from './routes/upload'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as TrackTrackIdRouteImport } from './routes/track/$trackId'
-import { Route as AuthSignupRouteImport } from './routes/auth/signup'
-import { Route as AuthLoginRouteImport } from './routes/auth/login'
-import { Route as AdminUsersRouteImport } from './routes/admin/users'
-import { Route as AdminInvitesRouteImport } from './routes/admin/invites'
-import { Route as TrackTrackIdVersionsRouteImport } from './routes/track/$trackId/versions'
-import { Route as TrackTrackIdUploadRouteImport } from './routes/track/$trackId/upload'
-import { Route as TrackTrackIdSettingsRouteImport } from './routes/track/$trackId/settings'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as AdminIndexRouteImport } from "./routes/admin/index";
+import { Route as AdminInvitesRouteImport } from "./routes/admin/invites";
+import { Route as AdminUsersRouteImport } from "./routes/admin/users";
+import { Route as AuthLoginRouteImport } from "./routes/auth/login";
+import { Route as AuthSignupRouteImport } from "./routes/auth/signup";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as SettingsRouteImport } from "./routes/settings";
+import { Route as TrackTrackIdRouteImport } from "./routes/track/$trackId";
+import { Route as TrackTrackIdSettingsRouteImport } from "./routes/track/$trackId/settings";
+import { Route as TrackTrackIdUploadRouteImport } from "./routes/track/$trackId/upload";
+import { Route as TrackTrackIdVersionsRouteImport } from "./routes/track/$trackId/versions";
+import { Route as UploadRouteImport } from "./routes/upload";
 
 const UploadRoute = UploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/upload",
+	path: "/upload",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/settings",
+	path: "/settings",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/",
+	path: "/",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/admin/",
+	path: "/admin/",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const TrackTrackIdRoute = TrackTrackIdRouteImport.update({
-  id: '/track/$trackId',
-  path: '/track/$trackId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/track/$trackId",
+	path: "/track/$trackId",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const AuthSignupRoute = AuthSignupRouteImport.update({
-  id: '/auth/signup',
-  path: '/auth/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/auth/signup",
+	path: "/auth/signup",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/auth/login',
-  path: '/auth/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/auth/login",
+	path: "/auth/login",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/admin/users",
+	path: "/admin/users",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const AdminInvitesRoute = AdminInvitesRouteImport.update({
-  id: '/admin/invites',
-  path: '/admin/invites',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/admin/invites",
+	path: "/admin/invites",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const TrackTrackIdVersionsRoute = TrackTrackIdVersionsRouteImport.update({
-  id: '/versions',
-  path: '/versions',
-  getParentRoute: () => TrackTrackIdRoute,
-} as any)
+	id: "/versions",
+	path: "/versions",
+	getParentRoute: () => TrackTrackIdRoute,
+} as any);
 const TrackTrackIdUploadRoute = TrackTrackIdUploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => TrackTrackIdRoute,
-} as any)
+	id: "/upload",
+	path: "/upload",
+	getParentRoute: () => TrackTrackIdRoute,
+} as any);
 const TrackTrackIdSettingsRoute = TrackTrackIdSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => TrackTrackIdRoute,
-} as any)
+	id: "/settings",
+	path: "/settings",
+	getParentRoute: () => TrackTrackIdRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
-  '/upload': typeof UploadRoute
-  '/admin/invites': typeof AdminInvitesRoute
-  '/admin/users': typeof AdminUsersRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/signup': typeof AuthSignupRoute
-  '/track/$trackId': typeof TrackTrackIdRouteWithChildren
-  '/admin': typeof AdminIndexRoute
-  '/track/$trackId/settings': typeof TrackTrackIdSettingsRoute
-  '/track/$trackId/upload': typeof TrackTrackIdUploadRoute
-  '/track/$trackId/versions': typeof TrackTrackIdVersionsRoute
+	"/": typeof IndexRoute;
+	"/settings": typeof SettingsRoute;
+	"/upload": typeof UploadRoute;
+	"/admin/invites": typeof AdminInvitesRoute;
+	"/admin/users": typeof AdminUsersRoute;
+	"/auth/login": typeof AuthLoginRoute;
+	"/auth/signup": typeof AuthSignupRoute;
+	"/track/$trackId": typeof TrackTrackIdRouteWithChildren;
+	"/admin": typeof AdminIndexRoute;
+	"/track/$trackId/settings": typeof TrackTrackIdSettingsRoute;
+	"/track/$trackId/upload": typeof TrackTrackIdUploadRoute;
+	"/track/$trackId/versions": typeof TrackTrackIdVersionsRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
-  '/upload': typeof UploadRoute
-  '/admin/invites': typeof AdminInvitesRoute
-  '/admin/users': typeof AdminUsersRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/signup': typeof AuthSignupRoute
-  '/track/$trackId': typeof TrackTrackIdRouteWithChildren
-  '/admin': typeof AdminIndexRoute
-  '/track/$trackId/settings': typeof TrackTrackIdSettingsRoute
-  '/track/$trackId/upload': typeof TrackTrackIdUploadRoute
-  '/track/$trackId/versions': typeof TrackTrackIdVersionsRoute
+	"/": typeof IndexRoute;
+	"/settings": typeof SettingsRoute;
+	"/upload": typeof UploadRoute;
+	"/admin/invites": typeof AdminInvitesRoute;
+	"/admin/users": typeof AdminUsersRoute;
+	"/auth/login": typeof AuthLoginRoute;
+	"/auth/signup": typeof AuthSignupRoute;
+	"/track/$trackId": typeof TrackTrackIdRouteWithChildren;
+	"/admin": typeof AdminIndexRoute;
+	"/track/$trackId/settings": typeof TrackTrackIdSettingsRoute;
+	"/track/$trackId/upload": typeof TrackTrackIdUploadRoute;
+	"/track/$trackId/versions": typeof TrackTrackIdVersionsRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
-  '/upload': typeof UploadRoute
-  '/admin/invites': typeof AdminInvitesRoute
-  '/admin/users': typeof AdminUsersRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/signup': typeof AuthSignupRoute
-  '/track/$trackId': typeof TrackTrackIdRouteWithChildren
-  '/admin/': typeof AdminIndexRoute
-  '/track/$trackId/settings': typeof TrackTrackIdSettingsRoute
-  '/track/$trackId/upload': typeof TrackTrackIdUploadRoute
-  '/track/$trackId/versions': typeof TrackTrackIdVersionsRoute
+	__root__: typeof rootRouteImport;
+	"/": typeof IndexRoute;
+	"/settings": typeof SettingsRoute;
+	"/upload": typeof UploadRoute;
+	"/admin/invites": typeof AdminInvitesRoute;
+	"/admin/users": typeof AdminUsersRoute;
+	"/auth/login": typeof AuthLoginRoute;
+	"/auth/signup": typeof AuthSignupRoute;
+	"/track/$trackId": typeof TrackTrackIdRouteWithChildren;
+	"/admin/": typeof AdminIndexRoute;
+	"/track/$trackId/settings": typeof TrackTrackIdSettingsRoute;
+	"/track/$trackId/upload": typeof TrackTrackIdUploadRoute;
+	"/track/$trackId/versions": typeof TrackTrackIdVersionsRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/settings'
-    | '/upload'
-    | '/admin/invites'
-    | '/admin/users'
-    | '/auth/login'
-    | '/auth/signup'
-    | '/track/$trackId'
-    | '/admin'
-    | '/track/$trackId/settings'
-    | '/track/$trackId/upload'
-    | '/track/$trackId/versions'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/settings'
-    | '/upload'
-    | '/admin/invites'
-    | '/admin/users'
-    | '/auth/login'
-    | '/auth/signup'
-    | '/track/$trackId'
-    | '/admin'
-    | '/track/$trackId/settings'
-    | '/track/$trackId/upload'
-    | '/track/$trackId/versions'
-  id:
-    | '__root__'
-    | '/'
-    | '/settings'
-    | '/upload'
-    | '/admin/invites'
-    | '/admin/users'
-    | '/auth/login'
-    | '/auth/signup'
-    | '/track/$trackId'
-    | '/admin/'
-    | '/track/$trackId/settings'
-    | '/track/$trackId/upload'
-    | '/track/$trackId/versions'
-  fileRoutesById: FileRoutesById
+	fileRoutesByFullPath: FileRoutesByFullPath;
+	fullPaths:
+		| "/"
+		| "/settings"
+		| "/upload"
+		| "/admin/invites"
+		| "/admin/users"
+		| "/auth/login"
+		| "/auth/signup"
+		| "/track/$trackId"
+		| "/admin"
+		| "/track/$trackId/settings"
+		| "/track/$trackId/upload"
+		| "/track/$trackId/versions";
+	fileRoutesByTo: FileRoutesByTo;
+	to:
+		| "/"
+		| "/settings"
+		| "/upload"
+		| "/admin/invites"
+		| "/admin/users"
+		| "/auth/login"
+		| "/auth/signup"
+		| "/track/$trackId"
+		| "/admin"
+		| "/track/$trackId/settings"
+		| "/track/$trackId/upload"
+		| "/track/$trackId/versions";
+	id:
+		| "__root__"
+		| "/"
+		| "/settings"
+		| "/upload"
+		| "/admin/invites"
+		| "/admin/users"
+		| "/auth/login"
+		| "/auth/signup"
+		| "/track/$trackId"
+		| "/admin/"
+		| "/track/$trackId/settings"
+		| "/track/$trackId/upload"
+		| "/track/$trackId/versions";
+	fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  SettingsRoute: typeof SettingsRoute
-  UploadRoute: typeof UploadRoute
-  AdminInvitesRoute: typeof AdminInvitesRoute
-  AdminUsersRoute: typeof AdminUsersRoute
-  AuthLoginRoute: typeof AuthLoginRoute
-  AuthSignupRoute: typeof AuthSignupRoute
-  TrackTrackIdRoute: typeof TrackTrackIdRouteWithChildren
-  AdminIndexRoute: typeof AdminIndexRoute
+	IndexRoute: typeof IndexRoute;
+	SettingsRoute: typeof SettingsRoute;
+	UploadRoute: typeof UploadRoute;
+	AdminInvitesRoute: typeof AdminInvitesRoute;
+	AdminUsersRoute: typeof AdminUsersRoute;
+	AuthLoginRoute: typeof AuthLoginRoute;
+	AuthSignupRoute: typeof AuthSignupRoute;
+	TrackTrackIdRoute: typeof TrackTrackIdRouteWithChildren;
+	AdminIndexRoute: typeof AdminIndexRoute;
 }
 
-declare module '@tanstack/solid-router' {
-  interface FileRoutesByPath {
-    '/upload': {
-      id: '/upload'
-      path: '/upload'
-      fullPath: '/upload'
-      preLoaderRoute: typeof UploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/track/$trackId': {
-      id: '/track/$trackId'
-      path: '/track/$trackId'
-      fullPath: '/track/$trackId'
-      preLoaderRoute: typeof TrackTrackIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/signup': {
-      id: '/auth/signup'
-      path: '/auth/signup'
-      fullPath: '/auth/signup'
-      preLoaderRoute: typeof AuthSignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/auth/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/invites': {
-      id: '/admin/invites'
-      path: '/admin/invites'
-      fullPath: '/admin/invites'
-      preLoaderRoute: typeof AdminInvitesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/track/$trackId/versions': {
-      id: '/track/$trackId/versions'
-      path: '/versions'
-      fullPath: '/track/$trackId/versions'
-      preLoaderRoute: typeof TrackTrackIdVersionsRouteImport
-      parentRoute: typeof TrackTrackIdRoute
-    }
-    '/track/$trackId/upload': {
-      id: '/track/$trackId/upload'
-      path: '/upload'
-      fullPath: '/track/$trackId/upload'
-      preLoaderRoute: typeof TrackTrackIdUploadRouteImport
-      parentRoute: typeof TrackTrackIdRoute
-    }
-    '/track/$trackId/settings': {
-      id: '/track/$trackId/settings'
-      path: '/settings'
-      fullPath: '/track/$trackId/settings'
-      preLoaderRoute: typeof TrackTrackIdSettingsRouteImport
-      parentRoute: typeof TrackTrackIdRoute
-    }
-  }
+declare module "@tanstack/solid-router" {
+	interface FileRoutesByPath {
+		"/upload": {
+			id: "/upload";
+			path: "/upload";
+			fullPath: "/upload";
+			preLoaderRoute: typeof UploadRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/settings": {
+			id: "/settings";
+			path: "/settings";
+			fullPath: "/settings";
+			preLoaderRoute: typeof SettingsRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/": {
+			id: "/";
+			path: "/";
+			fullPath: "/";
+			preLoaderRoute: typeof IndexRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/admin/": {
+			id: "/admin/";
+			path: "/admin";
+			fullPath: "/admin";
+			preLoaderRoute: typeof AdminIndexRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/track/$trackId": {
+			id: "/track/$trackId";
+			path: "/track/$trackId";
+			fullPath: "/track/$trackId";
+			preLoaderRoute: typeof TrackTrackIdRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/auth/signup": {
+			id: "/auth/signup";
+			path: "/auth/signup";
+			fullPath: "/auth/signup";
+			preLoaderRoute: typeof AuthSignupRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/auth/login": {
+			id: "/auth/login";
+			path: "/auth/login";
+			fullPath: "/auth/login";
+			preLoaderRoute: typeof AuthLoginRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/admin/users": {
+			id: "/admin/users";
+			path: "/admin/users";
+			fullPath: "/admin/users";
+			preLoaderRoute: typeof AdminUsersRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/admin/invites": {
+			id: "/admin/invites";
+			path: "/admin/invites";
+			fullPath: "/admin/invites";
+			preLoaderRoute: typeof AdminInvitesRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/track/$trackId/versions": {
+			id: "/track/$trackId/versions";
+			path: "/versions";
+			fullPath: "/track/$trackId/versions";
+			preLoaderRoute: typeof TrackTrackIdVersionsRouteImport;
+			parentRoute: typeof TrackTrackIdRoute;
+		};
+		"/track/$trackId/upload": {
+			id: "/track/$trackId/upload";
+			path: "/upload";
+			fullPath: "/track/$trackId/upload";
+			preLoaderRoute: typeof TrackTrackIdUploadRouteImport;
+			parentRoute: typeof TrackTrackIdRoute;
+		};
+		"/track/$trackId/settings": {
+			id: "/track/$trackId/settings";
+			path: "/settings";
+			fullPath: "/track/$trackId/settings";
+			preLoaderRoute: typeof TrackTrackIdSettingsRouteImport;
+			parentRoute: typeof TrackTrackIdRoute;
+		};
+	}
 }
 
 interface TrackTrackIdRouteChildren {
-  TrackTrackIdSettingsRoute: typeof TrackTrackIdSettingsRoute
-  TrackTrackIdUploadRoute: typeof TrackTrackIdUploadRoute
-  TrackTrackIdVersionsRoute: typeof TrackTrackIdVersionsRoute
+	TrackTrackIdSettingsRoute: typeof TrackTrackIdSettingsRoute;
+	TrackTrackIdUploadRoute: typeof TrackTrackIdUploadRoute;
+	TrackTrackIdVersionsRoute: typeof TrackTrackIdVersionsRoute;
 }
 
 const TrackTrackIdRouteChildren: TrackTrackIdRouteChildren = {
-  TrackTrackIdSettingsRoute: TrackTrackIdSettingsRoute,
-  TrackTrackIdUploadRoute: TrackTrackIdUploadRoute,
-  TrackTrackIdVersionsRoute: TrackTrackIdVersionsRoute,
-}
+	TrackTrackIdSettingsRoute: TrackTrackIdSettingsRoute,
+	TrackTrackIdUploadRoute: TrackTrackIdUploadRoute,
+	TrackTrackIdVersionsRoute: TrackTrackIdVersionsRoute,
+};
 
 const TrackTrackIdRouteWithChildren = TrackTrackIdRoute._addFileChildren(
-  TrackTrackIdRouteChildren,
-)
+	TrackTrackIdRouteChildren,
+);
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  SettingsRoute: SettingsRoute,
-  UploadRoute: UploadRoute,
-  AdminInvitesRoute: AdminInvitesRoute,
-  AdminUsersRoute: AdminUsersRoute,
-  AuthLoginRoute: AuthLoginRoute,
-  AuthSignupRoute: AuthSignupRoute,
-  TrackTrackIdRoute: TrackTrackIdRouteWithChildren,
-  AdminIndexRoute: AdminIndexRoute,
-}
+	IndexRoute: IndexRoute,
+	SettingsRoute: SettingsRoute,
+	UploadRoute: UploadRoute,
+	AdminInvitesRoute: AdminInvitesRoute,
+	AdminUsersRoute: AdminUsersRoute,
+	AuthLoginRoute: AuthLoginRoute,
+	AuthSignupRoute: AuthSignupRoute,
+	TrackTrackIdRoute: TrackTrackIdRouteWithChildren,
+	AdminIndexRoute: AdminIndexRoute,
+};
 export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+	._addFileChildren(rootRouteChildren)
+	._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/solid-start'
-declare module '@tanstack/solid-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
+import type { getRouter } from "./router.tsx";
+
+declare module "@tanstack/solid-start" {
+	interface Register {
+		ssr: true;
+		router: Awaited<ReturnType<typeof getRouter>>;
+	}
 }
