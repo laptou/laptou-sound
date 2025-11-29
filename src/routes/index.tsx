@@ -1,11 +1,12 @@
 // home page - displays recent tracks
 
-import { createFileRoute } from "@tanstack/solid-router";
-import { Music, Upload } from "lucide-solid";
+import { createFileRoute, Link } from "@tanstack/solid-router";
+import { Music, Upload, User } from "lucide-solid";
 import { For, Show } from "solid-js";
 import TrackCard from "@/components/TrackCard";
 import { wrapLoader } from "@/lib/loader-wrapper";
 import { getPublicTracks } from "@/server/tracks";
+import { useSession } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/")({
 	loader: wrapLoader("/", async () => {
@@ -14,17 +15,14 @@ export const Route = createFileRoute("/")({
 		return { tracks };
 	}),
 	component: HomePage,
-	// ssr: 'data-only', // or false
 });
 
 function HomePage() {
 	const data = Route.useLoaderData();
+	const session = useSession();
 
 	return (
-		<div
-			data-hi="hi"
-			class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900"
-		>
+		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
 			{/* hero section */}
 			<section class="relative py-20 px-6 text-center overflow-hidden">
 				<div class="absolute inset-0 bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10" />
@@ -45,19 +43,41 @@ function HomePage() {
 						and discover new sounds.
 					</p>
 					<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-						<a
-							href="/upload"
-							class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25"
+						<Show
+							when={session()?.data?.user}
+							fallback={
+								<>
+									<Link
+										to="/upload"
+										class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25"
+									>
+										<Upload class="w-5 h-5" />
+										Upload Track
+									</Link>
+									<Link
+										to="/login"
+										class="inline-flex items-center gap-2 px-6 py-3 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors"
+									>
+										Sign In
+									</Link>
+								</>
+							}
 						>
-							<Upload class="w-5 h-5" />
-							Upload Track
-						</a>
-						<a
-							href="/login"
-							class="inline-flex items-center gap-2 px-6 py-3 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors"
-						>
-							Sign In
-						</a>
+							<Link
+								to="/upload"
+								class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25"
+							>
+								<Upload class="w-5 h-5" />
+								Upload Track
+							</Link>
+							<Link
+								to="/my-tracks"
+								class="inline-flex items-center gap-2 px-6 py-3 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors"
+							>
+								<User class="w-5 h-5" />
+								My Tracks
+							</Link>
+						</Show>
 					</div>
 				</div>
 			</section>

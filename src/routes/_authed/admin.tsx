@@ -21,13 +21,14 @@ import {
 	getUsers,
 	updateUserRole,
 } from "@/server/admin";
+import { AccessDeniedError } from "@/lib/errors";
 import { hasRole } from "@/server/auth";
 import { deleteTrack, getPublicTracks } from "@/server/tracks";
 
 export const Route = createFileRoute("/_authed/admin")({
 	beforeLoad: async ({ context }) => {
 		if (!hasRole(context.user?.role as string, "admin")) {
-			throw new Error("Admin access required");
+			throw new AccessDeniedError("Admin access required");
 		}
 	},
 	loader: wrapLoader("/_authed/admin", async () => {
