@@ -4,6 +4,7 @@ alwaysApply: true
 The stack for this project:
 - TanStack Start is our full-stack framework
 - Biome is our linter
+- Bun is our package manager
 
 On the server side:
 - Use Better Auth (https://www.better-auth.com/llms.txt) for all authentication/authorization-related tasks
@@ -17,3 +18,5 @@ On the client side:
 - Use SolidJS for all client-side components
 
 If you don't know how something works, refer to the documentation so you can implement it properly instead of guessing. I have downloaded a lot of the relevant documentation into the `llm-docs` folder.
+
+If you need to modify `wrangler.jsonc`, prefer to do so using `bun wrangler` commands instead of modifying it directly.
