@@ -3,6 +3,7 @@
 import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
 import { useNavigate } from "@tanstack/solid-router";
+import { Button } from "@ui/button";
 import { FormField } from "@/components/FormField";
 import { emailPasswordLoginMutationOptions } from "@/lib/auth-queries";
 
@@ -90,13 +91,13 @@ export function EmailPasswordLoginForm(props: EmailPasswordLoginFormProps) {
 				})}
 			>
 				{(state) => (
-					<button
+					<Button
 						type="submit"
 						disabled={!state().canSubmit || loading()}
-						class="w-full py-3 px-4 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+						class="w-full"
 					>
 						{loading() || state().isSubmitting ? "Please wait..." : "Sign In"}
-					</button>
+					</Button>
 				)}
 			</form.Subscribe>
 		</form>

@@ -3,7 +3,10 @@
 import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
+import { Button } from "@ui/button";
+import { Callout, CalloutContent } from "@ui/callout";
 import { Show } from "solid-js";
+import { FormField } from "@/components/FormField";
 import { signupMutationOptions } from "@/lib/auth-queries";
 
 export const Route = createFileRoute("/signup")({
@@ -62,9 +65,11 @@ function SignupPage() {
 					</div>
 
 					<Show when={error()}>
-						<div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
-							<p class="text-red-300 text-center">{error()}</p>
-						</div>
+						<Callout variant="error" class="mb-6">
+							<CalloutContent>
+								<p class="text-center">{error()}</p>
+							</CalloutContent>
+						</Callout>
 					</Show>
 
 					<form
@@ -85,30 +90,12 @@ function SignupPage() {
 							}}
 						>
 							{(field) => (
-								<div>
-									<label
-										for={field().name}
-										class="block text-sm font-medium text-gray-300 mb-2"
-									>
-										Name
-									</label>
-									<input
-										id={field().name}
-										name={field().name}
-										type="text"
-										value={field().state.value}
-										onInput={(e) => field().handleChange(e.currentTarget.value)}
-										onBlur={field().handleBlur}
-										required
-										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-										placeholder="Your name"
-									/>
-									<Show when={field().state.meta.errors.length > 0}>
-										<p class="mt-1 text-sm text-red-400">
-											{field().state.meta.errors[0]}
-										</p>
-									</Show>
-								</div>
+								<FormField
+									field={field}
+									label="Name"
+									type="text"
+									placeholder="Your name"
+								/>
 							)}
 						</form.Field>
 
@@ -122,30 +109,12 @@ function SignupPage() {
 							}}
 						>
 							{(field) => (
-								<div>
-									<label
-										for={field().name}
-										class="block text-sm font-medium text-gray-300 mb-2"
-									>
-										Email
-									</label>
-									<input
-										id={field().name}
-										name={field().name}
-										type="email"
-										value={field().state.value}
-										onInput={(e) => field().handleChange(e.currentTarget.value)}
-										onBlur={field().handleBlur}
-										required
-										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-										placeholder="you@example.com"
-									/>
-									<Show when={field().state.meta.errors.length > 0}>
-										<p class="mt-1 text-sm text-red-400">
-											{field().state.meta.errors[0]}
-										</p>
-									</Show>
-								</div>
+								<FormField
+									field={field}
+									label="Email"
+									type="email"
+									placeholder="you@example.com"
+								/>
 							)}
 						</form.Field>
 
@@ -159,88 +128,35 @@ function SignupPage() {
 							}}
 						>
 							{(field) => (
-								<div>
-									<label
-										for={field().name}
-										class="block text-sm font-medium text-gray-300 mb-2"
-									>
-										Password
-									</label>
-									<input
-										id={field().name}
-										name={field().name}
-										type="password"
-										value={field().state.value}
-										onInput={(e) => field().handleChange(e.currentTarget.value)}
-										onBlur={field().handleBlur}
-										required
-										minLength={8}
-										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-										placeholder="••••••••"
-									/>
-									<Show when={field().state.meta.errors.length > 0}>
-										<p class="mt-1 text-sm text-red-400">
-											{field().state.meta.errors[0]}
-										</p>
-									</Show>
-								</div>
+								<FormField
+									field={field}
+									label="Password"
+									type="password"
+									placeholder="••••••••"
+								/>
 							)}
 						</form.Field>
 
 						<form.Field name="confirmPassword">
 							{(field) => (
-								<div>
-									<label
-										for={field().name}
-										class="block text-sm font-medium text-gray-300 mb-2"
-									>
-										Confirm Password
-									</label>
-									<input
-										id={field().name}
-										name={field().name}
-										type="password"
-										value={field().state.value}
-										onInput={(e) => field().handleChange(e.currentTarget.value)}
-										onBlur={field().handleBlur}
-										required
-										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-										placeholder="••••••••"
-									/>
-									<Show when={field().state.meta.errors.length > 0}>
-										<p class="mt-1 text-sm text-red-400">
-											{field().state.meta.errors[0]}
-										</p>
-									</Show>
-								</div>
+								<FormField
+									field={field}
+									label="Confirm Password"
+									type="password"
+									placeholder="••••••••"
+								/>
 							)}
 						</form.Field>
 
 						<form.Field name="inviteCode">
 							{(field) => (
-								<div>
-									<label
-										for={field().name}
-										class="block text-sm font-medium text-gray-300 mb-2"
-									>
-										Invite Code{" "}
-										<span class="text-gray-500 font-normal">(optional)</span>
-									</label>
-									<input
-										id={field().name}
-										name={field().name}
-										type="text"
-										value={field().state.value}
-										onInput={(e) => field().handleChange(e.currentTarget.value)}
-										onBlur={field().handleBlur}
-										class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-										placeholder="Enter invite code for uploader access"
-									/>
-									<p class="mt-1 text-xs text-gray-500">
-										Without an invite code, you'll be able to comment but not
-										upload.
-									</p>
-								</div>
+								<FormField
+									field={field}
+									label="Invite Code (optional)"
+									type="text"
+									placeholder="Enter invite code for uploader access"
+									required={false}
+								/>
 							)}
 						</form.Field>
 
@@ -251,15 +167,15 @@ function SignupPage() {
 							})}
 						>
 							{(state) => (
-								<button
+								<Button
 									type="submit"
 									disabled={!state().canSubmit || loading()}
-									class="w-full py-3 px-4 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+									class="w-full"
 								>
 									{loading() || state().isSubmitting
 										? "Creating account..."
 										: "Create Account"}
-								</button>
+								</Button>
 							)}
 						</form.Subscribe>
 					</form>

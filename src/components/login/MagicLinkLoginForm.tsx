@@ -2,6 +2,7 @@
 
 import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
+import { Button } from "@ui/button";
 import { FormField } from "@/components/FormField";
 import { magicLinkLoginMutationOptions } from "@/lib/auth-queries";
 
@@ -67,15 +68,15 @@ export function MagicLinkLoginForm(props: MagicLinkLoginFormProps) {
 				})}
 			>
 				{(state) => (
-					<button
+					<Button
 						type="submit"
 						disabled={!state().canSubmit || loading()}
-						class="w-full py-3 px-4 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+						class="w-full"
 					>
 						{loading() || state().isSubmitting
 							? "Please wait..."
 							: "Send Magic Link"}
-					</button>
+					</Button>
 				)}
 			</form.Subscribe>
 		</form>

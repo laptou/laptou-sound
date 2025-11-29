@@ -1,5 +1,6 @@
 // shared layout component for login page
 
+import { Callout, CalloutContent } from "@ui/callout";
 import { type JSX, Show } from "solid-js";
 
 type LoginLayoutProps = {
@@ -19,17 +20,21 @@ export function LoginLayout(props: LoginLayoutProps) {
 					</div>
 
 					<Show when={props.magicLinkSent?.()}>
-						<div class="bg-violet-500/20 border border-violet-500/50 rounded-lg p-4 mb-6">
-							<p class="text-violet-300 text-center">
-								Check your email for a magic link to sign in.
-							</p>
-						</div>
+						<Callout variant="default" class="mb-6">
+							<CalloutContent>
+								<p class="text-center">
+									Check your email for a magic link to sign in.
+								</p>
+							</CalloutContent>
+						</Callout>
 					</Show>
 
 					<Show when={props.error?.()}>
-						<div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
-							<p class="text-red-300 text-center">{props.error?.()}</p>
-						</div>
+						<Callout variant="error" class="mb-6">
+							<CalloutContent>
+								<p class="text-center">{props.error?.()}</p>
+							</CalloutContent>
+						</Callout>
 					</Show>
 
 					{props.children}

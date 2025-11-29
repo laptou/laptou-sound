@@ -1,6 +1,15 @@
 // upload page for creating new tracks
 
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
+import { Button } from "@ui/button";
+import { Callout, CalloutContent } from "@ui/callout";
+import { Label } from "@ui/label";
+import {
+	TextField,
+	TextFieldInput,
+	TextFieldLabel,
+	TextFieldTextArea,
+} from "@ui/text-field";
 import { Music, Upload, X } from "lucide-solid";
 import { createSignal, Show } from "solid-js";
 import { hasRole } from "@/server/auth";
@@ -143,9 +152,11 @@ function UploadPage() {
 				</div>
 
 				<Show when={error()}>
-					<div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
-						<p class="text-red-300 text-center">{error()}</p>
-					</div>
+					<Callout variant="error" class="mb-6">
+						<CalloutContent>
+							<p class="text-center">{error()}</p>
+						</CalloutContent>
+					</Callout>
 				</Show>
 
 				<form onSubmit={handleSubmit} class="space-y-6">
@@ -191,53 +202,39 @@ function UploadPage() {
 										</p>
 									</div>
 								</div>
-								<button
+								<Button
 									type="button"
 									onClick={removeFile}
-									class="p-2 text-gray-400 hover:text-white transition-colors"
+									variant="ghost"
+									size="icon"
+									class="p-2 text-gray-400 hover:text-white"
 								>
 									<X class="w-5 h-5" />
-								</button>
+								</Button>
 							</div>
 						</Show>
 					</div>
 
 					{/* title */}
-					<div>
-						<label
-							for="title"
-							class="block text-sm font-medium text-gray-300 mb-2"
-						>
-							Title *
-						</label>
-						<input
+					<TextField value={title()} onChange={setTitle} required>
+						<TextFieldLabel for="title">Title *</TextFieldLabel>
+						<TextFieldInput
 							id="title"
 							type="text"
-							value={title()}
-							onInput={(e) => setTitle(e.currentTarget.value)}
-							required
-							class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
 							placeholder="Enter track title"
 						/>
-					</div>
+					</TextField>
 
 					{/* description */}
-					<div>
-						<label
-							for="description"
-							class="block text-sm font-medium text-gray-300 mb-2"
-						>
-							Description
-						</label>
-						<textarea
+					<TextField value={description()} onChange={setDescription}>
+						<TextFieldLabel for="description">Description</TextFieldLabel>
+						<TextFieldTextArea
 							id="description"
-							value={description()}
-							onInput={(e) => setDescription(e.currentTarget.value)}
 							rows={3}
-							class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none"
 							placeholder="Add a description (optional)"
+							class="resize-none"
 						/>
-					</div>
+					</TextField>
 
 					{/* options */}
 					<div class="space-y-4">
@@ -249,7 +246,7 @@ function UploadPage() {
 								class="w-5 h-5 rounded border-slate-600 bg-slate-700 text-violet-500 focus:ring-violet-500"
 							/>
 							<div>
-								<span class="text-white font-medium">Public</span>
+								<Label class="text-white font-medium">Public</Label>
 								<p class="text-gray-400 text-sm">Anyone can see this track</p>
 							</div>
 						</label>
@@ -262,7 +259,7 @@ function UploadPage() {
 								class="w-5 h-5 rounded border-slate-600 bg-slate-700 text-violet-500 focus:ring-violet-500"
 							/>
 							<div>
-								<span class="text-white font-medium">Allow Downloads</span>
+								<Label class="text-white font-medium">Allow Downloads</Label>
 								<p class="text-gray-400 text-sm">
 									Let others download the original file
 								</p>
@@ -287,13 +284,13 @@ function UploadPage() {
 					</Show>
 
 					{/* submit button */}
-					<button
+					<Button
 						type="submit"
 						disabled={isUploading() || !file()}
-						class="w-full py-3 px-4 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+						class="w-full"
 					>
 						{isUploading() ? "Uploading..." : "Upload Track"}
-					</button>
+					</Button>
 				</form>
 			</div>
 		</div>

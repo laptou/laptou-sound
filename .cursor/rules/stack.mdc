@@ -16,9 +16,13 @@ On the server side:
 On the client side:
 - Use Tailwind v4 for all client side styling
 - Use SolidJS for all client-side components
+- For common components, use Solid-UI
+  - Solid-UI doesn't natively support Tailwind v4 yet, so we can install new Solid-UI components using `shadcn`'s CLI for now: `bunx shadcn@beta add @solid-ui/text-field`
 
 If you don't know how something works, refer to the documentation so you can implement it properly instead of guessing. I have downloaded a lot of the relevant documentation into the `llm-docs` folder.
 
 If you need to modify `wrangler.jsonc`, prefer to do so using `bun wrangler` commands instead of modifying it directly.
 
 Make sure to check the contents of the `llm-docs` folder so that you know which docs are available.
+
+In SolidJS, when using the `<Show>` component, take advantage of the fact that it can take a lambda as a child to reduce code verbosity / reduce the number of null checks required.

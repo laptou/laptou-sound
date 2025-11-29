@@ -1,10 +1,15 @@
 // generic form field component for tanstack form
 
 import type { FieldApi } from "@tanstack/solid-form";
-import { Show } from "solid-js";
+import {
+	TextField,
+	TextFieldErrorMessage,
+	TextFieldInput,
+	TextFieldLabel,
+} from "@ui/text-field";
 
 type FormFieldProps = {
-	field: FieldApi<any, any, undefined, string, string>;
+	field: FieldApi<unknown, unknown, undefined, string, string>;
 	label: string;
 	type?: string;
 	placeholder?: string;
@@ -12,30 +17,28 @@ type FormFieldProps = {
 };
 
 export function FormField(props: FormFieldProps) {
+	const fieldState = () => props.field();
+	const hasError = () => fieldState().state.meta.errors.length > 0;
+
 	return (
-		<div>
-			<label
-				for={props.field().name}
-				class="block text-sm font-medium text-gray-300 mb-2"
-			>
-				{props.label}
-			</label>
-			<input
-				id={props.field().name}
-				name={props.field().name}
+		<TextField
+			value={fieldState().state.value}
+			onChange={(value) => fieldState().handleChange(value)}
+			validationState={hasError() ? "invalid" : "valid"}
+			required={props.required !== false}
+		>
+			<TextFieldLabel for={fieldState().name}>{props.label}</TextFieldLabel>
+			<TextFieldInput
+				id={fieldState().name}
+				name={fieldState().name}
 				type={props.type || "text"}
-				value={props.field().state.value}
-				onInput={(e) => props.field().handleChange(e.currentTarget.value)}
-				onBlur={props.field().handleBlur}
-				required={props.required !== false}
-				class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
 				placeholder={props.placeholder}
+				onInput={(e) => fieldState().handleChange(e.currentTarget.value)}
+				onBlur={fieldState().handleBlur}
 			/>
-			<Show when={props.field().state.meta.errors.length > 0}>
-				<p class="mt-1 text-sm text-red-400">
-					{props.field().state.meta.errors[0]}
-				</p>
-			</Show>
-		</div>
+			<TextFieldErrorMessage>
+				{hasError() ? fieldState().state.meta.errors[0] : ""}
+			</TextFieldErrorMessage>
+		</TextField>
 	);
 }
