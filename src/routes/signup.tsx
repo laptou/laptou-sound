@@ -1,9 +1,9 @@
 // signup page
 
+import { createForm } from "@tanstack/solid-form";
+import { useMutation } from "@tanstack/solid-query";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { Show } from "solid-js";
-import { useMutation } from "@tanstack/solid-query";
-import { createForm } from "@tanstack/solid-form";
 import { signupMutationOptions } from "@/lib/auth-queries";
 
 export const Route = createFileRoute("/signup")({

@@ -1,8 +1,8 @@
 // route-level error component for tanstack router
 
 import type { ErrorComponentProps } from "@tanstack/solid-router";
-import { logError, reportError } from "@/lib/logger";
 import { createSignal, Show } from "solid-js";
+import { logError, reportError } from "@/lib/logger";
 
 export function RouteError(props: ErrorComponentProps) {
 	const [showDetails, setShowDetails] = createSignal(false);
@@ -93,4 +93,3 @@ export function RouteError(props: ErrorComponentProps) {
 		</div>
 	);
 }
-

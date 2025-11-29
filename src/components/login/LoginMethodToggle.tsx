@@ -33,4 +33,3 @@ export function LoginMethodToggle(props: LoginMethodToggleProps) {
 		</div>
 	);
 }
-

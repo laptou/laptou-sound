@@ -6,10 +6,9 @@ import { createMemo, createSignal, For, Show } from "solid-js";
 import SocialPromptModal from "@/components/SocialPromptModal";
 import WaveformPlayer from "@/components/WaveformPlayer";
 import type { TrackVersion } from "@/db/schema";
+import { wrapLoader } from "@/lib/loader-wrapper";
 import { getPlayCount, recordPlay } from "@/server/plays";
 import { getTrack, getTrackVersions } from "@/server/tracks";
-
-import { wrapLoader } from "@/lib/loader-wrapper";
 
 export const Route = createFileRoute("/track/$trackId")({
 	loader: wrapLoader("/track/$trackId", async ({ params }) => {

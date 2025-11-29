@@ -2,7 +2,7 @@
 // note: tanstack router handles route-level errors via errorComponent
 // this is for catching errors outside of routes
 
-import { ErrorBoundary, Show, createSignal } from "solid-js";
+import { createSignal, ErrorBoundary, Show } from "solid-js";
 
 interface AppErrorBoundaryProps {
 	children: import("solid-js").JSX.Element;
@@ -16,7 +16,9 @@ interface AppErrorBoundaryProps {
 export function AppErrorBoundary(props: AppErrorBoundaryProps) {
 	return (
 		<ErrorBoundary
-			fallback={(error, reset) => <AppErrorFallback error={error} reset={reset} />}
+			fallback={(error, reset) => (
+				<AppErrorFallback error={error} reset={reset} />
+			)}
 		>
 			{props.children}
 		</ErrorBoundary>

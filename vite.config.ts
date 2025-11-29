@@ -19,7 +19,7 @@ export default defineConfig({
 		solid({ ssr: true }),
 	],
 	// ssr: {
-		
+
 	// 	// external: ["cloudflare:workers"],
 	// },
 	// // build: {

@@ -1,7 +1,7 @@
 // generic form field component for tanstack form
 
-import { Show } from "solid-js";
 import type { FieldApi } from "@tanstack/solid-form";
+import { Show } from "solid-js";
 
 type FormFieldProps = {
 	field: FieldApi<any, any, undefined, string, string>;
@@ -39,4 +39,3 @@ export function FormField(props: FormFieldProps) {
 		</div>
 	);
 }
-

@@ -1,8 +1,8 @@
 // wrapper utility for adding error handling and logging to server functions
 
 import { createServerFn } from "@tanstack/solid-start";
-import { logInfo, logError, reportError } from "./logger";
 import { trackError } from "./error-reporter";
+import { logError, logInfo, reportError } from "./logger";
 
 // wrap a server function handler with error handling and logging
 export function wrapServerFn<T extends (...args: any[]) => Promise<any>>(
@@ -53,10 +53,8 @@ export function wrapServerFn<T extends (...args: any[]) => Promise<any>>(
 }
 
 // helper to create a server function with automatic error handling
-export function createLoggedServerFn<T extends (...args: any[]) => Promise<any>>(
-	fnName: string,
-	handler: T,
-) {
+export function createLoggedServerFn<
+	T extends (...args: any[]) => Promise<any>,
+>(fnName: string, handler: T) {
 	return createServerFn().handler(wrapServerFn(fnName, handler));
 }
-

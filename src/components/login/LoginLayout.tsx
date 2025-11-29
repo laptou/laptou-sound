@@ -1,6 +1,6 @@
 // shared layout component for login page
 
-import { Show, type JSX } from "solid-js";
+import { type JSX, Show } from "solid-js";
 
 type LoginLayoutProps = {
 	error?: () => string | null;
@@ -50,4 +50,3 @@ export function LoginLayout(props: LoginLayoutProps) {
 		</div>
 	);
 }
-

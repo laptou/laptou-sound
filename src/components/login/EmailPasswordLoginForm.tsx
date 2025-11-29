@@ -3,8 +3,8 @@
 import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
 import { useNavigate } from "@tanstack/solid-router";
-import { emailPasswordLoginMutationOptions } from "@/lib/auth-queries";
 import { FormField } from "@/components/FormField";
+import { emailPasswordLoginMutationOptions } from "@/lib/auth-queries";
 
 type EmailPasswordLoginFormProps = {
 	onError?: (error: string | null) => void;
@@ -102,4 +102,3 @@ export function EmailPasswordLoginForm(props: EmailPasswordLoginFormProps) {
 		</form>
 	);
 }
-

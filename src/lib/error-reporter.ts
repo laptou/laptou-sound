@@ -6,7 +6,13 @@ import { reportError } from "./logger";
 // error store for tracking errors (in-memory, server-side)
 const errorStore = new Map<
 	string,
-	{ count: number; lastSeen: Date; firstSeen: Date; error: Error; context?: LogContext }
+	{
+		count: number;
+		lastSeen: Date;
+		firstSeen: Date;
+		error: Error;
+		context?: LogContext;
+	}
 >();
 
 export interface ErrorReport {
@@ -67,4 +73,3 @@ export function getTrackedErrors(): ErrorReport[] {
 export function clearErrorStore() {
 	errorStore.clear();
 }
-

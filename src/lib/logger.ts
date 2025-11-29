@@ -63,9 +63,7 @@ export const logger = createIsomorphicFn()
 			);
 		} else {
 			// production: structured logging (could send to analytics)
-			console[level === "debug" ? "log" : level](
-				JSON.stringify(logEntry),
-			);
+			console[level === "debug" ? "log" : level](JSON.stringify(logEntry));
 			// TODO: integrate with analytics service if needed
 			// analytics.track('client_log', logEntry)
 		}
@@ -111,4 +109,3 @@ export const reportError = createIsomorphicFn()
 		// TODO: integrate with error tracking service (e.g., Sentry)
 		// Sentry.captureException(error, { extra: context })
 	});
-

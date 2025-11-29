@@ -1,10 +1,9 @@
+import { QueryClient } from "@tanstack/solid-query";
 import { createRouter } from "@tanstack/solid-router";
-
+import { setupRouterSsrQueryIntegration } from "@tanstack/solid-router-ssr-query";
+import { RouteError } from "./components/RouteError";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
-import { RouteError } from "./components/RouteError";
-import { QueryClient } from "@tanstack/solid-query";
-import { setupRouterSsrQueryIntegration } from "@tanstack/solid-router-ssr-query";
 
 // Create a new router instance with error handling
 export const getRouter = () => {

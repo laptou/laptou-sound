@@ -50,4 +50,3 @@ export const Route = createFileRoute("/health")({
 		},
 	},
 });
-

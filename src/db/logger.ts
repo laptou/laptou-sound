@@ -2,7 +2,7 @@
 
 import type { Logger } from "drizzle-orm/logger";
 
-import { logInfo, logDebug } from "@/lib/logger";
+import { logDebug, logInfo } from "@/lib/logger";
 
 // custom drizzle logger that integrates with our logging system
 export class DrizzleLogger implements Logger {

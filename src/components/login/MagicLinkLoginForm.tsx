@@ -2,8 +2,8 @@
 
 import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
-import { magicLinkLoginMutationOptions } from "@/lib/auth-queries";
 import { FormField } from "@/components/FormField";
+import { magicLinkLoginMutationOptions } from "@/lib/auth-queries";
 
 type MagicLinkLoginFormProps = {
 	onSuccess?: () => void;
@@ -81,4 +81,3 @@ export function MagicLinkLoginForm(props: MagicLinkLoginFormProps) {
 		</form>
 	);
 }
-

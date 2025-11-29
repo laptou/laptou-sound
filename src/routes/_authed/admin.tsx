@@ -1,9 +1,19 @@
 // admin dashboard page
 
 import { createFileRoute } from "@tanstack/solid-router";
-import { AlertTriangle, Key, Music, Plus, Shield, Trash2, Users } from "lucide-solid";
+import {
+	AlertTriangle,
+	Key,
+	Music,
+	Plus,
+	Shield,
+	Trash2,
+	Users,
+} from "lucide-solid";
 import { createEffect, createSignal, For, Show } from "solid-js";
 import type { InviteCode, Track, User } from "@/db/schema";
+import type { ErrorReport } from "@/lib/error-reporter";
+import { wrapLoader } from "@/lib/loader-wrapper";
 import {
 	createInviteCode,
 	deleteInviteCode,
@@ -13,8 +23,6 @@ import {
 } from "@/server/admin";
 import { hasRole } from "@/server/auth";
 import { deleteTrack, getPublicTracks } from "@/server/tracks";
-import { wrapLoader } from "@/lib/loader-wrapper";
-import type { ErrorReport } from "@/lib/error-reporter";
 
 export const Route = createFileRoute("/_authed/admin")({
 	beforeLoad: async ({ context }) => {
@@ -387,7 +395,9 @@ function AdminDashboard() {
 																{error.count}x
 															</span>
 														</div>
-														<p class="text-gray-300 mb-2">{error.error.message}</p>
+														<p class="text-gray-300 mb-2">
+															{error.error.message}
+														</p>
 														<div class="text-xs text-gray-500 space-y-1">
 															<p>
 																First seen:{" "}

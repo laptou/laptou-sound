@@ -2,9 +2,9 @@
 
 import { createFileRoute } from "@tanstack/solid-router";
 import { createSignal, Show } from "solid-js";
+import { EmailPasswordLoginForm } from "@/components/login/EmailPasswordLoginForm";
 import { LoginLayout } from "@/components/login/LoginLayout";
 import { LoginMethodToggle } from "@/components/login/LoginMethodToggle";
-import { EmailPasswordLoginForm } from "@/components/login/EmailPasswordLoginForm";
 import { MagicLinkLoginForm } from "@/components/login/MagicLinkLoginForm";
 
 export const Route = createFileRoute("/login")({

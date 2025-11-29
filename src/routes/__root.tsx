@@ -1,5 +1,6 @@
 // root layout with html shell
 
+import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 import {
 	createRootRouteWithContext,
 	HeadContent,
@@ -7,11 +8,8 @@ import {
 	Scripts,
 } from "@tanstack/solid-router";
 import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
-import { onMount, Suspense, type JSX } from "solid-js";
+import { Suspense } from "solid-js";
 import { HydrationScript } from "solid-js/web";
-import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
-
-import { initializeTheme } from "../lib/theme";
 
 import styleCss from "../styles.css?url";
 
