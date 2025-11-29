@@ -1,6 +1,6 @@
-import type { Config } from "drizzle-kit";
+import { defineConfig } from "drizzle-kit";
 
-export default {
+export default defineConfig({
 	schema: "./src/db/schema.ts",
 	out: "./drizzle/migrations",
 	dialect: "sqlite",
@@ -10,4 +10,4 @@ export default {
 		databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!,
 		token: process.env.CLOUDFLARE_API_TOKEN!,
 	},
-} satisfies Config;
+});
