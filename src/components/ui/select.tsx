@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 import type { JSX, ValidComponent } from "solid-js";
 import { splitProps } from "solid-js";
 
-import { cn } from "~/lib/utils";
+import { cn } from "@/lib/utils";
 
 const Select = SelectPrimitive.Root;
 const SelectValue = SelectPrimitive.Value;

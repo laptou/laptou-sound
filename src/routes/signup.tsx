@@ -65,11 +65,13 @@ function SignupPage() {
 					</div>
 
 					<Show when={error()}>
-						<Callout variant="error" class="mb-6">
-							<CalloutContent>
-								<p class="text-center">{error()}</p>
-							</CalloutContent>
-						</Callout>
+						{(err) => (
+							<Callout variant="error" class="mb-6">
+								<CalloutContent>
+									<p class="text-center">{err()}</p>
+								</CalloutContent>
+							</Callout>
+						)}
 					</Show>
 
 					<form

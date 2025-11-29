@@ -30,11 +30,13 @@ export function LoginLayout(props: LoginLayoutProps) {
 					</Show>
 
 					<Show when={props.error?.()}>
-						<Callout variant="error" class="mb-6">
-							<CalloutContent>
-								<p class="text-center">{props.error?.()}</p>
-							</CalloutContent>
-						</Callout>
+						{(error) => (
+							<Callout variant="error" class="mb-6">
+								<CalloutContent>
+									<p class="text-center">{error()}</p>
+								</CalloutContent>
+							</Callout>
+						)}
 					</Show>
 
 					{props.children}

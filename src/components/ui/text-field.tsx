@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 import type { ValidComponent } from "solid-js";
 import { mergeProps, splitProps } from "solid-js";
 
-import { cn } from "~/lib/utils";
+import { cn } from "@/lib/utils";
 
 type TextFieldRootProps<T extends ValidComponent = "div"> =
 	TextFieldPrimitive.TextFieldRootProps<T> & {

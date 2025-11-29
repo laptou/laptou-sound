@@ -152,11 +152,13 @@ function UploadPage() {
 				</div>
 
 				<Show when={error()}>
-					<Callout variant="error" class="mb-6">
-						<CalloutContent>
-							<p class="text-center">{error()}</p>
-						</CalloutContent>
-					</Callout>
+					{(err) => (
+						<Callout variant="error" class="mb-6">
+							<CalloutContent>
+								<p class="text-center">{err()}</p>
+							</CalloutContent>
+						</Callout>
+					)}
 				</Show>
 
 				<form onSubmit={handleSubmit} class="space-y-6">
@@ -190,28 +192,30 @@ function UploadPage() {
 								</>
 							}
 						>
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-3">
-									<div class="w-12 h-12 bg-violet-500/20 rounded-lg flex items-center justify-center">
-										<Music class="w-6 h-6 text-violet-400" />
+							{(f) => (
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-3">
+										<div class="w-12 h-12 bg-violet-500/20 rounded-lg flex items-center justify-center">
+											<Music class="w-6 h-6 text-violet-400" />
+										</div>
+										<div class="text-left">
+											<p class="text-white font-medium">{f()?.name}</p>
+											<p class="text-gray-400 text-sm">
+												{(f()?.size / (1024 * 1024)).toFixed(2)} MB
+											</p>
+										</div>
 									</div>
-									<div class="text-left">
-										<p class="text-white font-medium">{file()?.name}</p>
-										<p class="text-gray-400 text-sm">
-											{(file()?.size / (1024 * 1024)).toFixed(2)} MB
-										</p>
-									</div>
+									<Button
+										type="button"
+										onClick={removeFile}
+										variant="ghost"
+										size="icon"
+										class="p-2 text-gray-400 hover:text-white"
+									>
+										<X class="w-5 h-5" />
+									</Button>
 								</div>
-								<Button
-									type="button"
-									onClick={removeFile}
-									variant="ghost"
-									size="icon"
-									class="p-2 text-gray-400 hover:text-white"
-								>
-									<X class="w-5 h-5" />
-								</Button>
-							</div>
+							)}
 						</Show>
 					</div>
 
