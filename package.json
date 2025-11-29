@@ -9,7 +9,9 @@
 		"test": "vitest run",
 		"start": "node .output/server/index.mjs",
 		"deploy": "bun run build && wrangler deploy",
-		"preview": "bun run build && wrangler dev"
+		"preview": "bun run build && wrangler dev",
+		"cf-typegen": "wrangler types",
+		"postinstall": "npm run cf-typegen"
 	},
 	"dependencies": {
 		"@tailwindcss/vite": "^4.0.6",
