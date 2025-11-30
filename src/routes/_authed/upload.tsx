@@ -12,15 +12,17 @@ import {
 } from "@ui/text-field";
 import { Music, Upload, X } from "lucide-solid";
 import { createSignal, Show } from "solid-js";
+import { AccessDeniedError } from "@/lib/errors";
 import { hasRole } from "@/server/auth";
 import { createTrack } from "@/server/tracks";
-import { AccessDeniedError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authed/upload")({
 	beforeLoad: async ({ context }) => {
 		// check if user has uploader role
 		if (!hasRole(context.user?.role as string, "uploader")) {
-			throw new AccessDeniedError("You need uploader permissions to upload tracks");
+			throw new AccessDeniedError(
+				"You need uploader permissions to upload tracks",
+			);
 		}
 	},
 	component: UploadPage,

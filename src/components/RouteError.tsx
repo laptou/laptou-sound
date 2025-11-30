@@ -2,9 +2,9 @@
 // handles both anticipated errors (friendly messages) and unanticipated errors (generic messages)
 
 import type { ErrorComponentProps } from "@tanstack/solid-router";
+import { Link } from "@tanstack/solid-router";
 import { AlertCircle, Home } from "lucide-solid";
 import { createSignal, Show } from "solid-js";
-import { Link } from "@tanstack/solid-router";
 import { isAnticipatedError } from "@/lib/errors";
 import { logError, reportError } from "@/lib/logger";
 
@@ -17,7 +17,8 @@ export function RouteError(props: ErrorComponentProps) {
 		const errorContext = {
 			route: props.error,
 			info: props.info,
-			location: typeof window !== "undefined" ? window.location.href : undefined,
+			location:
+				typeof window !== "undefined" ? window.location.href : undefined,
 		};
 
 		logError(`Route error in ${props.routeId}`, errorContext);

@@ -18,9 +18,12 @@ export default defineConfig({
 		tanstackStart(),
 		solid({ ssr: true }),
 	],
+	// resolve: {
+	// 	external: ["@tanstack/start-server-core"],
+	// }
 	// ssr: {
 
-	// 	// external: ["cloudflare:workers"],
+	// 	external: ["cloudflare:workers", "@tanstack/start-server-core"],
 	// },
 	// // build: {
 	// // 	rollupOptions: {

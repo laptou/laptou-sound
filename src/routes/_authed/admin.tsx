@@ -13,6 +13,7 @@ import {
 import { createEffect, createSignal, For, Show } from "solid-js";
 import type { InviteCode, Track, User } from "@/db/schema";
 import type { ErrorReport } from "@/lib/error-reporter";
+import { AccessDeniedError } from "@/lib/errors";
 import { wrapLoader } from "@/lib/loader-wrapper";
 import {
 	createInviteCode,
@@ -21,7 +22,6 @@ import {
 	getUsers,
 	updateUserRole,
 } from "@/server/admin";
-import { AccessDeniedError } from "@/lib/errors";
 import { hasRole } from "@/server/auth";
 import { deleteTrack, getPublicTracks } from "@/server/tracks";
 

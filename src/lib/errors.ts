@@ -18,7 +18,9 @@ export class AnticipatedError extends Error {
 
 // specific anticipated error types
 export class AccessDeniedError extends AnticipatedError {
-	constructor(message: string = "You don't have permission to access this resource") {
+	constructor(
+		message: string = "You don't have permission to access this resource",
+	) {
 		super(message, "Access Denied", 403);
 		this.name = "AccessDeniedError";
 	}
@@ -42,4 +44,3 @@ export class ValidationError extends AnticipatedError {
 export function isAnticipatedError(error: unknown): error is AnticipatedError {
 	return error instanceof AnticipatedError;
 }
-

@@ -1,6 +1,7 @@
 // server middleware for logging and error handling
 
 import { createMiddleware } from "@tanstack/solid-start";
+import { createAuth } from "./auth";
 import { trackError } from "./error-reporter";
 import { logError, logInfo, logWarn, reportError } from "./logger";
 
@@ -129,9 +130,25 @@ export const performanceMonitor = createMiddleware().server(
 	},
 );
 
+export const authenticator = createMiddleware().server(
+	async ({ next, request }) => {
+		const session = await createAuth().api.getSession({
+			headers: request.headers,
+		});
+
+		return next({
+			context: {
+				session: session?.session ?? null,
+				user: session?.user ?? null,
+			},
+		});
+	},
+);
+
 // combined middleware for common use cases
 export const commonMiddleware = [
 	requestLogger,
 	errorHandler,
 	performanceMonitor,
+	authenticator,
 ];

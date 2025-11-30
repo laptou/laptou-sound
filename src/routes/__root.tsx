@@ -8,9 +8,10 @@ import {
 	Scripts,
 } from "@tanstack/solid-router";
 import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
-import { Suspense } from "solid-js";
+import { onMount, Suspense } from "solid-js";
 import { HydrationScript } from "solid-js/web";
-
+import { getSession } from "@/lib/auth";
+import { initializeTheme } from "@/lib/theme";
 import styleCss from "../styles.css?url";
 
 export const Route = createRootRouteWithContext()({
@@ -43,6 +44,11 @@ export const Route = createRootRouteWithContext()({
 		],
 		title: "laptou sound",
 	}),
+	beforeLoad: async () => {
+		const session = await getSession();
+		console.log("root session", session);
+		return { session };
+	},
 	shellComponent: RootDocument,
 	// errorComponent: (props) => {
 	// 	return (
@@ -54,9 +60,9 @@ export const Route = createRootRouteWithContext()({
 });
 
 function RootDocument() {
-	// onMount(() => {
-	// 	initializeTheme();
-	// });
+	onMount(() => {
+		initializeTheme();
+	});
 
 	return (
 		<html>

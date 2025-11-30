@@ -24,7 +24,7 @@
 		"@tanstack/solid-router-devtools": "^1.139.11",
 		"@tanstack/solid-router-ssr-query": "^1.139.11",
 		"@tanstack/solid-start": "^1.139.11",
-		"better-auth": "^1.4.3",
+		"better-auth": "./better-auth-1.4.4-beta.1.tgz",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"drizzle-orm": "^0.44.7",

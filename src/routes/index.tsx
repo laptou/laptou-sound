@@ -4,9 +4,9 @@ import { createFileRoute, Link } from "@tanstack/solid-router";
 import { Music, Upload, User } from "lucide-solid";
 import { For, Show } from "solid-js";
 import TrackCard from "@/components/TrackCard";
+import { useSession } from "@/lib/auth-client";
 import { wrapLoader } from "@/lib/loader-wrapper";
 import { getPublicTracks } from "@/server/tracks";
-import { useSession } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/")({
 	loader: wrapLoader("/", async () => {
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
 	const data = Route.useLoaderData();
-	const session = useSession();
+	const sessionState = useSession();
 
 	return (
 		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
@@ -44,7 +44,7 @@ function HomePage() {
 					</p>
 					<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
 						<Show
-							when={session()?.data?.user}
+							when={sessionState?.data?.user}
 							fallback={
 								<>
 									<Link
