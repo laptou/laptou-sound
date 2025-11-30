@@ -78,7 +78,9 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 		return null;
 	});
 
-	const isLoading = createMemo(() => waveformQuery.isLoading || waveformQuery.isFetching);
+	const isLoading = createMemo(
+		() => waveformQuery.isLoading || waveformQuery.isFetching,
+	);
 
 	// resize observer for canvas
 	onMount(() => {
@@ -151,14 +153,34 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 		const audio = audioRef;
 		if (!audio) return;
 
-		const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-		const handleDurationChange = () => setDuration(audio.duration || 0);
+		const handleTimeUpdate = () => {
+			console.log("timeupdate", audio.currentTime);
+			setCurrentTime(audio.currentTime);
+		};
+		const handleDurationChange = () => {
+			console.log("durationchange", audio.duration);
+			setDuration(audio.duration || 0);
+		};
 		const handleEnded = () => setIsPlaying(false);
 		const handlePlay = () => {
+			console.log("play");
 			setIsPlaying(true);
 			props.onPlay?.();
 		};
 		const handlePause = () => setIsPlaying(false);
+
+		if (audio.duration) {
+			setDuration(audio.duration || 0);
+		} else {
+			audio.addEventListener(
+				"loadedmetadata",
+				() => {
+					console.log("loadedmetadata", audio.duration);
+					setDuration(audio.duration || 0);
+				},
+				{ once: true },
+			);
+		}
 
 		audio.addEventListener("timeupdate", handleTimeUpdate);
 		audio.addEventListener("durationchange", handleDurationChange);
@@ -198,6 +220,7 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 		const rect = canvasRef.getBoundingClientRect();
 		const x = e.clientX - rect.left;
 		const percentage = x / rect.width;
+		console.log("seeking",  x, rect.width, percentage, duration(), percentage * duration());
 		audioRef.currentTime = percentage * duration();
 	};
 
@@ -210,21 +233,37 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 	return (
 		<div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 hover:border-violet-500/30 transition-all duration-300">
 			<Show when={props.streamUrl !== null}>
-				<audio ref={audioRef} src={props.streamUrl ?? undefined} preload="metadata" />
+				<audio
+					ref={audioRef}
+					src={props.streamUrl ?? undefined}
+					preload="metadata"
+				/>
 			</Show>
 
 			{/* debug info */}
 			<div class="mb-4 bg-slate-900/50 border border-slate-700 rounded p-2 text-xs">
-				<div class="text-gray-400 mb-1 font-medium">Debug Info (WaveformPlayer)</div>
+				<div class="text-gray-400 mb-1 font-medium">
+					Debug Info (WaveformPlayer)
+				</div>
 				<div class="space-y-1 text-gray-500 font-mono">
 					<div>streamUrl: {props.streamUrl ?? "null"}</div>
 					<div>waveformUrl: {props.waveformUrl ?? "null"}</div>
 					<div>title: {props.title}</div>
 					<div>artist: {props.artist}</div>
 					<div>duration: {props.duration ?? "undefined"}</div>
-					<div>waveformQuery.enabled: {!!props.waveformUrl && props.waveformUrl !== null ? "true" : "false"}</div>
-					<div>waveformQuery.isLoading: {waveformQuery.isLoading ? "true" : "false"}</div>
-					<div>waveformQuery.isError: {waveformQuery.isError ? "true" : "false"}</div>
+					<div>
+						waveformQuery.enabled:{" "}
+						{!!props.waveformUrl && props.waveformUrl !== null
+							? "true"
+							: "false"}
+					</div>
+					<div>
+						waveformQuery.isLoading:{" "}
+						{waveformQuery.isLoading ? "true" : "false"}
+					</div>
+					<div>
+						waveformQuery.isError: {waveformQuery.isError ? "true" : "false"}
+					</div>
 				</div>
 			</div>
 
@@ -260,7 +299,9 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 									}
 								>
 									<div class="h-20 bg-slate-800/50 rounded flex items-center justify-center">
-										<p class="text-gray-500 text-xs">No waveform data available</p>
+										<p class="text-gray-500 text-xs">
+											No waveform data available
+										</p>
 									</div>
 								</Show>
 							}
