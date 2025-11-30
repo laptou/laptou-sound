@@ -1,6 +1,7 @@
 // waveform audio player component
 // displays a soundcloud-style waveform with playback controls
 
+import { useQuery } from "@tanstack/solid-query";
 import Pause from "lucide-solid/icons/pause";
 import Play from "lucide-solid/icons/play";
 import Volume2 from "lucide-solid/icons/volume-2";
@@ -8,6 +9,7 @@ import VolumeX from "lucide-solid/icons/volume-x";
 import {
 	type Component,
 	createEffect,
+	createMemo,
 	createSignal,
 	onCleanup,
 	onMount,
@@ -20,8 +22,8 @@ interface WaveformData {
 }
 
 interface WaveformPlayerProps {
-	streamUrl: string;
-	waveformUrl: string;
+	streamUrl: string | null;
+	waveformUrl: string | null;
 	title: string;
 	artist: string;
 	duration?: number;
@@ -37,29 +39,46 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 	const [isMuted, setIsMuted] = createSignal(false);
 	const [currentTime, setCurrentTime] = createSignal(0);
 	const [duration, setDuration] = createSignal(props.duration ?? 0);
-	const [waveformData, setWaveformData] = createSignal<WaveformData | null>(
-		null,
-	);
-	const [isLoading, setIsLoading] = createSignal(true);
 	const [canvasWidth, setCanvasWidth] = createSignal(600);
 
-	// load waveform data
-	onMount(async () => {
-		try {
+	// load waveform data using tanstack query
+	const waveformQuery = useQuery(() => ({
+		queryKey: ["waveform", props.waveformUrl],
+		queryFn: async (): Promise<WaveformData> => {
+			if (!props.waveformUrl) {
+				throw new Error("No waveform URL provided");
+			}
 			const response = await fetch(props.waveformUrl);
-			const data = await response.json();
-			setWaveformData(data);
-		} catch (error) {
-			console.error("Failed to load waveform:", error);
-			// generate fallback waveform
-			setWaveformData({
+			if (!response.ok) {
+				throw new Error("Failed to load waveform");
+			}
+			return response.json();
+		},
+		enabled: !!props.waveformUrl && props.waveformUrl !== null,
+		retry: 1,
+		// generate fallback waveform on error
+		placeholderData: () => ({
+			peaks: Array.from({ length: 200 }, () => Math.random() * 0.8 + 0.2),
+			samples: 200,
+		}),
+	}));
+
+	// get waveform data with fallback
+	const waveformData = createMemo(() => {
+		if (waveformQuery.data) {
+			return waveformQuery.data;
+		}
+		if (waveformQuery.isError) {
+			// return fallback waveform on error
+			return {
 				peaks: Array.from({ length: 200 }, () => Math.random() * 0.8 + 0.2),
 				samples: 200,
-			});
-		} finally {
-			setIsLoading(false);
+			};
 		}
+		return null;
 	});
+
+	const isLoading = createMemo(() => waveformQuery.isLoading || waveformQuery.isFetching);
 
 	// resize observer for canvas
 	onMount(() => {
@@ -157,11 +176,13 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 	});
 
 	const togglePlay = () => {
-		if (!audioRef) return;
+		if (!audioRef || !props.streamUrl) return;
 		if (isPlaying()) {
 			audioRef.pause();
 		} else {
-			audioRef.play();
+			audioRef.play().catch((error) => {
+				console.error("Failed to play audio:", error);
+			});
 		}
 	};
 
@@ -188,14 +209,32 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 
 	return (
 		<div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 hover:border-violet-500/30 transition-all duration-300">
-			<audio ref={audioRef} src={props.streamUrl} preload="metadata" />
+			<Show when={props.streamUrl !== null}>
+				<audio ref={audioRef} src={props.streamUrl ?? undefined} preload="metadata" />
+			</Show>
+
+			{/* debug info */}
+			<div class="mb-4 bg-slate-900/50 border border-slate-700 rounded p-2 text-xs">
+				<div class="text-gray-400 mb-1 font-medium">Debug Info (WaveformPlayer)</div>
+				<div class="space-y-1 text-gray-500 font-mono">
+					<div>streamUrl: {props.streamUrl ?? "null"}</div>
+					<div>waveformUrl: {props.waveformUrl ?? "null"}</div>
+					<div>title: {props.title}</div>
+					<div>artist: {props.artist}</div>
+					<div>duration: {props.duration ?? "undefined"}</div>
+					<div>waveformQuery.enabled: {!!props.waveformUrl && props.waveformUrl !== null ? "true" : "false"}</div>
+					<div>waveformQuery.isLoading: {waveformQuery.isLoading ? "true" : "false"}</div>
+					<div>waveformQuery.isError: {waveformQuery.isError ? "true" : "false"}</div>
+				</div>
+			</div>
 
 			<div class="flex items-center gap-4">
 				{/* play button */}
 				<button
 					type="button"
 					onClick={togglePlay}
-					class="w-12 h-12 flex items-center justify-center bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 rounded-full text-white transition-all duration-200 shadow-lg shadow-violet-500/25 hover:scale-105 active:scale-95"
+					disabled={!props.streamUrl}
+					class="w-12 h-12 flex items-center justify-center bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 rounded-full text-white transition-all duration-200 shadow-lg shadow-violet-500/25 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
 				>
 					<Show when={isPlaying()} fallback={<Play class="w-5 h-5 ml-0.5" />}>
 						<Pause class="w-5 h-5" />
@@ -212,9 +251,18 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 					{/* waveform canvas */}
 					<div class="relative cursor-pointer" onClick={seek}>
 						<Show
-							when={!isLoading()}
+							when={props.waveformUrl !== null && !isLoading()}
 							fallback={
-								<div class="h-20 bg-slate-700/50 rounded animate-pulse" />
+								<Show
+									when={props.waveformUrl === null}
+									fallback={
+										<div class="h-20 bg-slate-700/50 rounded animate-pulse" />
+									}
+								>
+									<div class="h-20 bg-slate-800/50 rounded flex items-center justify-center">
+										<p class="text-gray-500 text-xs">No waveform data available</p>
+									</div>
+								</Show>
 							}
 						>
 							<canvas ref={canvasRef} class="w-full rounded" />

@@ -15,6 +15,13 @@
       "when": 1764402016494,
       "tag": "0001_green_alex_wilder",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1764540039955,
+      "tag": "0002_fuzzy_pete_wisdom",
+      "breakpoints": true
     }
   ]
 }

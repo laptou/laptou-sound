@@ -25,6 +25,10 @@ export const tracks = sqliteTable(
 			.default(false),
 		// json string: { instagram?: string, soundcloud?: string, tiktok?: string }
 		socialLinks: text("social_links"),
+		// id of the currently active version (null if no version is processed yet)
+		activeVersion: text("active_version").references(() => trackVersions.id, {
+			onDelete: "set null",
+		}),
 		createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 	},

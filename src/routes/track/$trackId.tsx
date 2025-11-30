@@ -29,12 +29,40 @@ export const Route = createFileRoute("/track/$trackId")({
 
 function TrackDetailPage() {
 	const data = Route.useLoaderData();
-	const [selectedVersion, setSelectedVersion] =
-		createSignal<TrackVersion | null>(() => {
-			// select the latest complete version
-			const versions = data().versions;
-			return versions.find((v) => v.processingStatus === "complete") ?? null;
-		});
+
+	// selected version id defaults to active version
+	const [selectedVersionId, setSelectedVersionId] = createSignal<string | null>(
+		data().track.activeVersion ?? null,
+	);
+
+	// derive selected version from id
+	const selectedVersion = createMemo(() => {
+		const id = selectedVersionId();
+		if (!id) return null;
+		return data().versions.find((v) => v.id === id) ?? null;
+	});
+
+	// playable version (complete and selected)
+	const playableVersion = createMemo(() => {
+		const version = selectedVersion();
+		if (version && version.processingStatus === "complete") {
+			return version;
+		}
+		return null;
+	});
+
+	// check if there are any complete versions available
+	const hasCompleteVersion = createMemo(() =>
+		data().versions.some((v) => v.processingStatus === "complete"),
+	);
+
+	// check if there are any versions still processing
+	const hasProcessingVersions = createMemo(() =>
+		data().versions.some(
+			(v) =>
+				v.processingStatus === "pending" || v.processingStatus === "processing",
+		),
+	);
 	const [showSocialPrompt, setShowSocialPrompt] = createSignal(false);
 
 	const socialLinks = createMemo(() => {
@@ -83,13 +111,13 @@ function TrackDetailPage() {
 		setShowSocialPrompt(false);
 	};
 
-	const getStreamUrl = (version: TrackVersion) => {
-		if (!version.streamKey) return "";
+	const getStreamUrl = (version: TrackVersion): string | null => {
+		if (!version.streamKey) return null;
 		return `/files/${version.streamKey}`;
 	};
 
-	const getWaveformUrl = (version: TrackVersion) => {
-		if (!version.waveformKey) return "";
+	const getWaveformUrl = (version: TrackVersion): string | null => {
+		if (!version.waveformKey) return null;
 		return `/files/${version.waveformKey}`;
 	};
 
@@ -119,13 +147,36 @@ function TrackDetailPage() {
 
 				{/* waveform player */}
 				<Show
-					when={selectedVersion()}
+					when={playableVersion()}
 					fallback={
 						<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
-							<p class="text-gray-400">No playable version available yet.</p>
-							<p class="text-gray-500 text-sm mt-2">
-								The track may still be processing.
-							</p>
+							<Show
+								when={hasProcessingVersions()}
+								fallback={
+									<>
+										<p class="text-gray-400 text-lg font-medium">
+											No playable version available
+										</p>
+										<p class="text-gray-500 text-sm mt-2">
+											{data().versions.length === 0
+												? "No versions have been uploaded yet."
+												: "All versions have failed processing or are not yet ready."}
+										</p>
+									</>
+								}
+							>
+								<p class="text-gray-400 text-lg font-medium">
+									Track is processing
+								</p>
+								<p class="text-gray-500 text-sm mt-2">
+									The track is being processed and will be available soon.
+								</p>
+								<Show when={hasCompleteVersion()}>
+									<p class="text-gray-500 text-xs mt-4">
+										Note: You can select a previous version below while waiting.
+									</p>
+								</Show>
+							</Show>
 						</div>
 					}
 				>
@@ -143,7 +194,14 @@ function TrackDetailPage() {
 
 				{/* actions */}
 				<div class="mt-6 flex items-center gap-4">
-					<Show when={data().track.allowDownload && selectedVersion()}>
+					<Show
+						when={
+							data().track.allowDownload &&
+							selectedVersion() &&
+							selectedVersion()?.processingStatus === "complete" &&
+							selectedVersion()?.originalKey
+						}
+					>
 						<button
 							type="button"
 							onClick={handleDownloadClick}
@@ -156,22 +214,28 @@ function TrackDetailPage() {
 				</div>
 
 				{/* version selector */}
-				<Show when={data().versions.length > 1}>
+				<Show when={data().versions.length > 0}>
 					<div class="mt-6">
-						<h3 class="text-white font-medium mb-3">Versions</h3>
+						<h3 class="text-white font-medium mb-3">
+							Versions {data().versions.length > 1 && `(${data().versions.length})`}
+						</h3>
 						<div class="flex flex-wrap gap-2">
 							<For each={data().versions}>
 								{(version) => (
 									<button
 										type="button"
-										onClick={() => setSelectedVersion(version)}
+										onClick={() => {
+											if (version.processingStatus === "complete") {
+												setSelectedVersionId(version.id);
+											}
+										}}
 										disabled={version.processingStatus !== "complete"}
 										class={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-											selectedVersion()?.id === version.id
+											selectedVersionId() === version.id
 												? "bg-violet-500 text-white"
 												: version.processingStatus === "complete"
 													? "bg-slate-700 text-gray-300 hover:bg-slate-600"
-													: "bg-slate-800 text-gray-500 cursor-not-allowed"
+													: "bg-slate-800 text-gray-500 cursor-not-allowed opacity-60"
 										}`}
 									>
 										v{version.versionNumber}
@@ -198,6 +262,27 @@ function TrackDetailPage() {
 					<div class="bg-slate-800/30 rounded-lg p-4">
 						<span class="text-gray-500">Versions</span>
 						<p class="text-white">{data().versions.length}</p>
+					</div>
+				</div>
+
+				{/* debug info */}
+				<div class="mt-8 bg-slate-900/50 border border-slate-700 rounded-lg p-4 text-xs">
+					<div class="text-gray-400 mb-2 font-medium">Debug Info (TrackDetailPage)</div>
+					<div class="space-y-1 text-gray-500 font-mono">
+						<div>versions.length: {data().versions.length}</div>
+						<div>selectedVersionId: {selectedVersionId() ?? "null"}</div>
+						<div>selectedVersion: {selectedVersion()?.id ?? "null"}</div>
+						<div>activeVersion: {data().track.activeVersion ?? "null"}</div>
+						<Show when={selectedVersion()}>
+							{(version) => (
+								<div class="mt-2 pt-2 border-t border-slate-700">
+									<div>streamUrl: {getStreamUrl(version()) ?? "null"}</div>
+									<div>waveformUrl: {getWaveformUrl(version()) ?? "null"}</div>
+									<div>streamKey: {version().streamKey ?? "null"}</div>
+									<div>waveformKey: {version().waveformKey ?? "null"}</div>
+								</div>
+							)}
+						</Show>
 					</div>
 				</div>
 			</div>

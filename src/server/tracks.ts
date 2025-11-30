@@ -38,17 +38,60 @@ export const getTrack = createServerFn({ method: "GET" })
 	});
 
 // get track versions
+// returns all versions for track owners/admins, otherwise only the active version
 export const getTrackVersions = createServerFn({ method: "GET" })
 	.inputValidator((data: { trackId: string }) => data)
 	.handler(async ({ data }) => {
-		const db = getDb();
-		const result = await db
-			.select()
-			.from(trackVersions)
-			.where(eq(trackVersions.trackId, data.trackId))
-			.orderBy(desc(trackVersions.versionNumber));
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
 
-		return result;
+		const db = getDb();
+		
+		// get track to check ownership and active version
+		const track = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, data.trackId))
+			.limit(1);
+
+		if (!track[0]) {
+			return [];
+		}
+
+		// check if user is owner or admin
+		let canViewAllVersions = false;
+		if (session?.user) {
+			const isTrackOwner = track[0].ownerId === session.user.id;
+			const userRole = (session.user as { role?: string }).role;
+			const isAdmin = userRole === "admin";
+			canViewAllVersions = isTrackOwner || isAdmin;
+		}
+
+		// if user can view all versions, return all
+		if (canViewAllVersions) {
+			const result = await db
+				.select()
+				.from(trackVersions)
+				.where(eq(trackVersions.trackId, data.trackId))
+				.orderBy(desc(trackVersions.versionNumber));
+			return result;
+		}
+
+		// otherwise, only return the active version if it exists
+		if (track[0].activeVersion) {
+			const result = await db
+				.select()
+				.from(trackVersions)
+				.where(
+					eq(trackVersions.id, track[0].activeVersion),
+				)
+				.limit(1);
+			return result;
+		}
+
+		// no active version, return empty array
+		return [];
 	});
 
 // get user's own tracks

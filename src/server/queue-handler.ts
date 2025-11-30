@@ -4,8 +4,9 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "@/db/schema";
-import { logDebug } from "@/lib/logger";
+import { logDebug, logError, } from "@/lib/logger";
 import { getStreamKey, getWaveformKey } from "./files";
+import { DrizzleLogger } from "@/db/logger";
 
 export interface AudioProcessingJob {
 	type: "process_audio";
@@ -46,7 +47,10 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 	logDebug("processing audio job", { job });
 
 	const bucket = env.laptou_sound_files;
-	const db = drizzle(env.laptou_sound_db, { schema });
+	const db = drizzle(env.laptou_sound_db, {
+		schema,
+		logger: new DrizzleLogger(),
+	});
 
 	// update status to processing
 	await db
@@ -70,14 +74,14 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 		const originalData = await original.arrayBuffer();
 
 		// store as stream file (in production, transcode to 128kbps mp3)
-		await bucket.put(streamKey, originalData, {
+		const streamObject = await bucket.put(streamKey, originalData, {
 			httpMetadata: { contentType: "audio/mpeg" },
 		});
 
 		// generate simplified waveform data
 		// in production, use an audio analysis library
 		const waveformData = generateSimplifiedWaveform(originalData);
-		await bucket.put(waveformKey, JSON.stringify(waveformData), {
+		const waveformObject = await bucket.put(waveformKey, JSON.stringify(waveformData), {
 			httpMetadata: { contentType: "application/json" },
 		});
 
@@ -89,21 +93,27 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 			.update(schema.trackVersions)
 			.set({
 				processingStatus: "complete",
-				streamKey,
-				waveformKey,
+				streamKey: streamObject.key,
+				waveformKey: waveformObject.key,
 				duration: estimatedDuration,
 			})
 			.where(eq(schema.trackVersions.id, job.versionId));
 
-		console.log("audio processing completed", {
+		// update track's active version to point to this processed version
+		await db
+			.update(schema.tracks)
+			.set({ activeVersion: job.versionId })
+			.where(eq(schema.tracks.id, job.trackId));
+
+		logDebug("audio processing completed", {
 			job,
-			streamKey,
-			waveformKey,
+			streamKey: streamObject.key,
+			waveformKey: waveformObject.key,
 			duration: estimatedDuration,
 			waveformDataSamples: waveformData.samples,
 		});
 	} catch (error) {
-		console.error("Audio processing failed:", error);
+		logError("[queue/audio-processing] failed", { error });
 
 		// update status to failed
 		await db

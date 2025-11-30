@@ -129,6 +129,7 @@ function UploadPage() {
 			const response = await fetch("/api/upload", {
 				method: "POST",
 				body: formData,
+				
 			});
 
 			if (!response.ok) {

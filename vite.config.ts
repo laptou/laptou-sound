@@ -1,6 +1,8 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
-import { devtools } from "@tanstack/devtools-vite";
+import { devtools as tanstackDevtools } from "@tanstack/devtools-vite";
+
+import solidDevtools from "solid-devtools/vite";
 import { tanstackStart } from "@tanstack/solid-start/plugin/vite";
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
@@ -8,7 +10,8 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
 	plugins: [
-		devtools(),
+		tanstackDevtools(),
+		solidDevtools(),
 		// this is the plugin that enables path aliases
 		viteTsConfigPaths({
 			projects: ["./tsconfig.json"],

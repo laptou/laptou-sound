@@ -1,0 +1,1 @@
+ALTER TABLE `tracks` ADD `active_version` text REFERENCES track_versions(id);

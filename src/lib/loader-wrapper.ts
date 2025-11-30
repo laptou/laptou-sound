@@ -11,11 +11,6 @@ export function wrapLoader<T extends (...args: any[]) => Promise<any>>(
 		const startTime = Date.now();
 		const isServer = typeof window === "undefined";
 
-		logInfo(`Loader called: ${routeId}`, {
-			route: routeId,
-			environment: isServer ? "server" : "client",
-		});
-
 		try {
 			const result = await loader(...args);
 			const duration = Date.now() - startTime;
