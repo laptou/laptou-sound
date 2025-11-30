@@ -1,8 +1,8 @@
 // wrapper utility for adding error handling and logging to server functions
+/** biome-ignore-all lint/suspicious/noExplicitAny: generic functions */
 
 import { createServerFn } from "@tanstack/solid-start";
-import { trackError } from "./error-reporter";
-import { logError, logInfo, reportError } from "./logger";
+import { logDebug, logError, logInfo } from "./logger";
 
 // wrap a server function handler with error handling and logging
 export function wrapServerFn<T extends (...args: any[]) => Promise<any>>(
@@ -20,7 +20,7 @@ export function wrapServerFn<T extends (...args: any[]) => Promise<any>>(
 			const result = await handler(...args);
 			const duration = Date.now() - startTime;
 
-			logInfo(`Server function completed: ${fnName}`, {
+			logDebug(`[server function] completed`, {
 				function: fnName,
 				duration: `${duration}ms`,
 			});
@@ -30,21 +30,11 @@ export function wrapServerFn<T extends (...args: any[]) => Promise<any>>(
 			const duration = Date.now() - startTime;
 			const err = error instanceof Error ? error : new Error(String(error));
 
-			logError(`Server function error: ${fnName}`, {
+			logError(`[server function] failed`, {
 				function: fnName,
 				duration: `${duration}ms`,
 				error: err.message,
 				stack: err.stack,
-			});
-
-			trackError(err, {
-				function: fnName,
-				duration: `${duration}ms`,
-			});
-
-			reportError(err, {
-				function: fnName,
-				duration: `${duration}ms`,
 			});
 
 			throw error;

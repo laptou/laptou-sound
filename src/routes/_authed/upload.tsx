@@ -93,7 +93,9 @@ function UploadPage() {
 		e.preventDefault();
 		setError(null);
 
-		if (!file()) {
+		const currentFile = file();
+
+		if (!currentFile) {
 			setError("Please select a file to upload");
 			return;
 		}
@@ -121,7 +123,7 @@ function UploadPage() {
 
 			// upload file
 			const formData = new FormData();
-			formData.append("file", file()!);
+			formData.append("file", currentFile);
 			formData.append("trackId", trackId);
 
 			const response = await fetch("/api/upload", {

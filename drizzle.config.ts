@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: drizzle will error if these are not set */
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({

@@ -20,7 +20,7 @@ export function wrapLoader<T extends (...args: any[]) => Promise<any>>(
 			const result = await loader(...args);
 			const duration = Date.now() - startTime;
 
-			logTrace(`[loader] completed ${routeId}`, {
+			logTrace(`[loader] completed`, {
 				route: routeId,
 				environment: isServer ? "server" : "client",
 				duration: `${duration}ms`,
@@ -28,7 +28,7 @@ export function wrapLoader<T extends (...args: any[]) => Promise<any>>(
 
 			// warn on slow loaders
 			if (duration > 1000) {
-				logWarn(`[loader] slow: ${routeId}`, {
+				logWarn(`[loader] slow`, {
 					route: routeId,
 					duration: `${duration}ms`,
 				});
@@ -39,7 +39,7 @@ export function wrapLoader<T extends (...args: any[]) => Promise<any>>(
 			const duration = Date.now() - startTime;
 			const err = error instanceof Error ? error : new Error(String(error));
 
-			logError(`[loader] failed ${routeId}`, {
+			logError(`[loader] failed`, {
 				route: routeId,
 				environment: isServer ? "server" : "client",
 				duration: `${duration}ms`,
