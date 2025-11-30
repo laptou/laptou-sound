@@ -10,7 +10,9 @@ import {
 	TextFieldLabel,
 	TextFieldTextArea,
 } from "@ui/text-field";
-import { Music, Upload, X } from "lucide-solid";
+import Music from "lucide-solid/icons/music";
+import Upload from "lucide-solid/icons/upload";
+import X from "lucide-solid/icons/x";
 import { createSignal, Show } from "solid-js";
 import { AccessDeniedError } from "@/lib/errors";
 import { hasRole } from "@/server/auth";

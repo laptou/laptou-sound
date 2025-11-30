@@ -1,7 +1,7 @@
 // track detail page with waveform player, versioning, and download
 
 import { createFileRoute } from "@tanstack/solid-router";
-import { Download } from "lucide-solid";
+import Download from "lucide-solid/icons/download";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import SocialPromptModal from "@/components/SocialPromptModal";
 import WaveformPlayer from "@/components/WaveformPlayer";

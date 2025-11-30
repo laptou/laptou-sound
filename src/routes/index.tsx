@@ -1,7 +1,9 @@
 // home page - displays recent tracks
 
 import { createFileRoute, Link } from "@tanstack/solid-router";
-import { Music, Upload, User } from "lucide-solid";
+import Music from "lucide-solid/icons/music";
+import Upload from "lucide-solid/icons/upload";
+import User from "lucide-solid/icons/user";
 import { For, Show } from "solid-js";
 import TrackCard from "@/components/TrackCard";
 import { useSession } from "@/lib/auth-client";

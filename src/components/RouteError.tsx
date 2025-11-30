@@ -3,7 +3,8 @@
 
 import type { ErrorComponentProps } from "@tanstack/solid-router";
 import { Link } from "@tanstack/solid-router";
-import { AlertCircle, Home } from "lucide-solid";
+import AlertCircle from "lucide-solid/icons/alert-circle";
+import Home from "lucide-solid/icons/home";
 import { createSignal, Show } from "solid-js";
 import { isAnticipatedError } from "@/lib/errors";
 import { logError, reportError } from "@/lib/logger";

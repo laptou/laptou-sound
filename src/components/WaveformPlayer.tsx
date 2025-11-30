@@ -1,7 +1,10 @@
 // waveform audio player component
 // displays a soundcloud-style waveform with playback controls
 
-import { Pause, Play, Volume2, VolumeX } from "lucide-solid";
+import Pause from "lucide-solid/icons/pause";
+import Play from "lucide-solid/icons/play";
+import Volume2 from "lucide-solid/icons/volume-2";
+import VolumeX from "lucide-solid/icons/volume-x";
 import {
 	type Component,
 	createEffect,

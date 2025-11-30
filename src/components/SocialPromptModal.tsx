@@ -1,6 +1,6 @@
 // social media prompt modal shown before download
 
-import { X } from "lucide-solid";
+import X from "lucide-solid/icons/x";
 import { type Component, Show } from "solid-js";
 
 interface SocialLinks {

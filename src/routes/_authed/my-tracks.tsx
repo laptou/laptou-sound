@@ -1,7 +1,10 @@
 // my tracks page - manage user's own tracks
 
 import { createFileRoute } from "@tanstack/solid-router";
-import { Edit2, Music, Plus, Trash2 } from "lucide-solid";
+import Edit2 from "lucide-solid/icons/edit-2";
+import Music from "lucide-solid/icons/music";
+import Plus from "lucide-solid/icons/plus";
+import Trash2 from "lucide-solid/icons/trash-2";
 import { createSignal, For, Show } from "solid-js";
 import type { Track } from "@/db/schema";
 import { deleteTrack, getMyTracks } from "@/server/tracks";

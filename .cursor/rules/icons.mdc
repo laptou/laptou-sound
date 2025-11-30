@@ -1,0 +1,39 @@
+---
+description: When adding frontend icons to the project
+alwaysApply: false
+---
+
+For icons, use `lucide-solid`.
+
+Lucide is built with ES Modules, so it's completely tree-shakable.
+
+Each icon can be imported as a Solid component, which renders an inline SVG element. This way, only the icons that are imported into your project are included in the final bundle. The rest of the icons are tree-shaken away.
+Example
+
+Additional props can be passed to adjust the icon:
+
+```jsx
+import { Camera } from 'lucide-solid';
+
+// Usage
+const App = () => {
+  return <Camera color="red" size={48} />;
+};
+
+export default App;
+```
+
+Vite loading/performing issues with the dev server can be resolved by import icons directly from the lucide-solid/icons directory:
+
+```jsx
+import Camera from 'lucide-solid/icons/camera';
+
+// Usage
+const App = () => {
+  return <Camera color="red" size={48} />;
+};
+
+export default App;
+```
+
+So you should always import them this way.

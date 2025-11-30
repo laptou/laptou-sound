@@ -1,15 +1,13 @@
 // admin dashboard page
 
 import { createFileRoute } from "@tanstack/solid-router";
-import {
-	AlertTriangle,
-	Key,
-	Music,
-	Plus,
-	Shield,
-	Trash2,
-	Users,
-} from "lucide-solid";
+import AlertTriangle from "lucide-solid/icons/alert-triangle";
+import Key from "lucide-solid/icons/key";
+import Music from "lucide-solid/icons/music";
+import Plus from "lucide-solid/icons/plus";
+import Shield from "lucide-solid/icons/shield";
+import Trash2 from "lucide-solid/icons/trash-2";
+import Users from "lucide-solid/icons/users";
 import { createEffect, createSignal, For, Show } from "solid-js";
 import type { InviteCode, Track, User } from "@/db/schema";
 import type { ErrorReport } from "@/lib/error-reporter";

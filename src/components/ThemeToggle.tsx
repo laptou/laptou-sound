@@ -1,6 +1,8 @@
 // theme toggle button component
 
-import { Monitor, Moon, Sun } from "lucide-solid";
+import Monitor from "lucide-solid/icons/monitor";
+import Moon from "lucide-solid/icons/moon";
+import Sun from "lucide-solid/icons/sun";
 import { type Component, onMount, Show } from "solid-js";
 import { initializeTheme, useTheme } from "@/lib/theme";
 

@@ -3,7 +3,7 @@
 import { createMiddleware } from "@tanstack/solid-start";
 import { createAuth } from "./auth";
 import { trackError } from "./error-reporter";
-import { logError, logInfo, logWarn, reportError } from "./logger";
+import { logDebug, logError, logInfo, logWarn, reportError } from "./logger";
 
 // request/response logging middleware
 export const requestLogger = createMiddleware().server(
@@ -12,19 +12,11 @@ export const requestLogger = createMiddleware().server(
 		const timestamp = new Date().toISOString();
 		const url = new URL(request.url);
 
-		logInfo(`Incoming ${request.method} ${url.pathname}`, {
-			method: request.method,
-			path: url.pathname,
-			query: Object.fromEntries(url.searchParams),
-			userAgent: request.headers.get("user-agent"),
-			timestamp,
-		});
-
 		try {
 			const result = await next();
 			const duration = Date.now() - startTime;
 
-			logInfo(`Completed ${request.method} ${url.pathname}`, {
+			logDebug(`[request] completed`, {
 				method: request.method,
 				path: url.pathname,
 				status: result.response.status,
@@ -43,7 +35,7 @@ export const requestLogger = createMiddleware().server(
 			const duration = Date.now() - startTime;
 			const err = error instanceof Error ? error : new Error(String(error));
 
-			logError(`Error in ${request.method} ${url.pathname}`, {
+			logError(`[request] failed`, {
 				method: request.method,
 				path: url.pathname,
 				duration: `${duration}ms`,
@@ -52,47 +44,6 @@ export const requestLogger = createMiddleware().server(
 				timestamp: new Date().toISOString(),
 			});
 
-			trackError(err, {
-				method: request.method,
-				path: url.pathname,
-				duration: `${duration}ms`,
-			});
-
-			reportError(err, {
-				method: request.method,
-				path: url.pathname,
-				duration: `${duration}ms`,
-			});
-
-			throw error;
-		}
-	},
-);
-
-// error handling middleware
-export const errorHandler = createMiddleware().server(
-	async ({ next, request }) => {
-		try {
-			return await next();
-		} catch (error) {
-			const err = error instanceof Error ? error : new Error(String(error));
-			const url = new URL(request.url);
-
-			// log and track error
-			logError(`Unhandled error in middleware`, {
-				method: request.method,
-				path: url.pathname,
-				error: err.message,
-				stack: err.stack,
-			});
-
-			trackError(err, {
-				method: request.method,
-				path: url.pathname,
-				middleware: true,
-			});
-
-			// re-throw to let route handlers handle it
 			throw error;
 		}
 	},
@@ -106,26 +57,18 @@ export const performanceMonitor = createMiddleware().server(
 
 		try {
 			const response = await next();
+			return response;
+		} finally {
 			const duration = Date.now() - startTime;
 
 			// warn on slow requests
 			if (duration > 1000) {
-				logWarn(`Slow request detected: ${request.method} ${url.pathname}`, {
+				logWarn(`[request] slow`, {
 					method: request.method,
 					path: url.pathname,
 					duration: `${duration}ms`,
 				});
 			}
-
-			return response;
-		} catch (error) {
-			const duration = Date.now() - startTime;
-			logError(`Request failed after ${duration}ms`, {
-				method: request.method,
-				path: url.pathname,
-				duration: `${duration}ms`,
-			});
-			throw error;
 		}
 	},
 );
@@ -148,7 +91,6 @@ export const authenticator = createMiddleware().server(
 // combined middleware for common use cases
 export const commonMiddleware = [
 	requestLogger,
-	errorHandler,
 	performanceMonitor,
 	authenticator,
 ];

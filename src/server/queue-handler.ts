@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "@/db/schema";
 import { getStreamKey, getWaveformKey } from "./files";
+import { logDebug } from "@/lib/logger";
 
 export interface AudioProcessingJob {
 	type: "process_audio";
@@ -24,6 +25,8 @@ export type QueueMessage = AudioProcessingJob | DeleteTrackJob;
 export async function handleQueueBatch(
 	batch: MessageBatch<QueueMessage>,
 ): Promise<void> {
+	logDebug("handling queue batch", { batch });
+
 	for (const message of batch.messages) {
 		try {
 			if (message.body.type === "process_audio") {
@@ -40,6 +43,8 @@ export async function handleQueueBatch(
 }
 
 async function processAudioJob(job: AudioProcessingJob): Promise<void> {
+	logDebug("processing audio job", { job });
+
 	const bucket = env.laptou_sound_files;
 	const db = drizzle(env.laptou_sound_db, { schema });
 
@@ -89,6 +94,14 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 				duration: estimatedDuration,
 			})
 			.where(eq(schema.trackVersions.id, job.versionId));
+
+		console.log("audio processing completed", {
+			job,
+			streamKey,
+			waveformKey,
+			duration: estimatedDuration,
+			waveformDataSamples: waveformData.samples,
+		});
 	} catch (error) {
 		console.error("Audio processing failed:", error);
 

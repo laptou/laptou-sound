@@ -1,6 +1,6 @@
 // track card component for displaying track in lists
 
-import { Play } from "lucide-solid";
+import Play from "lucide-solid/icons/play";
 import type { Component } from "solid-js";
 import type { Track } from "@/db/schema";
 

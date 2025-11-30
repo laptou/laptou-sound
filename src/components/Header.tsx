@@ -1,7 +1,10 @@
 // main navigation header
 
 import { Link } from "@tanstack/solid-router";
-import { Music, Shield, Upload, User } from "lucide-solid";
+import Music from "lucide-solid/icons/music";
+import Shield from "lucide-solid/icons/shield";
+import Upload from "lucide-solid/icons/upload";
+import User from "lucide-solid/icons/user";
 import { createSignal, onMount, Show } from "solid-js";
 import { getSession } from "@/server/auth";
 import ThemeToggle from "./ThemeToggle";

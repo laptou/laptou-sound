@@ -46,7 +46,6 @@ export const Route = createRootRouteWithContext()({
 	}),
 	beforeLoad: async () => {
 		const session = await getSession();
-		console.log("root session", session);
 		return { session };
 	},
 	shellComponent: RootDocument,
