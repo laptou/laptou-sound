@@ -1,7 +1,6 @@
 // wrapper utility for adding error handling and logging to route loaders
 
-import { trackError } from "./error-reporter";
-import { logError, logInfo, logTrace, logWarn, reportError } from "./logger";
+import { logError, logInfo, logTrace, logWarn } from "./logger";
 
 // wrap a loader function with error handling and logging
 export function wrapLoader<T extends (...args: any[]) => Promise<any>>(

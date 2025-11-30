@@ -4,8 +4,8 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "@/db/schema";
-import { getStreamKey, getWaveformKey } from "./files";
 import { logDebug } from "@/lib/logger";
+import { getStreamKey, getWaveformKey } from "./files";
 
 export interface AudioProcessingJob {
 	type: "process_audio";

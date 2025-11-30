@@ -13,7 +13,8 @@ export const logger = createIsomorphicFn()
 	.server((level: LogLevel, message: string, ...contexts: LogContext[]) => {
 		const timestamp = new Date().toISOString();
 		// merge all context objects, later ones override earlier ones
-		const context = contexts.length > 0 ? Object.assign({}, ...contexts) : undefined;
+		const context =
+			contexts.length > 0 ? Object.assign({}, ...contexts) : undefined;
 		const logEntry = {
 			timestamp,
 			level,
@@ -47,7 +48,8 @@ export const logger = createIsomorphicFn()
 	.client((level: LogLevel, message: string, ...contexts: LogContext[]) => {
 		const timestamp = new Date().toISOString();
 		// merge all context objects, later ones override earlier ones
-		const context = contexts.length > 0 ? Object.assign({}, ...contexts) : undefined;
+		const context =
+			contexts.length > 0 ? Object.assign({}, ...contexts) : undefined;
 		const logEntry = {
 			timestamp,
 			level,

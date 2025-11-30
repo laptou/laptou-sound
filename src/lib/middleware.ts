@@ -2,8 +2,7 @@
 
 import { createMiddleware } from "@tanstack/solid-start";
 import { createAuth } from "./auth";
-import { trackError } from "./error-reporter";
-import { logDebug, logError, logInfo, logWarn, reportError } from "./logger";
+import { logDebug, logError, logWarn } from "./logger";
 
 // request/response logging middleware
 export const requestLogger = createMiddleware().server(
