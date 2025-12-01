@@ -766,6 +766,13 @@ export const uploadAlbumArt = createServerFn({ method: "POST" })
 		const ext = mimeToExt[data.file.type] ?? "jpg";
 		const albumArtKey = getAlbumArtKey(data.trackId, data.versionId, ext);
 
+		// delete old album art if it exists with a different key (e.g. different extension)
+		const oldAlbumArtKey = version[0].albumArtKey;
+		if (oldAlbumArtKey && oldAlbumArtKey !== albumArtKey) {
+			const { deleteFile } = await import("./files");
+			await deleteFile(oldAlbumArtKey);
+		}
+
 		// upload to r2
 		await uploadFile(
 			albumArtKey,
@@ -789,4 +796,71 @@ export const uploadAlbumArt = createServerFn({ method: "POST" })
 		await queue.send(job);
 
 		return { albumArtKey };
+	});
+
+// remove album art from a version - deletes from r2 and clears database
+export const removeAlbumArt = createServerFn({ method: "POST" })
+	.inputValidator((data: { trackId: string; versionId: string }) => data)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		const db = getDb();
+
+		// verify ownership
+		const track = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, data.trackId))
+			.limit(1);
+
+		if (!track[0]) {
+			throw new Error("Track not found");
+		}
+
+		const isOwner = track[0].ownerId === session.user.id;
+		const isAdmin = session.user.role === "admin";
+
+		if (!isOwner && !isAdmin) {
+			throw new Error("You do not have permission to edit this track");
+		}
+
+		// get version to find album art key
+		const version = await db
+			.select()
+			.from(trackVersions)
+			.where(eq(trackVersions.id, data.versionId))
+			.limit(1);
+
+		if (!version[0]) {
+			throw new Error("Version not found");
+		}
+
+		// delete album art from r2 if it exists
+		if (version[0].albumArtKey) {
+			const { deleteFile } = await import("./files");
+			await deleteFile(version[0].albumArtKey);
+		}
+
+		// clear album art key in database
+		await db
+			.update(trackVersions)
+			.set({ albumArtKey: null })
+			.where(eq(trackVersions.id, data.versionId));
+
+		// queue job to regenerate download file without album art
+		const queue = env.laptou_sound_audio_processing_queue;
+		const job: UpdateMetadataJob = {
+			type: "update_metadata",
+			trackId: data.trackId,
+			versionId: data.versionId,
+		};
+		await queue.send(job);
+
+		return { success: true };
 	});

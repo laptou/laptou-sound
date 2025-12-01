@@ -73,24 +73,14 @@ function RootDocument() {
 			</head>
 			<body class="min-h-screen">
 				<HeadContent />
-				<ClientOnly
-					fallback={
-						<Suspense>
-							<Outlet />
-							<TanStackRouterDevtools position="bottom-right" />
-							<SolidQueryDevtools buttonPosition="bottom-left" />
-						</Suspense>
-					}
-				>
+				<Suspense>
 					<AudioPlayerProvider>
-						<Suspense>
-							<Outlet />
-							<TanStackRouterDevtools position="bottom-right" />
-							<SolidQueryDevtools buttonPosition="bottom-left" />
-						</Suspense>
+						<Outlet />
 						<MediaControls />
 					</AudioPlayerProvider>
-				</ClientOnly>
+					<TanStackRouterDevtools position="bottom-right" />
+					<SolidQueryDevtools buttonPosition="bottom-left" />
+				</Suspense>
 				<Scripts />
 			</body>
 		</html>

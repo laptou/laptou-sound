@@ -9,13 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FilesSplatRouteImport } from './routes/files/$'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
+import { Route as LayoutSignupRouteImport } from './routes/_layout/signup'
+import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
 import { Route as LayoutAuthedRouteImport } from './routes/_layout/_authed'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAdminErrorsRouteImport } from './routes/api/admin/errors'
@@ -26,16 +26,6 @@ import { Route as LayoutAuthedAccountRouteImport } from './routes/_layout/_authe
 import { Route as LayoutTrackTrackIdIndexRouteImport } from './routes/_layout/track.$trackId/index'
 import { Route as LayoutTrackTrackIdEditRouteImport } from './routes/_layout/track.$trackId/edit'
 
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const HealthRoute = HealthRouteImport.update({
   id: '/health',
   path: '/health',
@@ -59,6 +49,16 @@ const ApiUploadRoute = ApiUploadRouteImport.update({
   id: '/api/upload',
   path: '/api/upload',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LayoutSignupRoute = LayoutSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutLoginRoute = LayoutLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutAuthedRoute = LayoutAuthedRouteImport.update({
   id: '/_authed',
@@ -108,8 +108,8 @@ const LayoutTrackTrackIdEditRoute = LayoutTrackTrackIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
+  '/login': typeof LayoutLoginRoute
+  '/signup': typeof LayoutSignupRoute
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
   '/account': typeof LayoutAuthedAccountRoute
@@ -124,8 +124,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
+  '/login': typeof LayoutLoginRoute
+  '/signup': typeof LayoutSignupRoute
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
   '/account': typeof LayoutAuthedAccountRoute
@@ -142,9 +142,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_layout': typeof LayoutRouteWithChildren
   '/health': typeof HealthRoute
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
   '/_layout/_authed': typeof LayoutAuthedRouteWithChildren
+  '/_layout/login': typeof LayoutLoginRoute
+  '/_layout/signup': typeof LayoutSignupRoute
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
   '/_layout/_authed/account': typeof LayoutAuthedAccountRoute
@@ -194,9 +194,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_layout'
     | '/health'
-    | '/login'
-    | '/signup'
     | '/_layout/_authed'
+    | '/_layout/login'
+    | '/_layout/signup'
     | '/api/upload'
     | '/files/$'
     | '/_layout/_authed/account'
@@ -213,8 +213,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LayoutRoute: typeof LayoutRouteWithChildren
   HealthRoute: typeof HealthRoute
-  LoginRoute: typeof LoginRoute
-  SignupRoute: typeof SignupRoute
   ApiUploadRoute: typeof ApiUploadRoute
   FilesSplatRoute: typeof FilesSplatRoute
   ApiAdminErrorsRoute: typeof ApiAdminErrorsRoute
@@ -223,20 +221,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/solid-router' {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/health': {
       id: '/health'
       path: '/health'
@@ -271,6 +255,20 @@ declare module '@tanstack/solid-router' {
       fullPath: '/api/upload'
       preLoaderRoute: typeof ApiUploadRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_layout/signup': {
+      id: '/_layout/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof LayoutSignupRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/login': {
+      id: '/_layout/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LayoutLoginRouteImport
+      parentRoute: typeof LayoutRoute
     }
     '/_layout/_authed': {
       id: '/_layout/_authed'
@@ -358,12 +356,16 @@ const LayoutAuthedRouteWithChildren = LayoutAuthedRoute._addFileChildren(
 
 interface LayoutRouteChildren {
   LayoutAuthedRoute: typeof LayoutAuthedRouteWithChildren
+  LayoutLoginRoute: typeof LayoutLoginRoute
+  LayoutSignupRoute: typeof LayoutSignupRoute
   LayoutTrackTrackIdEditRoute: typeof LayoutTrackTrackIdEditRoute
   LayoutTrackTrackIdIndexRoute: typeof LayoutTrackTrackIdIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAuthedRoute: LayoutAuthedRouteWithChildren,
+  LayoutLoginRoute: LayoutLoginRoute,
+  LayoutSignupRoute: LayoutSignupRoute,
   LayoutTrackTrackIdEditRoute: LayoutTrackTrackIdEditRoute,
   LayoutTrackTrackIdIndexRoute: LayoutTrackTrackIdIndexRoute,
 }
@@ -375,8 +377,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LayoutRoute: LayoutRouteWithChildren,
   HealthRoute: HealthRoute,
-  LoginRoute: LoginRoute,
-  SignupRoute: SignupRoute,
   ApiUploadRoute: ApiUploadRoute,
   FilesSplatRoute: FilesSplatRoute,
   ApiAdminErrorsRoute: ApiAdminErrorsRoute,

@@ -68,6 +68,8 @@ export const AudioPlayerProvider: Component<{ children: JSX.Element }> = (
 
 	// setup audio element on mount
 	onMount(() => {
+		if (import.meta.env.SSR) return;
+		
 		audioElement = new Audio();
 		audioElement.preload = "metadata";
 		setAudioRef(audioElement);

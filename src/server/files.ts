@@ -1,5 +1,6 @@
 // file storage operations using cloudflare r2
 
+import { logTrace } from "@/lib/logger";
 import { env } from "cloudflare:workers";
 
 // r2 key structure:
@@ -42,6 +43,7 @@ export async function uploadFile(
 	contentType: string,
 ) {
 	const bucket = env.laptou_sound_files;
+	logTrace("[r2] uploading file", { key, contentType });
 	await bucket.put(key, data, {
 		httpMetadata: { contentType },
 	});

@@ -126,7 +126,7 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 				}
 			>
 				{(file) => (
-					<div class="flex items-center justify-between w-full gap-6 basis-0">
+					<div class="flex items-center justify-between w-full gap-6 basis-0 flex-1">
 						<div class="flex items-center gap-3 min-w-0">
 							<div class="w-12 h-12 bg-violet-500/20 rounded-lg flex items-center justify-center shrink-0">
 								<Music class="w-6 h-6 text-violet-400" />
