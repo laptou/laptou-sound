@@ -14,7 +14,6 @@ import { getPublicTracks } from "@/server/tracks";
 export const Route = createFileRoute("/")({
 	loader: wrapLoader("/", async () => {
 		const tracks = await getPublicTracks();
-		console.log("tracks", tracks);
 		return { tracks };
 	}),
 	component: HomePage,

@@ -5,7 +5,6 @@ import {
 	type Accessor,
 	type Component,
 	createContext,
-	createEffect,
 	createMemo,
 	createSignal,
 	type JSX,
@@ -66,6 +65,14 @@ export const AudioPlayerProvider: Component<{ children: JSX.Element }> = (
 	const [currentTime, setCurrentTime] = createSignal(0);
 	const [duration, setDuration] = createSignal(0);
 	const [queue, setQueue] = createSignal<QueueTrack[]>([]);
+	
+	// flag to prevent ended event from firing when intentionally changing tracks
+	let isChangingTrack = false;
+
+	// helper to validate duration
+	const isValidDuration = (dur: number): boolean => {
+		return Number.isFinite(dur) && dur > 0 && !Number.isNaN(dur);
+	};
 
 	// setup audio element on mount
 	onMount(() => {
@@ -75,19 +82,61 @@ export const AudioPlayerProvider: Component<{ children: JSX.Element }> = (
 		audioElement.preload = "metadata";
 		setAudioRef(audioElement);
 
-		const handleTimeUpdate = () => setCurrentTime(audioElement!.currentTime);
-		const handleDurationChange = () => setDuration(audioElement!.duration || 0);
+		const handleTimeUpdate = () => {
+			if (audioElement && !isChangingTrack) {
+				setCurrentTime(audioElement.currentTime);
+			}
+		};
+		
+		const handleDurationChange = () => {
+			if (!audioElement) return;
+			const dur = audioElement.duration;
+			if (isValidDuration(dur)) {
+				setDuration(dur);
+			}
+		};
+		
 		const handleEnded = () => {
+			// ignore ended event if we're intentionally changing tracks
+			if (isChangingTrack) return;
+			
 			setIsPlaying(false);
 			// auto-play next track in queue
 			const q = queue();
 			if (q.length > 0) {
 				playFromQueue(0);
+			} else {
+				// clear current track if queue is empty
+				setCurrentTrack(null);
+				setCurrentTime(0);
 			}
 		};
-		const handlePlay = () => setIsPlaying(true);
-		const handlePause = () => setIsPlaying(false);
-		const handleLoadedMetadata = () => setDuration(audioElement!.duration || 0);
+		
+		const handlePlay = () => {
+			if (!isChangingTrack) {
+				setIsPlaying(true);
+			}
+		};
+		
+		const handlePause = () => {
+			if (!isChangingTrack) {
+				setIsPlaying(false);
+			}
+		};
+		
+		const handleLoadedMetadata = () => {
+			if (!audioElement) return;
+			const dur = audioElement.duration;
+			if (isValidDuration(dur)) {
+				setDuration(dur);
+			}
+		};
+		
+		const handleError = (e: Event) => {
+			console.error("audio error:", e);
+			setIsPlaying(false);
+			// don't auto-play next track on error
+		};
 
 		audioElement.addEventListener("timeupdate", handleTimeUpdate);
 		audioElement.addEventListener("durationchange", handleDurationChange);
@@ -95,16 +144,19 @@ export const AudioPlayerProvider: Component<{ children: JSX.Element }> = (
 		audioElement.addEventListener("play", handlePlay);
 		audioElement.addEventListener("pause", handlePause);
 		audioElement.addEventListener("loadedmetadata", handleLoadedMetadata);
+		audioElement.addEventListener("error", handleError);
 
 		onCleanup(() => {
-			audioElement!.removeEventListener("timeupdate", handleTimeUpdate);
-			audioElement!.removeEventListener("durationchange", handleDurationChange);
-			audioElement!.removeEventListener("ended", handleEnded);
-			audioElement!.removeEventListener("play", handlePlay);
-			audioElement!.removeEventListener("pause", handlePause);
-			audioElement!.removeEventListener("loadedmetadata", handleLoadedMetadata);
-			audioElement!.pause();
-			audioElement!.src = "";
+			if (!audioElement) return;
+			audioElement.removeEventListener("timeupdate", handleTimeUpdate);
+			audioElement.removeEventListener("durationchange", handleDurationChange);
+			audioElement.removeEventListener("ended", handleEnded);
+			audioElement.removeEventListener("play", handlePlay);
+			audioElement.removeEventListener("pause", handlePause);
+			audioElement.removeEventListener("loadedmetadata", handleLoadedMetadata);
+			audioElement.removeEventListener("error", handleError);
+			audioElement.pause();
+			audioElement.src = "";
 		});
 	});
 
@@ -112,10 +164,33 @@ export const AudioPlayerProvider: Component<{ children: JSX.Element }> = (
 	const play = (track: QueueTrack) => {
 		if (!audioElement) return;
 
+		// set flag to prevent ended event from firing during track change
+		isChangingTrack = true;
+		
+		// pause and reset before changing source to prevent race conditions
+		audioElement.pause();
+		audioElement.currentTime = 0;
+		setCurrentTime(0);
+		setDuration(0);
+		
+		// set new source and track
 		setCurrentTrack(track);
 		audioElement.src = track.streamUrl;
-		audioElement.play().catch((error) => {
+		
+		// reset flag after src is set and play starts
+		// use a small delay to ensure the src change is processed
+		const resetFlag = () => {
+			isChangingTrack = false;
+		};
+		
+		audioElement.play().then(() => {
+			setIsPlaying(true);
+			// reset flag once playback actually starts
+			setTimeout(resetFlag, 100);
+		}).catch((error) => {
 			console.error("failed to play audio:", error);
+			resetFlag();
+			setIsPlaying(false);
 		});
 	};
 

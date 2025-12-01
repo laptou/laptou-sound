@@ -86,7 +86,7 @@ const MediaControlsInner: Component = () => {
 	return (
 		<div
 			class={cn(
-				"fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out",
+				"sticky bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out backdrop-blur-2xl bg-stone-950/80",
 				isVisible()
 					? "translate-y-0 opacity-100"
 					: "translate-y-full opacity-0 pointer-events-none",
@@ -95,9 +95,6 @@ const MediaControlsInner: Component = () => {
 				"view-transition-name": "media-controls",
 			}}
 		>
-			{/* backdrop blur layer */}
-			<div class="absolute inset-0 bg-stone-950/90 backdrop-blur-xl border-t border-stone-800/50" />
-
 			{/* content */}
 			<div class="relative max-w-4xl mx-auto px-4 py-3">
 				<div class="flex items-center gap-4">
