@@ -11,6 +11,7 @@ import {
 	getAlbumArtKey,
 	getOriginalKey,
 	uploadFile,
+	generatePresignedUrl,
 } from "./files";
 import type { UpdateMetadataJob } from "./queue-handler";
 
@@ -863,4 +864,70 @@ export const removeAlbumArt = createServerFn({ method: "POST" })
 		await queue.send(job);
 
 		return { success: true };
+	});
+
+// generate presigned url for streaming a track version
+// checks access permissions before generating the url
+export const getStreamPresignedUrl = createServerFn({ method: "GET" })
+	.inputValidator((data: { trackId: string; versionId: string }) => data)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		const db = getDb();
+
+		// get track to check access
+		const track = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, data.trackId))
+			.limit(1);
+
+		if (!track[0]) {
+			throw new Error("Track not found");
+		}
+
+		// check access: public tracks are accessible to everyone
+		// private tracks are only accessible to owner or admin
+		const isPublic = track[0].isPublic;
+		const isOwner = session?.user && track[0].ownerId === session.user.id;
+		const isAdmin = session?.user && session.user.role === "admin";
+
+		if (!isPublic && !isOwner && !isAdmin) {
+			throw new Error("You do not have permission to access this track");
+		}
+
+		// get version to verify it exists and is complete
+		const version = await db
+			.select()
+			.from(trackVersions)
+			.where(eq(trackVersions.id, data.versionId))
+			.limit(1);
+
+		if (!version[0]) {
+			throw new Error("Version not found");
+		}
+
+		// only allow access to complete versions (unless owner/admin)
+		if (version[0].processingStatus !== "complete") {
+			if (!isOwner && !isAdmin) {
+				throw new Error("Version is not ready for playback");
+			}
+		}
+
+		// check if version belongs to this track
+		if (version[0].trackId !== data.trackId) {
+			throw new Error("Version does not belong to this track");
+		}
+
+		// if no stream key, return null
+		if (!version[0].streamKey) {
+			return { url: null };
+		}
+
+		// generate presigned url (valid for 1 hour)
+		const url = await generatePresignedUrl(version[0].streamKey, "GET", 3600);
+
+		return { url };
 	});

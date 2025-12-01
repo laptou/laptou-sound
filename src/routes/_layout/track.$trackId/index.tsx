@@ -11,7 +11,11 @@ import type { TrackVersion } from "@/db/schema";
 import { wrapLoader } from "@/lib/loader-wrapper";
 import { formatSmartDate } from "@/lib/utils";
 import { getPlayCount, recordPlay } from "@/server/plays";
-import { getTrack, getTrackVersions } from "@/server/tracks";
+import {
+	getTrack,
+	getTrackVersions,
+	getStreamPresignedUrl,
+} from "@/server/tracks";
 import { getUserInfo } from "@/server/users";
 
 export const Route = createFileRoute("/_layout/track/$trackId/")({
@@ -128,9 +132,44 @@ function TrackDetailPage() {
 		setShowSocialPrompt(false);
 	};
 
+	// get presigned stream url for the selected version
+	const streamUrlQuery = useQuery(() => {
+		const version = selectedVersion();
+		if (
+			!version ||
+			!version.streamKey ||
+			version.processingStatus !== "complete"
+		) {
+			return {
+				queryKey: ["stream-url", data().track.id, null],
+				queryFn: async () => null,
+				enabled: false,
+			};
+		}
+		return {
+			queryKey: ["stream-url", data().track.id, version.id],
+			queryFn: async () => {
+				if (import.meta.env.DEV) {
+					return `/files/${version.streamKey}`;
+				}
+
+				const result = await getStreamPresignedUrl({
+					data: {
+						trackId: data().track.id,
+						versionId: version.id,
+					},
+				});
+				return result.url;
+			},
+			staleTime: 1000 * 60 * 50, // refresh 10 minutes before expiry (urls valid for 1 hour)
+			gcTime: 1000 * 60 * 60, // cache for 1 hour
+		};
+	});
+
 	const getStreamUrl = (version: TrackVersion): string | null => {
-		if (!version.streamKey) return null;
-		return `/files/${version.streamKey}`;
+		// only return url if this is the selected version and query has data
+		if (version.id !== selectedVersionId()) return null;
+		return streamUrlQuery.data ?? null;
 	};
 
 	const getAlbumArtUrl = (version: TrackVersion): string | null => {
