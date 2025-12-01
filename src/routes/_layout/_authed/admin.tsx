@@ -119,9 +119,8 @@ function AdminDashboard() {
 	};
 
 	return (
-		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
-			<div class="max-w-6xl mx-auto">
-				<div class="flex items-center gap-4 mb-8">
+		<div class="max-w-6xl mx-auto">
+			<div class="flex items-center gap-4 mb-8">
 					<div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center">
 						<Shield class="w-6 h-6 text-white" />
 					</div>

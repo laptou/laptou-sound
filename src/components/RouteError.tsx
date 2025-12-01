@@ -27,11 +27,11 @@ export function RouteError(props: ErrorComponentProps) {
 	}
 
 	return (
-		<div
-			role="alert"
-			class="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-4"
-		>
-			<div class="max-w-md w-full bg-slate-800/90 backdrop-blur-sm rounded-lg shadow-lg p-6 border border-slate-700">
+		<div class="w-full max-w-md mx-auto">
+			<div
+				role="alert"
+				class="bg-stone-800/50 backdrop-blur-sm border border-stone-700 rounded-2xl p-8 my-8 shadow-xl"
+			>
 				<div class="flex items-center mb-4">
 					<div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mr-3">
 						<AlertCircle class="w-6 h-6 text-red-400" />
