@@ -27,6 +27,9 @@
 			"binding": "laptou_sound_files"
 		}
 	],
+	"vars": {
+		"VITE_BETTER_AUTH_URL": "https://sound.laptou.net"
+	},
 	// queues for async audio processing
 	"queues": {
 		"producers": [

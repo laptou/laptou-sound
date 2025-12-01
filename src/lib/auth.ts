@@ -56,6 +56,8 @@ export const createAuth = createServerOnlyFn(() => {
 		},
 		trustedOrigins: [
 			"http://localhost:3000",
+			"https://sound.laptou.net",
+			"https://laptou-sound.ibiyemi.workers.dev"
 			// add production domain here
 		],
 	});
