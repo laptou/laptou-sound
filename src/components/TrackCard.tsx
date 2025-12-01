@@ -46,7 +46,7 @@ export const TrackCard: Component<TrackCardProps> = (props) => {
 	return (
 		<a
 			href={`/track/${props.track.id}`}
-			class="group flex bg-stone-900/50 hover:bg-stone-900/80 transition-colors"
+			class="group flex bg-stone-900/50 hover:bg-stone-900/80 transition-colors rounded-sm overflow-clip"
 		>
 			<div class="relative w-40 h-40 shrink-0 bg-stone-800">
 				<Show

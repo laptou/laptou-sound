@@ -136,8 +136,9 @@ function TrackDetailPage() {
 	}
 
 	return (
-		<div class="min-h-screen bg-linear-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
-			<div class="max-w-4xl mx-auto">
+		<div class="min-h-screen bg-linear-to-b from-stone-900 via-stone-950 to-stone-900 py-12 px-6 relative">
+			<div class="absolute inset-0 bg-linear-to-br from-violet-500 via-indigo-500 to-purple-500 mask-radial-at-top mask-circle mask-radial-from-0% mask-contain opacity-30 z-0" />
+			<div class="max-w-4xl mx-auto relative z-10">
 				{/* track header */}
 				<div class="mb-8 flex gap-6">
 					{/* album art */}
@@ -146,8 +147,8 @@ function TrackDetailPage() {
 							<Show
 								when={getAlbumArtUrl(version())}
 								fallback={
-									<div class="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center shrink-0">
-										<Music class="w-12 h-12 text-gray-600" />
+									<div class="w-32 h-32 bg-stone-800 rounded-lg flex items-center justify-center shrink-0">
+										<Music class="w-12 h-12 text-stone-600" />
 									</div>
 								}
 							>
@@ -170,7 +171,7 @@ function TrackDetailPage() {
 							<Show when={data().canEdit}>
 								<Link
 									to={`/track/${data().track.id}/edit`}
-									class="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-gray-300 rounded-lg text-sm font-medium transition-colors"
+									class="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 bg-stone-800/80 hover:bg-stone-700/80 text-white/80 rounded-lg text-sm font-medium transition-colors"
 								>
 									<Pencil class="w-4 h-4" />
 									Edit
@@ -178,11 +179,11 @@ function TrackDetailPage() {
 							</Show>
 						</div>
 						<Show when={data().track.description}>
-							<p class="text-gray-400 text-lg mb-4">
+							<p class="text-lg mb-4 opacity-70">
 								{data().track.description}
 							</p>
 						</Show>
-						<div class="flex items-center gap-4 text-sm text-gray-400">
+						<div class="flex items-center gap-4 text-sm opacity-50">
 							<span>{formatPlayCount(data().playCount)} plays</span>
 							<span>•</span>
 							<span>
@@ -196,15 +197,15 @@ function TrackDetailPage() {
 				<Show
 					when={playableVersion()}
 					fallback={
-						<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
+						<div class="bg-stone-900/50 rounded-xl p-8 text-center">
 							<Show
 								when={hasProcessingVersions()}
 								fallback={
 									<>
-										<p class="text-gray-400 text-lg font-medium">
+										<p class="text-lg font-medium opacity-70">
 											No playable version available
 										</p>
-										<p class="text-gray-500 text-sm mt-2">
+										<p class="text-sm mt-2 opacity-50">
 											{data().versions.length === 0
 												? "No versions have been uploaded yet."
 												: "All versions have failed processing or are not yet ready."}
@@ -212,14 +213,14 @@ function TrackDetailPage() {
 									</>
 								}
 							>
-								<p class="text-gray-400 text-lg font-medium">
+								<p class="text-lg font-medium opacity-70">
 									Track is processing
 								</p>
-								<p class="text-gray-500 text-sm mt-2">
+								<p class="text-sm mt-2 opacity-50">
 									The track is being processed and will be available soon.
 								</p>
 								<Show when={hasCompleteVersion()}>
-									<p class="text-gray-500 text-xs mt-4">
+									<p class="text-xs mt-4 opacity-50">
 										Note: You can select a previous version below while waiting.
 									</p>
 								</Show>
@@ -251,7 +252,7 @@ function TrackDetailPage() {
 						<button
 							type="button"
 							onClick={handleDownloadClick}
-							class="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+							class="inline-flex items-center gap-2 px-4 py-2 bg-stone-800/80 hover:bg-stone-700/80 text-white rounded-lg font-medium transition-colors"
 						>
 							<Download class="w-4 h-4" />
 							Download
@@ -281,8 +282,8 @@ function TrackDetailPage() {
 											selectedVersionId() === version.id
 												? "bg-violet-500 text-white"
 												: version.processingStatus === "complete"
-													? "bg-slate-700 text-gray-300 hover:bg-slate-600"
-													: "bg-slate-800 text-gray-500 cursor-not-allowed opacity-60"
+													? "bg-stone-800/80 text-white/70 hover:bg-stone-700/80"
+													: "bg-stone-900/50 text-white/40 cursor-not-allowed"
 										}`}
 									>
 										v{version.versionNumber}
@@ -300,31 +301,31 @@ function TrackDetailPage() {
 
 				{/* track info */}
 				<div class="mt-8 grid grid-cols-2 gap-4 text-sm">
-					<div class="bg-slate-800/30 rounded-lg p-4">
-						<span class="text-gray-500">Uploaded</span>
+					<div class="bg-stone-900/50 rounded-lg p-4">
+						<span class="opacity-50">Uploaded</span>
 						<p class="text-white">
 							{new Date(data().track.createdAt).toLocaleDateString()}
 						</p>
 					</div>
-					<div class="bg-slate-800/30 rounded-lg p-4">
-						<span class="text-gray-500">Versions</span>
+					<div class="bg-stone-900/50 rounded-lg p-4">
+						<span class="opacity-50">Versions</span>
 						<p class="text-white">{data().versions.length}</p>
 					</div>
 				</div>
 
 				{/* debug info */}
-				<div class="mt-8 bg-slate-900/50 border border-slate-700 rounded-lg p-4 text-xs">
-					<div class="text-gray-400 mb-2 font-medium">
+				<div class="mt-8 bg-stone-900/30 rounded-lg p-4 text-xs">
+					<div class="opacity-70 mb-2 font-medium">
 						Debug Info (TrackDetailPage)
 					</div>
-					<div class="space-y-1 text-gray-500 font-mono">
+					<div class="space-y-1 opacity-50 font-mono">
 						<div>versions.length: {data().versions.length}</div>
 						<div>selectedVersionId: {selectedVersionId() ?? "null"}</div>
 						<div>selectedVersion: {selectedVersion()?.id ?? "null"}</div>
 						<div>activeVersion: {data().track.activeVersion ?? "null"}</div>
 						<Show when={selectedVersion()}>
 							{(version) => (
-								<div class="mt-2 pt-2 border-t border-slate-700">
+								<div class="mt-2 pt-2 border-t border-stone-800">
 									<div>streamUrl: {getStreamUrl(version()) ?? "null"}</div>
 									<div>streamKey: {version().streamKey ?? "null"}</div>
 									<div>artist: {version().artist ?? "null"}</div>

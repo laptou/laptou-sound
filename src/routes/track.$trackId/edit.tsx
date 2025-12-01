@@ -287,8 +287,9 @@ function TrackEditPage() {
 	}
 
 	return (
-		<div class="min-h-screen bg-linear-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
-			<div class="max-w-4xl mx-auto">
+		<div class="min-h-screen bg-linear-to-b from-stone-900 via-stone-950 to-stone-900 py-12 px-6 relative">
+			<div class="absolute inset-0 bg-linear-to-br from-violet-500 via-indigo-500 to-purple-500 mask-radial-at-top mask-circle mask-radial-from-0% mask-contain opacity-30 z-0" />
+			<div class="max-w-4xl mx-auto relative z-10">
 				{/* header */}
 				<div class="flex items-center gap-4 mb-8">
 					<Button
@@ -300,7 +301,7 @@ function TrackEditPage() {
 					</Button>
 					<div>
 						<h1 class="text-2xl font-bold text-white">Edit Track</h1>
-						<p class="text-gray-400 text-sm">{data().track.title}</p>
+						<p class="text-sm opacity-70">{data().track.title}</p>
 					</div>
 				</div>
 
@@ -327,7 +328,7 @@ function TrackEditPage() {
 
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					{/* track metadata section */}
-					<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+					<div class="bg-stone-900/50 rounded-xl p-6">
 						<h2 class="text-lg font-semibold text-white mb-4">Track Details</h2>
 
 						<div class="space-y-4">
@@ -351,9 +352,9 @@ function TrackEditPage() {
 										type="checkbox"
 										checked={isPublic()}
 										onChange={(e) => setIsPublic(e.currentTarget.checked)}
-										class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
+										class="w-4 h-4 rounded border-stone-600 bg-stone-800 text-violet-500"
 									/>
-									<span class="text-gray-300">Public</span>
+									<span class="text-white/80">Public</span>
 								</label>
 
 								<label class="flex items-center gap-3 cursor-pointer">
@@ -361,9 +362,9 @@ function TrackEditPage() {
 										type="checkbox"
 										checked={allowDownload()}
 										onChange={(e) => setAllowDownload(e.currentTarget.checked)}
-										class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
+										class="w-4 h-4 rounded border-stone-600 bg-stone-800 text-violet-500"
 									/>
-									<span class="text-gray-300">Allow Downloads</span>
+									<span class="text-white/80">Allow Downloads</span>
 								</label>
 
 								<label class="flex items-center gap-3 cursor-pointer">
@@ -371,16 +372,16 @@ function TrackEditPage() {
 										type="checkbox"
 										checked={socialPromptEnabled()}
 										onChange={(e) => setSocialPromptEnabled(e.currentTarget.checked)}
-										class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
+										class="w-4 h-4 rounded border-stone-600 bg-stone-800 text-violet-500"
 									/>
-									<span class="text-gray-300">Prompt for Social Follow</span>
+									<span class="text-white/80">Prompt for Social Follow</span>
 								</label>
 							</div>
 
 							{/* social links */}
 							<Show when={socialPromptEnabled()}>
-								<div class="pt-4 border-t border-slate-700 space-y-3">
-									<Label class="text-gray-400 text-sm">Social Links</Label>
+								<div class="pt-4 border-t border-stone-800 space-y-3">
+									<Label class="text-sm opacity-70">Social Links</Label>
 									<TextField value={instagram()} onChange={setInstagram}>
 										<TextFieldInput type="text" placeholder="Instagram username" />
 									</TextField>
@@ -404,7 +405,7 @@ function TrackEditPage() {
 					</div>
 
 					{/* versions section */}
-					<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+					<div class="bg-stone-900/50 rounded-xl p-6">
 						<div class="flex items-center justify-between mb-4">
 							<h2 class="text-lg font-semibold text-white">Versions</h2>
 							<Button
@@ -419,7 +420,7 @@ function TrackEditPage() {
 
 						{/* upload new version */}
 						<Show when={showUpload()}>
-							<div class="mb-4 p-4 bg-slate-900/50 border border-slate-700 rounded-lg">
+							<div class="mb-4 p-4 bg-stone-800/50 rounded-lg">
 								<div class="flex items-center justify-between mb-3">
 									<span class="text-white font-medium">Upload New Version</span>
 									<Button
@@ -437,9 +438,9 @@ function TrackEditPage() {
 								<Show
 									when={uploadFile()}
 									fallback={
-										<div class="relative border-2 border-dashed border-slate-600 rounded-lg p-6 text-center">
-											<Upload class="w-8 h-8 text-gray-400 mx-auto mb-2" />
-											<p class="text-gray-400 text-sm">
+										<div class="relative border-2 border-dashed border-stone-700 rounded-lg p-6 text-center">
+											<Upload class="w-8 h-8 mx-auto mb-2 opacity-70" />
+											<p class="text-sm opacity-70">
 												Drop audio file or click to browse
 											</p>
 											<input
@@ -454,10 +455,10 @@ function TrackEditPage() {
 									{(file) => (
 										<div class="flex items-center justify-between">
 											<div class="flex items-center gap-3">
-												<Music class="w-5 h-5 text-violet-400" />
+												<Music class="w-5 h-5 text-violet-400/80" />
 												<div>
 													<p class="text-white text-sm">{file().name}</p>
-													<p class="text-gray-400 text-xs">
+													<p class="text-xs opacity-50">
 														{(file().size / (1024 * 1024)).toFixed(2)} MB
 													</p>
 												</div>
@@ -489,10 +490,10 @@ function TrackEditPage() {
 							<For each={data().versions}>
 								{(version) => (
 									<div
-										class={`p-4 rounded-lg border transition-colors ${
+										class={`p-4 rounded-lg transition-colors ${
 											data().track.activeVersion === version.id
-												? "bg-violet-500/10 border-violet-500/50"
-												: "bg-slate-900/50 border-slate-700"
+												? "bg-violet-500/10 ring-1 ring-violet-500/50"
+												: "bg-stone-800/50"
 										}`}
 									>
 										<Show
@@ -506,8 +507,8 @@ function TrackEditPage() {
 															<Show
 																when={getAlbumArtUrl(version)}
 																fallback={
-																	<div class="w-12 h-12 bg-slate-700 rounded flex items-center justify-center">
-																		<Music class="w-6 h-6 text-gray-500" />
+																	<div class="w-12 h-12 bg-stone-700 rounded flex items-center justify-center">
+																		<Music class="w-6 h-6 opacity-50" />
 																	</div>
 																}
 															>
@@ -545,9 +546,9 @@ function TrackEditPage() {
 																		{version.processingStatus}
 																	</span>
 																</div>
-																<p class="text-gray-400 text-xs">
-																	{new Date(version.createdAt).toLocaleDateString()}
-																</p>
+<p class="text-xs opacity-50">
+																{new Date(version.createdAt).toLocaleDateString()}
+															</p>
 															</div>
 														</div>
 
@@ -590,39 +591,39 @@ function TrackEditPage() {
 													{/* version metadata */}
 													<div class="grid grid-cols-2 gap-2 text-xs">
 														<div>
-															<span class="text-gray-500">Duration:</span>{" "}
-															<span class="text-gray-300">
+															<span class="opacity-50">Duration:</span>{" "}
+															<span class="opacity-70">
 																{formatDuration(version.duration)}
 															</span>
 														</div>
 														<div>
-															<span class="text-gray-500">Bitrate:</span>{" "}
-															<span class="text-gray-300">
+															<span class="opacity-50">Bitrate:</span>{" "}
+															<span class="opacity-70">
 																{formatBitrate(version.bitrate)}
 															</span>
 														</div>
 														<Show when={version.artist}>
 															<div>
-																<span class="text-gray-500">Artist:</span>{" "}
-																<span class="text-gray-300">{version.artist}</span>
+																<span class="opacity-50">Artist:</span>{" "}
+																<span class="opacity-70">{version.artist}</span>
 															</div>
 														</Show>
 														<Show when={version.album}>
 															<div>
-																<span class="text-gray-500">Album:</span>{" "}
-																<span class="text-gray-300">{version.album}</span>
+																<span class="opacity-50">Album:</span>{" "}
+																<span class="opacity-70">{version.album}</span>
 															</div>
 														</Show>
 														<Show when={version.genre}>
 															<div>
-																<span class="text-gray-500">Genre:</span>{" "}
-																<span class="text-gray-300">{version.genre}</span>
+																<span class="opacity-50">Genre:</span>{" "}
+																<span class="opacity-70">{version.genre}</span>
 															</div>
 														</Show>
 														<Show when={version.year}>
 															<div>
-																<span class="text-gray-500">Year:</span>{" "}
-																<span class="text-gray-300">{version.year}</span>
+																<span class="opacity-50">Year:</span>{" "}
+																<span class="opacity-70">{version.year}</span>
 															</div>
 														</Show>
 													</div>
@@ -730,7 +731,7 @@ function TrackEditPage() {
 							</For>
 
 							<Show when={data().versions.length === 0}>
-								<div class="text-center py-8 text-gray-400">
+								<div class="text-center py-8 opacity-70">
 									<Music class="w-12 h-12 mx-auto mb-2 opacity-50" />
 									<p>No versions yet</p>
 								</div>
@@ -742,7 +743,7 @@ function TrackEditPage() {
 				{/* danger zone */}
 				<div class="mt-8 bg-red-950/20 border border-red-900/50 rounded-xl p-6">
 					<h2 class="text-lg font-semibold text-red-400 mb-4">Danger Zone</h2>
-					<p class="text-gray-400 text-sm mb-4">
+					<p class="text-sm mb-4 opacity-70">
 						Deleting this track will remove all versions, plays, and comments.
 						This cannot be undone.
 					</p>

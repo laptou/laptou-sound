@@ -176,7 +176,7 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 				gradient.addColorStop(1, "#6366f1");
 				ctx.fillStyle = gradient;
 			} else {
-				ctx.fillStyle = "#475569";
+				ctx.fillStyle = "#57534e"; // stone-600
 			}
 
 			ctx.beginPath();
@@ -257,7 +257,7 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 	};
 
 	return (
-		<div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 hover:border-violet-500/30 transition-all duration-300">
+		<div class="bg-stone-900/50 backdrop-blur-sm rounded-xl p-4 transition-all duration-300">
 			<Show when={props.streamUrl !== null}>
 				<audio
 					ref={audioRef}
@@ -272,7 +272,7 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 					type="button"
 					onClick={togglePlay}
 					disabled={!props.streamUrl}
-					class="w-12 h-12 flex items-center justify-center bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 rounded-full text-white transition-all duration-200 shadow-lg shadow-violet-500/25 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+					class="w-12 h-12 flex items-center justify-center bg-linear-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 rounded-full text-white transition-all duration-200 shadow-lg shadow-violet-500/25 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
 				>
 					<Show when={isPlaying()} fallback={<Play class="w-5 h-5 ml-0.5" />}>
 						<Pause class="w-5 h-5" />
@@ -283,7 +283,7 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 				<div class="flex-1 min-w-0" ref={containerRef}>
 					<div class="flex items-baseline gap-2 mb-2">
 						<span class="text-white font-medium truncate">{props.title}</span>
-						<span class="text-gray-400 text-sm truncate">{props.artist}</span>
+						<span class="text-sm truncate opacity-70">{props.artist}</span>
 					</div>
 
 					{/* waveform canvas */}
@@ -294,15 +294,15 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 								<Show
 									when={props.streamUrl === null}
 									fallback={
-										<div class="h-20 bg-slate-700/50 rounded animate-pulse flex items-center justify-center">
-											<span class="text-gray-500 text-xs">
+										<div class="h-20 bg-stone-800/50 rounded animate-pulse flex items-center justify-center">
+											<span class="text-xs opacity-50">
 												Computing waveform...
 											</span>
 										</div>
 									}
 								>
-									<div class="h-20 bg-slate-800/50 rounded flex items-center justify-center">
-										<p class="text-gray-500 text-xs">No audio available</p>
+									<div class="h-20 bg-stone-800/30 rounded flex items-center justify-center">
+										<p class="text-xs opacity-50">No audio available</p>
 									</div>
 								</Show>
 							}
@@ -312,7 +312,7 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 					</div>
 
 					{/* time display */}
-					<div class="flex justify-between text-xs text-gray-400 mt-1">
+					<div class="flex justify-between text-xs opacity-50 mt-1">
 						<span>{formatTime(currentTime())}</span>
 						<span>{formatTime(duration())}</span>
 					</div>
@@ -322,7 +322,7 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 				<button
 					type="button"
 					onClick={toggleMute}
-					class="p-2 text-gray-400 hover:text-white transition-colors"
+					class="p-2 opacity-70 hover:opacity-100 transition-opacity"
 				>
 					<Show when={isMuted()} fallback={<Volume2 class="w-5 h-5" />}>
 						<VolumeX class="w-5 h-5" />

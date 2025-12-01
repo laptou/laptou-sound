@@ -3,6 +3,23 @@ description: For UI design considerations
 alwaysApply: false
 ---
 
-- Use gentle corner radii and a minimal aesthetic (avoid excessive borders and such)
-- Use drop shadows and backdrop blur liberally
-- For muted text, use opacity instead of setting specific colors to make theming easier
+## color palette
+- use the **stone** palette for backgrounds (warm grays) instead of slate
+- layer translucent backgrounds with opacity, e.g. `bg-stone-900/50`, `hover:bg-stone-900/80`
+- use vibrant violet/indigo/purple gradients for accent overlays
+- radial gradient overlays with masks add depth: `bg-linear-to-br from-violet-500 via-indigo-500 to-purple-500 mask-radial-at-top mask-circle`
+
+## text hierarchy
+- use **opacity** for muted text instead of specific gray colors (easier theming)
+- primary text: full opacity
+- secondary/bylines: `opacity-70`
+- tertiary/timestamps: `opacity-50`
+
+## borders & corners
+- avoid explicit borders where possible; use background contrast instead
+- for list items (track cards), use **flat edges** (no rounded corners) for a clean edge-to-edge look
+- for standalone panels, modals, and inputs, use gentle corner radii (`rounded-lg`, `rounded-xl`)
+
+## depth & effects
+- use `backdrop-blur-sm` on translucent overlays
+- use drop shadows sparingly for elevated interactive elements
