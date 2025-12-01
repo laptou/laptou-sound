@@ -19,9 +19,9 @@ function RouteComponent() {
 	const sessionState = useSession();
 
 	return (
-		<div class="min-h-screen bg-linear-to-b from-stone-900 via-stone-950 to-stone-900 pb-24 py-12 px-6">
+		<div class="min-h-screen bg-linear-to-b from-stone-900 via-stone-950 to-stone-900 pb-24 py-12 px-6 relative">
 			<div class="absolute inset-0 bg-linear-to-br from-violet-500 via-indigo-500 to-purple-500 mask-radial-at-top mask-circle mask-radial-from-0% mask-contain opacity-30 z-0" />
-			<div class="max-w-7xl mx-auto z-10">
+			<div class="max-w-7xl mx-auto z-10 relative">
 				{/* header */}
 				<div class="grid grid-cols-3 items-center gap-4 mb-8">
 					<Link to="/">
