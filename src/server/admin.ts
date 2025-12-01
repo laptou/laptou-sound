@@ -192,3 +192,60 @@ export const adminDeleteTrack = createServerFn({ method: "POST" })
 
 		return { success: true };
 	});
+
+// delete a user (admin only)
+export const deleteUser = createServerFn({ method: "POST" })
+	.inputValidator((data: { userId: string }) => data)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		if (!hasRole(session.user.role as string, "admin")) {
+			throw new Error("Admin access required");
+		}
+
+		// prevent self-deletion
+		if (data.userId === session.user.id) {
+			throw new Error("Cannot delete your own account");
+		}
+
+		const db = getDb();
+
+		// verify user exists
+		const users = await db
+			.select()
+			.from(user)
+			.where(eq(user.id, data.userId))
+			.limit(1);
+
+		if (users.length === 0) {
+			throw new Error("User not found");
+		}
+
+		// get user's tracks before deletion (for file cleanup)
+		const userTracks = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.ownerId, data.userId));
+
+		// delete track files from r2
+		const { deleteTrackFiles } = await import("./files");
+		for (const track of userTracks) {
+			try {
+				await deleteTrackFiles(track.id);
+			} catch (error) {
+				// log but continue - don't fail user deletion if file deletion fails
+				console.error(`Failed to delete files for track ${track.id}:`, error);
+			}
+		}
+
+		// delete user (cascade will handle tracks, comments, etc.)
+		await db.delete(user).where(eq(user.id, data.userId));
+
+		return { success: true };
+	});

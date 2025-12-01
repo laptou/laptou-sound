@@ -16,6 +16,7 @@ import { wrapLoader } from "@/lib/loader-wrapper";
 import {
 	createInviteCode,
 	deleteInviteCode,
+	deleteUser,
 	getInviteCodes,
 	getUsers,
 	updateUserRole,
@@ -115,6 +116,23 @@ function AdminDashboard() {
 			window.location.reload();
 		} catch (_error) {
 			alert("Failed to delete track");
+		}
+	};
+
+	const handleDeleteUser = async (user: User) => {
+		if (
+			!confirm(
+				`Delete user "${user.email}"? This will also delete all their tracks and cannot be undone.`,
+			)
+		)
+			return;
+		try {
+			await deleteUser({ data: { userId: user.id } });
+			window.location.reload();
+		} catch (error) {
+			alert(
+				error instanceof Error ? error.message : "Failed to delete user",
+			);
 		}
 	};
 
@@ -269,35 +287,45 @@ function AdminDashboard() {
 						<For each={data().users}>
 							{(user) => (
 								<div class="flex items-center justify-between bg-slate-700/50 rounded-lg p-4">
-									<div>
+									<div class="flex-1">
 										<p class="text-white font-medium">{user.email}</p>
 										<p class="text-gray-400 text-sm">
 											Joined {new Date(user.createdAt).toLocaleDateString()}
 										</p>
 									</div>
-									<select
-										value={user.role || "commenter"}
-										onChange={(e) =>
-											handleUpdateRole(
-												user,
-												e.currentTarget.value as
-													| "commenter"
-													| "uploader"
-													| "admin",
-											)
-										}
-										class={`px-3 py-2 rounded-lg text-sm font-medium ${
-											user.role === "admin"
-												? "bg-red-500/20 text-red-300 border border-red-500/50"
-												: user.role === "uploader"
-													? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
-													: "bg-gray-500/20 text-gray-300 border border-gray-500/50"
-										}`}
-									>
-										<option value="commenter">Commenter</option>
-										<option value="uploader">Uploader</option>
-										<option value="admin">Admin</option>
-									</select>
+									<div class="flex items-center gap-3">
+										<select
+											value={user.role || "commenter"}
+											onChange={(e) =>
+												handleUpdateRole(
+													user,
+													e.currentTarget.value as
+														| "commenter"
+														| "uploader"
+														| "admin",
+												)
+											}
+											class={`px-3 py-2 rounded-lg text-sm font-medium ${
+												user.role === "admin"
+													? "bg-red-500/20 text-red-300 border border-red-500/50"
+													: user.role === "uploader"
+														? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
+														: "bg-gray-500/20 text-gray-300 border border-gray-500/50"
+											}`}
+										>
+											<option value="commenter">Commenter</option>
+											<option value="uploader">Uploader</option>
+											<option value="admin">Admin</option>
+										</select>
+										<button
+											type="button"
+											onClick={() => handleDeleteUser(user)}
+											class="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+											title="Delete user"
+										>
+											<Trash2 class="w-4 h-4" />
+										</button>
+									</div>
 								</div>
 							)}
 						</For>

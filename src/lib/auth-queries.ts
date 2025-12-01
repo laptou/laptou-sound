@@ -9,6 +9,7 @@ import {
 	signUpEmail,
 	updateUser,
 } from "./auth-client";
+import { redeemInviteCode } from "@/server/auth";
 
 // email/password login mutation
 export const emailPasswordLoginMutationOptions = () => ({
@@ -33,7 +34,8 @@ export const signupMutationOptions = () =>
 		mutationFn: async (variables: {
 			email: string;
 			password: string;
-			name: string;
+			name: string;	
+			inviteCode?: string;
 		}, context: MutationFunctionContext) =>
 			await signUpEmail(context.client, {
 				email: variables.email,
@@ -68,4 +70,10 @@ export const changePasswordMutationOptions = () => ({
 		currentPassword: string;
 		newPassword: string;
 	}, context: MutationFunctionContext) => await changePassword(context.client, variables),
+});
+
+// redeem invite code mutation
+export const redeemInviteCodeMutationOptions = () => ({
+	mutationFn: async (variables: { code: string }, _context: MutationFunctionContext) =>
+		await redeemInviteCode({ data: variables }),
 });

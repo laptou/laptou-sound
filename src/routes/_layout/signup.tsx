@@ -7,6 +7,7 @@ import { Button } from "@ui/button";
 import { toast } from "solid-sonner";
 import { FormField } from "@/components/FormField";
 import { signupMutationOptions } from "@/lib/auth-queries";
+import { redeemInviteCode } from "@/server/auth";
 
 export const Route = createFileRoute("/_layout/signup")({
 	component: SignupPage,
@@ -45,6 +46,20 @@ function SignupPage() {
 					name: value.name,
 				});
 				toast.success("Account created successfully");
+
+				if (value.inviteCode) {
+					try {
+						await redeemInviteCode({ data: { code: value.inviteCode } });
+						toast.success("Invite code redeemed successfully");
+					} catch (err) {
+						toast.error(
+							err instanceof Error
+								? err.message
+								: "Failed to redeem invite code",
+						);
+					}
+				}
+
 				navigate({ to: "/" });
 			} catch (err) {
 				toast.error(
