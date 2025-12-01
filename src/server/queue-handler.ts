@@ -4,10 +4,10 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as mm from "music-metadata";
+import { DrizzleLogger } from "@/db/logger";
 import * as schema from "@/db/schema";
 import { logDebug, logError } from "@/lib/logger";
 import { getAlbumArtKey, getStreamKey } from "./files";
-import { DrizzleLogger } from "@/db/logger";
 
 export interface AudioProcessingJob {
 	type: "process_audio";

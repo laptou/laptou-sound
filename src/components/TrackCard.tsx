@@ -1,11 +1,11 @@
 import "./TrackCard.css";
 
 import { useQuery } from "@tanstack/solid-query";
+import { Link } from "@tanstack/solid-router";
 import Music from "lucide-solid/icons/music";
 import { type Component, Show } from "solid-js";
-import { getUserInfo } from "@/server/users";
 import { formatSmartDate } from "@/lib/utils";
-import { Link } from "@tanstack/solid-router";
+import { getUserInfo } from "@/server/users";
 
 // minimal track shape required by the card
 interface TrackLike {
@@ -59,7 +59,11 @@ export const TrackCard: Component<TrackCardProps> = (props) => {
 					}
 				>
 					{(url) => (
-						<img src={url()} alt="" class="w-full h-full object-cover tc-vt-track-album-art" />
+						<img
+							src={url()}
+							alt=""
+							class="w-full h-full object-cover tc-vt-track-album-art"
+						/>
 					)}
 				</Show>
 			</div>

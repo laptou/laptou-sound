@@ -7,7 +7,6 @@ import {
 	setActiveVersion,
 	updateTrack,
 	updateVersionMetadata,
-	uploadTrackVersion,
 } from "@/server/tracks";
 
 // update track metadata mutation
@@ -31,19 +30,15 @@ export const updateTrackMutationOptions = () =>
 // set active version mutation
 export const setActiveVersionMutationOptions = () =>
 	({
-		mutationFn: async (variables: {
-			trackId: string;
-			versionId: string;
-		}) => await setActiveVersion({ data: variables }),
+		mutationFn: async (variables: { trackId: string; versionId: string }) =>
+			await setActiveVersion({ data: variables }),
 	}) satisfies MutationOptions;
 
 // delete track version mutation
 export const deleteTrackVersionMutationOptions = () =>
 	({
-		mutationFn: async (variables: {
-			trackId: string;
-			versionId: string;
-		}) => await deleteTrackVersion({ data: variables }),
+		mutationFn: async (variables: { trackId: string; versionId: string }) =>
+			await deleteTrackVersion({ data: variables }),
 	}) satisfies MutationOptions;
 
 // update version metadata mutation
@@ -62,10 +57,7 @@ export const updateVersionMetadataMutationOptions = () =>
 // upload track version mutation (uses api route for formdata)
 export const uploadTrackVersionMutationOptions = () =>
 	({
-		mutationFn: async (variables: {
-			trackId: string;
-			file: File;
-		}) => {
+		mutationFn: async (variables: { trackId: string; file: File }) => {
 			const formData = new FormData();
 			formData.append("file", variables.file);
 			formData.append("trackId", variables.trackId);
@@ -92,4 +84,3 @@ export const deleteTrackMutationOptions = () =>
 		mutationFn: async (variables: { trackId: string }) =>
 			await deleteTrack({ data: variables }),
 	}) satisfies MutationOptions;
-

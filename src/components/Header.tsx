@@ -101,32 +101,32 @@ export default function Header() {
 
 					<ThemeToggle />
 
-				<Show
-					when={user()}
-					fallback={
+					<Show
+						when={user()}
+						fallback={
+							<Link
+								to="/login"
+								class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-violet-500/25"
+							>
+								<User class="w-4 h-4" />
+								<span>Sign In</span>
+							</Link>
+						}
+					>
 						<Link
-							to="/login"
-							class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-violet-500/25"
+							to="/account"
+							class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
+							activeProps={{
+								class:
+									"flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-violet-500/20 rounded-lg",
+							}}
 						>
 							<User class="w-4 h-4" />
-							<span>Sign In</span>
+							<span class="hidden sm:inline truncate max-w-[100px]">
+								{user()?.email}
+							</span>
 						</Link>
-					}
-				>
-					<Link
-						to="/account"
-						class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
-						activeProps={{
-							class:
-								"flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-violet-500/20 rounded-lg",
-						}}
-					>
-						<User class="w-4 h-4" />
-						<span class="hidden sm:inline truncate max-w-[100px]">
-							{user()?.email}
-						</span>
-					</Link>
-				</Show>
+					</Show>
 				</nav>
 			</div>
 		</header>

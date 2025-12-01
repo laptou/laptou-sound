@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_layout/_authed/admin")({
 			getInviteCodes(),
 			getUsers(),
 			getPublicTracks(),
-		])
+		]);
 		return { inviteCodes, users, tracks };
 	}),
 	component: AdminDashboard,
@@ -57,7 +57,7 @@ function AdminDashboard() {
 		if (activeTab() === "errors") {
 			loadErrors();
 		}
-	})
+	});
 
 	const loadErrors = async () => {
 		setLoadingErrors(true);
@@ -72,7 +72,7 @@ function AdminDashboard() {
 		} finally {
 			setLoadingErrors(false);
 		}
-	}
+	};
 
 	const handleCreateCode = async () => {
 		setIsCreating(true);
@@ -84,7 +84,7 @@ function AdminDashboard() {
 		} finally {
 			setIsCreating(false);
 		}
-	}
+	};
 
 	const handleDeleteCode = async (code: InviteCode) => {
 		if (!confirm("Delete this invite code?")) return;
@@ -94,7 +94,7 @@ function AdminDashboard() {
 		} catch (_error) {
 			alert("Failed to delete invite code");
 		}
-	}
+	};
 
 	const handleUpdateRole = async (
 		user: User,
@@ -106,7 +106,7 @@ function AdminDashboard() {
 		} catch (_error) {
 			alert("Failed to update role");
 		}
-	}
+	};
 
 	const handleDeleteTrack = async (track: Track) => {
 		if (!confirm(`Delete "${track.title}"?`)) return;
@@ -116,7 +116,7 @@ function AdminDashboard() {
 		} catch (_error) {
 			alert("Failed to delete track");
 		}
-	}
+	};
 
 	return (
 		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
@@ -439,5 +439,5 @@ function AdminDashboard() {
 				</Show>
 			</div>
 		</div>
-	)
+	);
 }

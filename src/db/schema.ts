@@ -1,7 +1,13 @@
 // database schema for laptou sound
 // uses drizzle orm with cloudflare d1 (sqlite)
 
-import { index, integer, sqliteTable, text, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import {
+	type AnySQLiteColumn,
+	index,
+	integer,
+	sqliteTable,
+	text,
+} from "drizzle-orm/sqlite-core";
 import { session, user } from "./auth-schema.gen";
 
 export { user, session };
@@ -26,9 +32,12 @@ export const tracks = sqliteTable(
 		// json string: { instagram?: string, soundcloud?: string, tiktok?: string }
 		socialLinks: text("social_links"),
 		// id of the currently active version (null if no version is processed yet)
-		activeVersion: text("active_version").references((): AnySQLiteColumn => trackVersions.id, {
-			onDelete: "set null",
-		}),
+		activeVersion: text("active_version").references(
+			(): AnySQLiteColumn => trackVersions.id,
+			{
+				onDelete: "set null",
+			},
+		),
 		createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 	},

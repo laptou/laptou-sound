@@ -134,10 +134,7 @@ export function formatRelativeTime(
 }
 
 // smart formatter: relative for recent, absolute for older
-export function formatSmartDate(
-	date: DateInput,
-	thresholdDays = 7,
-): string {
+export function formatSmartDate(date: DateInput, thresholdDays = 7): string {
 	const d = toDate(date);
 	const now = Date.now();
 	const diffMs = Math.abs(d.getTime() - now);

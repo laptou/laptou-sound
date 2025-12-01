@@ -1,6 +1,6 @@
 // shared layout component for login page
 
-import { type JSX } from "solid-js";
+import type { JSX } from "solid-js";
 
 type LoginLayoutProps = {
 	children: JSX.Element;

@@ -37,9 +37,13 @@ function AccountPage() {
 	const session = useSession();
 
 	// mutations
-	const updateProfileMutation = useMutation(() => updateProfileMutationOptions());
+	const updateProfileMutation = useMutation(() =>
+		updateProfileMutationOptions(),
+	);
 	const changeEmailMutation = useMutation(() => changeEmailMutationOptions());
-	const changePasswordMutation = useMutation(() => changePasswordMutationOptions());
+	const changePasswordMutation = useMutation(() =>
+		changePasswordMutationOptions(),
+	);
 
 	// profile form
 	const profileForm = createForm(() => ({
@@ -175,7 +179,8 @@ function AccountPage() {
 												when={field().state.value}
 												fallback={
 													<span class="text-3xl font-bold text-white">
-														{currentUser()?.name?.charAt(0).toUpperCase() ?? "?"}
+														{currentUser()?.name?.charAt(0).toUpperCase() ??
+															"?"}
 													</span>
 												}
 											>
@@ -464,7 +469,8 @@ function AccountPage() {
 							validators={{
 								onChangeListenTo: ["newPassword"],
 								onChange: ({ value, fieldApi }) => {
-									const newPassword = fieldApi.form.getFieldValue("newPassword");
+									const newPassword =
+										fieldApi.form.getFieldValue("newPassword");
 									if (!value) return "Please confirm your password";
 									if (value !== newPassword) return "Passwords don't match";
 									return undefined;

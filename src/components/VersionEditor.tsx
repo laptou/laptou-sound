@@ -21,7 +21,9 @@ type VersionEditorProps = {
 
 export function VersionEditor(props: VersionEditorProps) {
 	const router = useRouter();
-	const updateMutation = useMutation(() => updateVersionMetadataMutationOptions());
+	const updateMutation = useMutation(() =>
+		updateVersionMetadataMutationOptions(),
+	);
 
 	const form = createForm(() => ({
 		defaultValues: {

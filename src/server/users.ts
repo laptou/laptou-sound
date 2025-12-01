@@ -49,4 +49,3 @@ export const getUserInfoBatch = createServerFn({ method: "GET" })
 		// return as a map for easy lookup
 		return Object.fromEntries(result.map((u) => [u.id, u]));
 	});
-

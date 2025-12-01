@@ -23,7 +23,7 @@ function MyTracksPage() {
 
 	const handleDelete = async (track: Track) => {
 		if (!confirm(`Are you sure you want to delete "${track.title}"?`)) {
-			return
+			return;
 		}
 
 		setDeletingId(track.id);
@@ -37,7 +37,7 @@ function MyTracksPage() {
 		} finally {
 			setDeletingId(null);
 		}
-	}
+	};
 
 	return (
 		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
@@ -134,5 +134,5 @@ function MyTracksPage() {
 				</Show>
 			</div>
 		</div>
-	)
+	);
 }

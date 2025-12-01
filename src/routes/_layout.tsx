@@ -1,15 +1,15 @@
-import { Button } from "@/components/ui/button";
 import {
 	ClientOnly,
 	createFileRoute,
 	Link,
 	Outlet,
 } from "@tanstack/solid-router";
-import { useSession } from "@/lib/auth-client";
+import Upload from "lucide-solid/icons/upload";
+import User from "lucide-solid/icons/user";
 import { Show } from "solid-js";
 import { Toaster } from "solid-sonner";
-import User from "lucide-solid/icons/user";
-import Upload from "lucide-solid/icons/upload";
+import { Button } from "@/components/ui/button";
+import { useSession } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_layout")({
 	component: RouteComponent,

@@ -2,7 +2,11 @@
 
 import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/solid-router";
+import {
+	createFileRoute,
+	useNavigate,
+	useRouter,
+} from "@tanstack/solid-router";
 import { Button } from "@ui/button";
 import { Label } from "@ui/label";
 import {
@@ -344,9 +348,7 @@ function TrackEditPage() {
 					>
 						<div class="space-y-3">
 							<trackForm.Field name="isPublic">
-								{(field) => (
-									<FormCheckboxSimple field={field} label="Public" />
-								)}
+								{(field) => <FormCheckboxSimple field={field} label="Public" />}
 							</trackForm.Field>
 
 							<trackForm.Field name="allowDownload">

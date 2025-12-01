@@ -4,7 +4,6 @@ import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { Button } from "@ui/button";
-import { Show } from "solid-js";
 import { toast } from "solid-sonner";
 import { FormField } from "@/components/FormField";
 import { signupMutationOptions } from "@/lib/auth-queries";

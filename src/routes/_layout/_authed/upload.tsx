@@ -6,11 +6,7 @@ import { Button } from "@ui/button";
 import { createSignal, Show } from "solid-js";
 import { toast } from "solid-sonner";
 import { FileUploadZone } from "@/components/FileUploadZone";
-import {
-	FormCheckbox,
-	FormField,
-	FormTextArea,
-} from "@/components/FormField";
+import { FormCheckbox, FormField, FormTextArea } from "@/components/FormField";
 import { AccessDeniedError } from "@/lib/errors";
 import { hasRole } from "@/server/auth";
 import { createTrack } from "@/server/tracks";

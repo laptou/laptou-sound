@@ -1,18 +1,17 @@
 // track detail page with waveform player, versioning, and download
 
-import { createFileRoute, Link } from "@tanstack/solid-router";
 import { useQuery } from "@tanstack/solid-query";
+import { createFileRoute, Link } from "@tanstack/solid-router";
 import Download from "lucide-solid/icons/download";
 import Music from "lucide-solid/icons/music";
 import Pencil from "lucide-solid/icons/pencil";
 import { createMemo, createSignal, For, Show } from "solid-js";
-import SocialPromptModal from "@/components/SocialPromptModal";
 import { WaveformPlayer } from "@/components/WaveformPlayer";
 import type { TrackVersion } from "@/db/schema";
 import { wrapLoader } from "@/lib/loader-wrapper";
+import { formatSmartDate } from "@/lib/utils";
 import { getPlayCount, recordPlay } from "@/server/plays";
 import { getTrack, getTrackVersions } from "@/server/tracks";
-import { formatSmartDate } from "@/lib/utils";
 import { getUserInfo } from "@/server/users";
 
 export const Route = createFileRoute("/_layout/track/$trackId/")({
@@ -81,7 +80,7 @@ function TrackDetailPage() {
 				v.processingStatus === "pending" || v.processingStatus === "processing",
 		),
 	);
-	const [showSocialPrompt, setShowSocialPrompt] = createSignal(false);
+	const [_showSocialPrompt, setShowSocialPrompt] = createSignal(false);
 
 	const socialLinks = createMemo(() => {
 		const links = data().track.socialLinks;

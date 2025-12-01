@@ -67,7 +67,9 @@ export const getPublicTracks = createServerFn({ method: "GET" }).handler(
 			ownerId: t.ownerId,
 			ownerName: t.ownerName,
 			ownerImage: t.ownerImage,
-			albumArtKey: t.activeVersion ? (albumArtMap[t.activeVersion] ?? null) : null,
+			albumArtKey: t.activeVersion
+				? (albumArtMap[t.activeVersion] ?? null)
+				: null,
 			createdAt: t.createdAt,
 		}));
 	},
@@ -97,7 +99,7 @@ export const getTrackVersions = createServerFn({ method: "GET" })
 		const session = await auth.api.getSession({ headers: request.headers });
 
 		const db = getDb();
-		
+
 		// get track to check ownership and active version
 		const track = await db
 			.select()
@@ -133,9 +135,7 @@ export const getTrackVersions = createServerFn({ method: "GET" })
 			const result = await db
 				.select()
 				.from(trackVersions)
-				.where(
-					eq(trackVersions.id, track[0].activeVersion),
-				)
+				.where(eq(trackVersions.id, track[0].activeVersion))
 				.limit(1);
 			return result;
 		}

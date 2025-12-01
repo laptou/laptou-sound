@@ -23,7 +23,11 @@ export function getStreamKey(trackId: string, versionId: string) {
 	return `${getTrackVersionPrefix(trackId, versionId)}stream.mp3`;
 }
 
-export function getAlbumArtKey(trackId: string, versionId: string, ext: string) {
+export function getAlbumArtKey(
+	trackId: string,
+	versionId: string,
+	ext: string,
+) {
 	return `${getTrackVersionPrefix(trackId, versionId)}albumart.${ext}`;
 }
 

@@ -1,6 +1,5 @@
 // generic form field components for tanstack form
 
-import type { JSX } from "solid-js";
 import { Label } from "@ui/label";
 import {
 	TextField,
@@ -9,6 +8,7 @@ import {
 	TextFieldLabel,
 	TextFieldTextArea,
 } from "@ui/text-field";
+import type { JSX } from "solid-js";
 
 // common field accessor type - uses any to avoid complex tanstack form generics
 // biome-ignore lint/suspicious/noExplicitAny: tanstack form types are complex
@@ -126,7 +126,9 @@ type FormCheckboxProps = {
 
 export function FormCheckbox(props: FormCheckboxProps) {
 	return (
-		<label class={`flex items-center gap-3 cursor-pointer ${props.class ?? ""}`}>
+		<label
+			class={`flex items-center gap-3 cursor-pointer ${props.class ?? ""}`}
+		>
 			<input
 				type="checkbox"
 				checked={props.field().state.value}
@@ -152,7 +154,9 @@ type FormCheckboxSimpleProps = {
 
 export function FormCheckboxSimple(props: FormCheckboxSimpleProps) {
 	return (
-		<label class={`flex items-center gap-3 cursor-pointer ${props.class ?? ""}`}>
+		<label
+			class={`flex items-center gap-3 cursor-pointer ${props.class ?? ""}`}
+		>
 			<input
 				type="checkbox"
 				checked={props.field().state.value}

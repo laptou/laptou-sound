@@ -1,9 +1,8 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { devtools as tanstackDevtools } from "@tanstack/devtools-vite";
-
-import solidDevtools from "solid-devtools/vite";
 import { tanstackStart } from "@tanstack/solid-start/plugin/vite";
+import solidDevtools from "solid-devtools/vite";
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
 import viteTsConfigPaths from "vite-tsconfig-paths";

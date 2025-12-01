@@ -2,7 +2,7 @@
 // displays a soundcloud-style waveform with playback controls
 // waveform is computed client-side using web audio api
 
-import { createQuery, useQuery } from "@tanstack/solid-query";
+import { useQuery } from "@tanstack/solid-query";
 import { ClientOnly } from "@tanstack/solid-router";
 import Pause from "lucide-solid/icons/pause";
 import Play from "lucide-solid/icons/play";
