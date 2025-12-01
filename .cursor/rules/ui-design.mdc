@@ -23,3 +23,7 @@ alwaysApply: false
 ## depth & effects
 - use `backdrop-blur-sm` on translucent overlays
 - use drop shadows sparingly for elevated interactive elements
+
+## feedback
+- use the toaster (`ui/sonner`) to provide feedback when an action has completed
+  successfully (ex.: edit, delete, upload)

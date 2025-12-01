@@ -12,18 +12,19 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HealthRouteImport } from './routes/health'
-import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FilesSplatRouteImport } from './routes/files/$'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
-import { Route as AuthedUploadRouteImport } from './routes/_authed/upload'
-import { Route as AuthedMyTracksRouteImport } from './routes/_authed/my-tracks'
-import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
-import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
-import { Route as TrackTrackIdIndexRouteImport } from './routes/track.$trackId/index'
-import { Route as TrackTrackIdEditRouteImport } from './routes/track.$trackId/edit'
+import { Route as LayoutAuthedRouteImport } from './routes/_layout/_authed'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAdminErrorsRouteImport } from './routes/api/admin/errors'
+import { Route as LayoutAuthedUploadRouteImport } from './routes/_layout/_authed/upload'
+import { Route as LayoutAuthedMyTracksRouteImport } from './routes/_layout/_authed/my-tracks'
+import { Route as LayoutAuthedAdminRouteImport } from './routes/_layout/_authed/admin'
+import { Route as LayoutAuthedAccountRouteImport } from './routes/_layout/_authed/account'
+import { Route as LayoutTrackTrackIdIndexRouteImport } from './routes/_layout/track.$trackId/index'
+import { Route as LayoutTrackTrackIdEditRouteImport } from './routes/_layout/track.$trackId/edit'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -40,8 +41,8 @@ const HealthRoute = HealthRouteImport.update({
   path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedRoute = AuthedRouteImport.update({
-  id: '/_authed',
+const LayoutRoute = LayoutRouteImport.update({
+  id: '/_layout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -59,35 +60,9 @@ const ApiUploadRoute = ApiUploadRouteImport.update({
   path: '/api/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedUploadRoute = AuthedUploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedMyTracksRoute = AuthedMyTracksRouteImport.update({
-  id: '/my-tracks',
-  path: '/my-tracks',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedAdminRoute = AuthedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedAccountRoute = AuthedAccountRouteImport.update({
-  id: '/account',
-  path: '/account',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const TrackTrackIdIndexRoute = TrackTrackIdIndexRouteImport.update({
-  id: '/track/$trackId/',
-  path: '/track/$trackId/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TrackTrackIdEditRoute = TrackTrackIdEditRouteImport.update({
-  id: '/track/$trackId/edit',
-  path: '/track/$trackId/edit',
-  getParentRoute: () => rootRouteImport,
+const LayoutAuthedRoute = LayoutAuthedRouteImport.update({
+  id: '/_authed',
+  getParentRoute: () => LayoutRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -99,56 +74,87 @@ const ApiAdminErrorsRoute = ApiAdminErrorsRouteImport.update({
   path: '/api/admin/errors',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LayoutAuthedUploadRoute = LayoutAuthedUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => LayoutAuthedRoute,
+} as any)
+const LayoutAuthedMyTracksRoute = LayoutAuthedMyTracksRouteImport.update({
+  id: '/my-tracks',
+  path: '/my-tracks',
+  getParentRoute: () => LayoutAuthedRoute,
+} as any)
+const LayoutAuthedAdminRoute = LayoutAuthedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => LayoutAuthedRoute,
+} as any)
+const LayoutAuthedAccountRoute = LayoutAuthedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => LayoutAuthedRoute,
+} as any)
+const LayoutTrackTrackIdIndexRoute = LayoutTrackTrackIdIndexRouteImport.update({
+  id: '/track/$trackId/',
+  path: '/track/$trackId/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutTrackTrackIdEditRoute = LayoutTrackTrackIdEditRouteImport.update({
+  id: '/track/$trackId/edit',
+  path: '/track/$trackId/edit',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/account': typeof AuthedAccountRoute
-  '/admin': typeof AuthedAdminRoute
-  '/my-tracks': typeof AuthedMyTracksRoute
-  '/upload': typeof AuthedUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
+  '/account': typeof LayoutAuthedAccountRoute
+  '/admin': typeof LayoutAuthedAdminRoute
+  '/my-tracks': typeof LayoutAuthedMyTracksRoute
+  '/upload': typeof LayoutAuthedUploadRoute
   '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/track/$trackId/edit': typeof TrackTrackIdEditRoute
-  '/track/$trackId': typeof TrackTrackIdIndexRoute
+  '/track/$trackId/edit': typeof LayoutTrackTrackIdEditRoute
+  '/track/$trackId': typeof LayoutTrackTrackIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/account': typeof AuthedAccountRoute
-  '/admin': typeof AuthedAdminRoute
-  '/my-tracks': typeof AuthedMyTracksRoute
-  '/upload': typeof AuthedUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
+  '/account': typeof LayoutAuthedAccountRoute
+  '/admin': typeof LayoutAuthedAdminRoute
+  '/my-tracks': typeof LayoutAuthedMyTracksRoute
+  '/upload': typeof LayoutAuthedUploadRoute
   '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/track/$trackId/edit': typeof TrackTrackIdEditRoute
-  '/track/$trackId': typeof TrackTrackIdIndexRoute
+  '/track/$trackId/edit': typeof LayoutTrackTrackIdEditRoute
+  '/track/$trackId': typeof LayoutTrackTrackIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authed': typeof AuthedRouteWithChildren
+  '/_layout': typeof LayoutRouteWithChildren
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/_authed/account': typeof AuthedAccountRoute
-  '/_authed/admin': typeof AuthedAdminRoute
-  '/_authed/my-tracks': typeof AuthedMyTracksRoute
-  '/_authed/upload': typeof AuthedUploadRoute
+  '/_layout/_authed': typeof LayoutAuthedRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
+  '/_layout/_authed/account': typeof LayoutAuthedAccountRoute
+  '/_layout/_authed/admin': typeof LayoutAuthedAdminRoute
+  '/_layout/_authed/my-tracks': typeof LayoutAuthedMyTracksRoute
+  '/_layout/_authed/upload': typeof LayoutAuthedUploadRoute
   '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/track/$trackId/edit': typeof TrackTrackIdEditRoute
-  '/track/$trackId/': typeof TrackTrackIdIndexRoute
+  '/_layout/track/$trackId/edit': typeof LayoutTrackTrackIdEditRoute
+  '/_layout/track/$trackId/': typeof LayoutTrackTrackIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,12 +163,12 @@ export interface FileRouteTypes {
     | '/health'
     | '/login'
     | '/signup'
+    | '/api/upload'
+    | '/files/$'
     | '/account'
     | '/admin'
     | '/my-tracks'
     | '/upload'
-    | '/api/upload'
-    | '/files/$'
     | '/api/admin/errors'
     | '/api/auth/$'
     | '/track/$trackId/edit'
@@ -173,12 +179,12 @@ export interface FileRouteTypes {
     | '/health'
     | '/login'
     | '/signup'
+    | '/api/upload'
+    | '/files/$'
     | '/account'
     | '/admin'
     | '/my-tracks'
     | '/upload'
-    | '/api/upload'
-    | '/files/$'
     | '/api/admin/errors'
     | '/api/auth/$'
     | '/track/$trackId/edit'
@@ -186,25 +192,26 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/_authed'
+    | '/_layout'
     | '/health'
     | '/login'
     | '/signup'
-    | '/_authed/account'
-    | '/_authed/admin'
-    | '/_authed/my-tracks'
-    | '/_authed/upload'
+    | '/_layout/_authed'
     | '/api/upload'
     | '/files/$'
+    | '/_layout/_authed/account'
+    | '/_layout/_authed/admin'
+    | '/_layout/_authed/my-tracks'
+    | '/_layout/_authed/upload'
     | '/api/admin/errors'
     | '/api/auth/$'
-    | '/track/$trackId/edit'
-    | '/track/$trackId/'
+    | '/_layout/track/$trackId/edit'
+    | '/_layout/track/$trackId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthedRoute: typeof AuthedRouteWithChildren
+  LayoutRoute: typeof LayoutRouteWithChildren
   HealthRoute: typeof HealthRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
@@ -212,8 +219,6 @@ export interface RootRouteChildren {
   FilesSplatRoute: typeof FilesSplatRoute
   ApiAdminErrorsRoute: typeof ApiAdminErrorsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  TrackTrackIdEditRoute: typeof TrackTrackIdEditRoute
-  TrackTrackIdIndexRoute: typeof TrackTrackIdIndexRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -239,11 +244,11 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof HealthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed': {
-      id: '/_authed'
+    '/_layout': {
+      id: '/_layout'
       path: ''
       fullPath: ''
-      preLoaderRoute: typeof AuthedRouteImport
+      preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -267,47 +272,12 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof ApiUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/upload': {
-      id: '/_authed/upload'
-      path: '/upload'
-      fullPath: '/upload'
-      preLoaderRoute: typeof AuthedUploadRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/my-tracks': {
-      id: '/_authed/my-tracks'
-      path: '/my-tracks'
-      fullPath: '/my-tracks'
-      preLoaderRoute: typeof AuthedMyTracksRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/admin': {
-      id: '/_authed/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthedAdminRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/account': {
-      id: '/_authed/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AuthedAccountRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/track/$trackId/': {
-      id: '/track/$trackId/'
-      path: '/track/$trackId'
-      fullPath: '/track/$trackId'
-      preLoaderRoute: typeof TrackTrackIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/track/$trackId/edit': {
-      id: '/track/$trackId/edit'
-      path: '/track/$trackId/edit'
-      fullPath: '/track/$trackId/edit'
-      preLoaderRoute: typeof TrackTrackIdEditRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_layout/_authed': {
+      id: '/_layout/_authed'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof LayoutAuthedRouteImport
+      parentRoute: typeof LayoutRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -323,29 +293,87 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof ApiAdminErrorsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_layout/_authed/upload': {
+      id: '/_layout/_authed/upload'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof LayoutAuthedUploadRouteImport
+      parentRoute: typeof LayoutAuthedRoute
+    }
+    '/_layout/_authed/my-tracks': {
+      id: '/_layout/_authed/my-tracks'
+      path: '/my-tracks'
+      fullPath: '/my-tracks'
+      preLoaderRoute: typeof LayoutAuthedMyTracksRouteImport
+      parentRoute: typeof LayoutAuthedRoute
+    }
+    '/_layout/_authed/admin': {
+      id: '/_layout/_authed/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof LayoutAuthedAdminRouteImport
+      parentRoute: typeof LayoutAuthedRoute
+    }
+    '/_layout/_authed/account': {
+      id: '/_layout/_authed/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof LayoutAuthedAccountRouteImport
+      parentRoute: typeof LayoutAuthedRoute
+    }
+    '/_layout/track/$trackId/': {
+      id: '/_layout/track/$trackId/'
+      path: '/track/$trackId'
+      fullPath: '/track/$trackId'
+      preLoaderRoute: typeof LayoutTrackTrackIdIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/track/$trackId/edit': {
+      id: '/_layout/track/$trackId/edit'
+      path: '/track/$trackId/edit'
+      fullPath: '/track/$trackId/edit'
+      preLoaderRoute: typeof LayoutTrackTrackIdEditRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
-interface AuthedRouteChildren {
-  AuthedAccountRoute: typeof AuthedAccountRoute
-  AuthedAdminRoute: typeof AuthedAdminRoute
-  AuthedMyTracksRoute: typeof AuthedMyTracksRoute
-  AuthedUploadRoute: typeof AuthedUploadRoute
+interface LayoutAuthedRouteChildren {
+  LayoutAuthedAccountRoute: typeof LayoutAuthedAccountRoute
+  LayoutAuthedAdminRoute: typeof LayoutAuthedAdminRoute
+  LayoutAuthedMyTracksRoute: typeof LayoutAuthedMyTracksRoute
+  LayoutAuthedUploadRoute: typeof LayoutAuthedUploadRoute
 }
 
-const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedAccountRoute: AuthedAccountRoute,
-  AuthedAdminRoute: AuthedAdminRoute,
-  AuthedMyTracksRoute: AuthedMyTracksRoute,
-  AuthedUploadRoute: AuthedUploadRoute,
+const LayoutAuthedRouteChildren: LayoutAuthedRouteChildren = {
+  LayoutAuthedAccountRoute: LayoutAuthedAccountRoute,
+  LayoutAuthedAdminRoute: LayoutAuthedAdminRoute,
+  LayoutAuthedMyTracksRoute: LayoutAuthedMyTracksRoute,
+  LayoutAuthedUploadRoute: LayoutAuthedUploadRoute,
 }
 
-const AuthedRouteWithChildren =
-  AuthedRoute._addFileChildren(AuthedRouteChildren)
+const LayoutAuthedRouteWithChildren = LayoutAuthedRoute._addFileChildren(
+  LayoutAuthedRouteChildren,
+)
+
+interface LayoutRouteChildren {
+  LayoutAuthedRoute: typeof LayoutAuthedRouteWithChildren
+  LayoutTrackTrackIdEditRoute: typeof LayoutTrackTrackIdEditRoute
+  LayoutTrackTrackIdIndexRoute: typeof LayoutTrackTrackIdIndexRoute
+}
+
+const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutAuthedRoute: LayoutAuthedRouteWithChildren,
+  LayoutTrackTrackIdEditRoute: LayoutTrackTrackIdEditRoute,
+  LayoutTrackTrackIdIndexRoute: LayoutTrackTrackIdIndexRoute,
+}
+
+const LayoutRouteWithChildren =
+  LayoutRoute._addFileChildren(LayoutRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthedRoute: AuthedRouteWithChildren,
+  LayoutRoute: LayoutRouteWithChildren,
   HealthRoute: HealthRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
@@ -353,8 +381,6 @@ const rootRouteChildren: RootRouteChildren = {
   FilesSplatRoute: FilesSplatRoute,
   ApiAdminErrorsRoute: ApiAdminErrorsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  TrackTrackIdEditRoute: TrackTrackIdEditRoute,
-  TrackTrackIdIndexRoute: TrackTrackIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -22,7 +22,7 @@ import {
 } from "@/lib/auth-client";
 import { getSession } from "@/server/auth";
 
-export const Route = createFileRoute("/_authed/account")({
+export const Route = createFileRoute("/_layout/_authed/account")({
 	loader: async () => {
 		const session = await getSession();
 		return { user: session?.user };
@@ -69,7 +69,7 @@ function AccountPage() {
 			await updateUser({
 				name: name(),
 				image: avatarUrl() || null,
-			});
+			})
 
 			setProfileSuccess(true);
 			setShowAvatarInput(false);
@@ -77,11 +77,11 @@ function AccountPage() {
 		} catch (err) {
 			setProfileError(
 				err instanceof Error ? err.message : "Failed to update profile",
-			);
+			)
 		} finally {
 			setProfileSaving(false);
 		}
-	};
+	}
 
 	const handleEmailChange = async (e: Event) => {
 		e.preventDefault();
@@ -90,7 +90,7 @@ function AccountPage() {
 
 		if (!newEmail().trim()) {
 			setEmailError("Please enter a new email address");
-			return;
+			return
 		}
 
 		setEmailSaving(true);
@@ -102,11 +102,11 @@ function AccountPage() {
 		} catch (err) {
 			setEmailError(
 				err instanceof Error ? err.message : "Failed to change email",
-			);
+			)
 		} finally {
 			setEmailSaving(false);
 		}
-	};
+	}
 
 	const handlePasswordChange = async (e: Event) => {
 		e.preventDefault();
@@ -115,22 +115,22 @@ function AccountPage() {
 
 		if (!currentPassword()) {
 			setPasswordError("Please enter your current password");
-			return;
+			return
 		}
 
 		if (!newPassword()) {
 			setPasswordError("Please enter a new password");
-			return;
+			return
 		}
 
 		if (newPassword().length < 8) {
 			setPasswordError("New password must be at least 8 characters");
-			return;
+			return
 		}
 
 		if (newPassword() !== confirmPassword()) {
 			setPasswordError("Passwords don't match");
-			return;
+			return
 		}
 
 		setPasswordSaving(true);
@@ -139,7 +139,7 @@ function AccountPage() {
 			await changePassword({
 				currentPassword: currentPassword(),
 				newPassword: newPassword(),
-			});
+			})
 			setPasswordSuccess(true);
 			setCurrentPassword("");
 			setNewPassword("");
@@ -148,11 +148,11 @@ function AccountPage() {
 		} catch (err) {
 			setPasswordError(
 				err instanceof Error ? err.message : "Failed to change password",
-			);
+			)
 		} finally {
 			setPasswordSaving(false);
 		}
-	};
+	}
 
 	const handleSignOut = async () => {
 		try {
@@ -161,7 +161,7 @@ function AccountPage() {
 		} catch (err) {
 			console.error("Sign out failed:", err);
 		}
-	};
+	}
 
 	const currentUser = () => session.data?.user ?? data().user;
 
@@ -407,5 +407,5 @@ function AccountPage() {
 				</section>
 			</div>
 		</div>
-	);
+	)
 }

@@ -18,13 +18,13 @@ import { AccessDeniedError } from "@/lib/errors";
 import { hasRole } from "@/server/auth";
 import { createTrack } from "@/server/tracks";
 
-export const Route = createFileRoute("/_authed/upload")({
+export const Route = createFileRoute("/_layout/_authed/upload")({
 	beforeLoad: async ({ context }) => {
 		// check if user has uploader role
 		if (!hasRole(context.user?.role as string, "uploader")) {
 			throw new AccessDeniedError(
 				"You need uploader permissions to upload tracks",
-			);
+			)
 		}
 	},
 	component: UploadPage,
@@ -49,13 +49,13 @@ function UploadPage() {
 			// validate file type
 			if (!selectedFile.type.startsWith("audio/")) {
 				setError("Please select an audio file");
-				return;
+				return
 			}
 
 			// validate file size (100MB max)
 			if (selectedFile.size > 100 * 1024 * 1024) {
 				setError("File size must be less than 100MB");
-				return;
+				return
 			}
 
 			setFile(selectedFile);
@@ -67,7 +67,7 @@ function UploadPage() {
 				setTitle(fileName);
 			}
 		}
-	};
+	}
 
 	const handleDrop = (e: DragEvent) => {
 		e.preventDefault();
@@ -76,7 +76,7 @@ function UploadPage() {
 		if (droppedFile) {
 			if (!droppedFile.type.startsWith("audio/")) {
 				setError("Please drop an audio file");
-				return;
+				return
 			}
 
 			setFile(droppedFile);
@@ -87,7 +87,7 @@ function UploadPage() {
 				setTitle(fileName);
 			}
 		}
-	};
+	}
 
 	const handleSubmit = async (e: Event) => {
 		e.preventDefault();
@@ -97,12 +97,12 @@ function UploadPage() {
 
 		if (!currentFile) {
 			setError("Please select a file to upload");
-			return;
+			return
 		}
 
 		if (!title().trim()) {
 			setError("Please enter a title");
-			return;
+			return
 		}
 
 		setIsUploading(true);
@@ -117,7 +117,7 @@ function UploadPage() {
 					isPublic: isPublic(),
 					allowDownload: allowDownload(),
 				},
-			});
+			})
 
 			setUploadProgress(30);
 
@@ -130,7 +130,7 @@ function UploadPage() {
 				method: "POST",
 				body: formData,
 				
-			});
+			})
 
 			if (!response.ok) {
 				throw new Error("Upload failed");
@@ -145,11 +145,11 @@ function UploadPage() {
 		} finally {
 			setIsUploading(false);
 		}
-	};
+	}
 
 	const removeFile = () => {
 		setFile(null);
-	};
+	}
 
 	return (
 		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
@@ -306,5 +306,5 @@ function UploadPage() {
 				</form>
 			</div>
 		</div>
-	);
+	)
 }

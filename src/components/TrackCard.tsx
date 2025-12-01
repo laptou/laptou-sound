@@ -1,10 +1,11 @@
-// track card component with album art and auto-fetched owner info
+import "./TrackCard.css";
 
 import { useQuery } from "@tanstack/solid-query";
 import Music from "lucide-solid/icons/music";
 import { type Component, Show } from "solid-js";
 import { getUserInfo } from "@/server/users";
 import { formatSmartDate } from "@/lib/utils";
+import { Link } from "@tanstack/solid-router";
 
 // minimal track shape required by the card
 interface TrackLike {
@@ -44,28 +45,28 @@ export const TrackCard: Component<TrackCardProps> = (props) => {
 		props.track.albumArtKey ? `/files/${props.track.albumArtKey}` : null;
 
 	return (
-		<a
-			href={`/track/${props.track.id}`}
+		<Link
+			to={`/track/${props.track.id}`}
 			class="group flex bg-stone-900/50 hover:bg-stone-900/80 transition-colors rounded-sm overflow-clip"
 		>
 			<div class="relative w-40 h-40 shrink-0 bg-stone-800">
 				<Show
 					when={albumArtUrl()}
 					fallback={
-						<div class="absolute inset-0 flex items-center justify-center">
+						<div class="absolute inset-0 flex items-center justify-center tc-vt-track-album-art">
 							<Music class="w-8 h-8 text-stone-600" />
 						</div>
 					}
 				>
 					{(url) => (
-						<img src={url()} alt="" class="w-full h-full object-cover" />
+						<img src={url()} alt="" class="w-full h-full object-cover tc-vt-track-album-art" />
 					)}
 				</Show>
 			</div>
 
 			{/* track info */}
 			<div class="flex-1 min-w-0 px-8 py-3 flex flex-col justify-center group">
-				<h3 class="font-bold text-2xl transition-colors">
+				<h3 class="font-bold text-2xl transition-colors tc-vt-track-name w-fit">
 					{props.track.title}
 				</h3>
 				<div class="flex items-center gap-2 mt-0.5">
@@ -78,14 +79,18 @@ export const TrackCard: Component<TrackCardProps> = (props) => {
 							/>
 						)}
 					</Show>
-					<span class="text-sm">
+					<span class="text-sm tc-vt-track-metadata">
 						<span class="opacity-70">uploaded by </span>
-						<span class="opacity-70 group-hover:opacity-80">{displayName()}</span>
-						<span class="opacity-50">&nbsp;&bull;&nbsp;{formatSmartDate(props.track.createdAt)}</span>
+						<span class="opacity-70 group-hover:opacity-80">
+							{displayName()}
+						</span>
+						<span class="opacity-50">
+							&nbsp;&bull;&nbsp;{formatSmartDate(props.track.createdAt)}
+						</span>
 					</span>
 				</div>
 			</div>
-		</a>
+		</Link>
 	);
 };
 

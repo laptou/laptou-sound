@@ -23,7 +23,7 @@ import {
 import { hasRole } from "@/server/auth";
 import { deleteTrack, getPublicTracks } from "@/server/tracks";
 
-export const Route = createFileRoute("/_authed/admin")({
+export const Route = createFileRoute("/_layout/_authed/admin")({
 	beforeLoad: async ({ context }) => {
 		if (!hasRole(context.user?.role as string, "admin")) {
 			throw new AccessDeniedError("Admin access required");
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authed/admin")({
 			getInviteCodes(),
 			getUsers(),
 			getPublicTracks(),
-		]);
+		])
 		return { inviteCodes, users, tracks };
 	}),
 	component: AdminDashboard,
@@ -57,7 +57,7 @@ function AdminDashboard() {
 		if (activeTab() === "errors") {
 			loadErrors();
 		}
-	});
+	})
 
 	const loadErrors = async () => {
 		setLoadingErrors(true);
@@ -72,7 +72,7 @@ function AdminDashboard() {
 		} finally {
 			setLoadingErrors(false);
 		}
-	};
+	}
 
 	const handleCreateCode = async () => {
 		setIsCreating(true);
@@ -84,7 +84,7 @@ function AdminDashboard() {
 		} finally {
 			setIsCreating(false);
 		}
-	};
+	}
 
 	const handleDeleteCode = async (code: InviteCode) => {
 		if (!confirm("Delete this invite code?")) return;
@@ -94,7 +94,7 @@ function AdminDashboard() {
 		} catch (_error) {
 			alert("Failed to delete invite code");
 		}
-	};
+	}
 
 	const handleUpdateRole = async (
 		user: User,
@@ -106,7 +106,7 @@ function AdminDashboard() {
 		} catch (_error) {
 			alert("Failed to update role");
 		}
-	};
+	}
 
 	const handleDeleteTrack = async (track: Track) => {
 		if (!confirm(`Delete "${track.title}"?`)) return;
@@ -116,7 +116,7 @@ function AdminDashboard() {
 		} catch (_error) {
 			alert("Failed to delete track");
 		}
-	};
+	}
 
 	return (
 		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
@@ -327,7 +327,7 @@ function AdminDashboard() {
 										<div class="flex items-center justify-between bg-slate-700/50 rounded-lg p-4">
 											<div>
 												<a
-													href={`/track/${track.id}`}
+													href={"/track/${track.id}"}
 													class="text-white font-medium hover:text-violet-300 transition-colors"
 												>
 													{track.title}
@@ -439,5 +439,5 @@ function AdminDashboard() {
 				</Show>
 			</div>
 		</div>
-	);
+	)
 }

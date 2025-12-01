@@ -9,7 +9,7 @@ import { createSignal, For, Show } from "solid-js";
 import type { Track } from "@/db/schema";
 import { deleteTrack, getMyTracks } from "@/server/tracks";
 
-export const Route = createFileRoute("/_authed/my-tracks")({
+export const Route = createFileRoute("/_layout/_authed/my-tracks")({
 	loader: async () => {
 		const tracks = await getMyTracks();
 		return { tracks };
@@ -23,7 +23,7 @@ function MyTracksPage() {
 
 	const handleDelete = async (track: Track) => {
 		if (!confirm(`Are you sure you want to delete "${track.title}"?`)) {
-			return;
+			return
 		}
 
 		setDeletingId(track.id);
@@ -37,7 +37,7 @@ function MyTracksPage() {
 		} finally {
 			setDeletingId(null);
 		}
-	};
+	}
 
 	return (
 		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
@@ -81,14 +81,14 @@ function MyTracksPage() {
 									<div class="flex items-center justify-between">
 										<div class="flex items-center gap-4">
 											<a
-												href={`/track/${track.id}`}
+												href={"/track/${track.id}"}
 												class="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center hover:scale-105 transition-transform"
 											>
 												<Music class="w-6 h-6 text-white" />
 											</a>
 											<div>
 												<a
-													href={`/track/${track.id}`}
+													href={"/track/${track.id}"}
 													class="text-white font-medium hover:text-violet-300 transition-colors"
 												>
 													{track.title}
@@ -112,7 +112,7 @@ function MyTracksPage() {
 
 										<div class="flex items-center gap-2">
 											<a
-												href={`/track/${track.id}/edit`}
+												href={"/track/${track.id}/edit"}
 												class="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
 											>
 												<Edit2 class="w-4 h-4" />
@@ -134,5 +134,5 @@ function MyTracksPage() {
 				</Show>
 			</div>
 		</div>
-	);
+	)
 }

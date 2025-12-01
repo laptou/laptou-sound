@@ -13,6 +13,7 @@ export const getRouter = () => {
 		routeTree,
 		context: { queryClient },
 		scrollRestoration: true,
+		defaultViewTransition: true,
 		// default error component for all routes
 		defaultErrorComponent: RouteError,
 	});

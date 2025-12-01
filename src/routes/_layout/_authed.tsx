@@ -4,7 +4,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/solid-router";
 import { getSession } from "@/server/auth";
 
-export const Route = createFileRoute("/_authed")({
+export const Route = createFileRoute("/_layout/_authed")({
 	beforeLoad: async () => {
 		const session = await getSession();
 

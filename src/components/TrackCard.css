@@ -1,0 +1,11 @@
+.tc-vt-track-name:is(:where(.group):hover *) {
+    view-transition-name: track-name;
+}
+
+.tc-vt-track-album-art:is(:where(.group):hover *) {
+    view-transition-name: track-album-art;
+}
+
+.tc-vt-track-metadata:is(:where(.group):hover *) {
+    view-transition-name: track-metadata;
+}

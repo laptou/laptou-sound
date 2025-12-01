@@ -7,6 +7,7 @@
 	--font-sans: "Spline Sans", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 	--font-heading: "Panchang Variable", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
+
 :root {
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
@@ -263,4 +264,34 @@ html.light ::-webkit-scrollbar-thumb:hover {
 
 html.light .glass {
 	@apply bg-black/5 border-black/10;
+}
+
+.vt-track-name {
+    view-transition-name: track-name;
+}
+
+::view-transition-old(track-name),
+::view-transition-new(track-name) {
+  /* Make the text views match the height of their group */
+  height: 100%;
+  /* Set the other dimension to auto,
+     which for images means they maintain their aspect ratio */
+  width: auto;
+}
+
+::view-transition-group(track-name) {
+  /* Clip the views as they overflow the group */
+  overflow: clip;
+}
+
+.vt-track-album-art {
+    view-transition-name: track-album-art;
+}
+
+.vt-track-metadata {
+    view-transition-name: track-metadata;
+}
+
+.vt-logo {
+    view-transition-name: logo;
 }

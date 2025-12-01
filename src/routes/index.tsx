@@ -31,7 +31,7 @@ function HomePage() {
 			{/* hero section */}
 			<section class="relative py-20 px-6 text-center overflow-hidden z-10">
 				<div class="relative max-w-7xl mx-auto grid grid-cols-3">
-					<h1 class="text-5xl md:text-6xl font-bold text-white mb-4 font-heading col-start-2">
+					<h1 class="text-5xl md:text-6xl font-bold text-white mb-4 font-heading col-start-2 vt-logo">
 						<span class="bg-linear-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
 							laptou
 						</span>{" "}
