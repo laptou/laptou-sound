@@ -46,7 +46,7 @@ function UploadPage() {
 			}
 
 			setIsUploading(true);
-			setUploadProgress(10);
+			setUploadProgress(0);
 
 			try {
 				// create track metadata
@@ -59,21 +59,56 @@ function UploadPage() {
 					},
 				});
 
-				setUploadProgress(30);
+				setUploadProgress(5);
 
-				// upload file
+				// upload file with progress tracking
 				const formData = new FormData();
 				formData.append("file", currentFile);
 				formData.append("trackId", trackId);
 
-				const response = await fetch("/api/upload", {
-					method: "POST",
-					body: formData,
-				});
+				// use xmlhttprequest to track upload progress
+				const response = await new Promise<{ versionId: string; versionNumber: number }>(
+					(resolve, reject) => {
+						const xhr = new XMLHttpRequest();
 
-				if (!response.ok) {
-					throw new Error("Upload failed");
-				}
+						// track upload progress (5-95% range, leaving 5% for completion)
+						xhr.upload.addEventListener("progress", (e) => {
+							if (e.lengthComputable) {
+								const percentComplete = 5 + (e.loaded / e.total) * 90;
+								setUploadProgress(Math.round(percentComplete));
+							}
+						});
+
+						xhr.addEventListener("load", () => {
+							if (xhr.status >= 200 && xhr.status < 300) {
+								try {
+									const data = JSON.parse(xhr.responseText);
+									resolve(data);
+								} catch (err) {
+									reject(new Error("Failed to parse response"));
+								}
+							} else {
+								try {
+									const error = JSON.parse(xhr.responseText);
+									reject(new Error(error.error || "Upload failed"));
+								} catch {
+									reject(new Error(`Upload failed with status ${xhr.status}`));
+								}
+							}
+						});
+
+						xhr.addEventListener("error", () => {
+							reject(new Error("Network error during upload"));
+						});
+
+						xhr.addEventListener("abort", () => {
+							reject(new Error("Upload was cancelled"));
+						});
+
+						xhr.open("POST", "/api/upload");
+						xhr.send(formData);
+					},
+				);
 
 				setUploadProgress(100);
 
