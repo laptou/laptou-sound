@@ -6,7 +6,13 @@ import { getRequest } from "@tanstack/solid-start/server";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb, type NewTrack, tracks, trackVersions, user } from "@/db";
 import { createAuth } from "@/lib/auth";
-import { deleteTrackFiles, getOriginalKey, uploadFile } from "./files";
+import {
+	deleteTrackFiles,
+	getAlbumArtKey,
+	getOriginalKey,
+	uploadFile,
+} from "./files";
+import type { UpdateMetadataJob } from "./queue-handler";
 
 // public track info including owner and album art
 export interface PublicTrackInfo {
@@ -505,7 +511,7 @@ export const setActiveVersion = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-// update version metadata
+// update version metadata and queue job to regenerate download file
 export const updateVersionMetadata = createServerFn({ method: "POST" })
 	.inputValidator(
 		(data: {
@@ -568,6 +574,15 @@ export const updateVersionMetadata = createServerFn({ method: "POST" })
 			.update(trackVersions)
 			.set(updates)
 			.where(eq(trackVersions.id, data.versionId));
+
+		// queue job to regenerate download file with new metadata
+		const queue = env.laptou_sound_audio_processing_queue;
+		const job: UpdateMetadataJob = {
+			type: "update_metadata",
+			trackId: data.trackId,
+			versionId: data.versionId,
+		};
+		await queue.send(job);
 
 		return { success: true };
 	});
@@ -674,4 +689,104 @@ export const unarchiveTrackVersion = createServerFn({ method: "POST" })
 			.where(eq(trackVersions.id, data.versionId));
 
 		return { success: true };
+	});
+
+// upload album art for a version - accepts FormData directly
+export const uploadAlbumArt = createServerFn({ method: "POST" })
+	.inputValidator((data) => {
+		if (!(data instanceof FormData)) {
+			throw new Error("Expected FormData");
+		}
+
+		const file = data.get("file") as File | null;
+		const trackId = data.get("trackId")?.toString();
+		const versionId = data.get("versionId")?.toString();
+
+		if (!file) {
+			throw new Error("No file provided");
+		}
+
+		if (!file.type.startsWith("image/")) {
+			throw new Error("File must be an image");
+		}
+
+		if (!trackId || !versionId) {
+			throw new Error("Track ID and version ID required");
+		}
+
+		return { file, trackId, versionId };
+	})
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		const db = getDb();
+
+		// verify ownership
+		const track = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, data.trackId))
+			.limit(1);
+
+		if (!track[0]) {
+			throw new Error("Track not found");
+		}
+
+		const isOwner = track[0].ownerId === session.user.id;
+		const isAdmin = session.user.role === "admin";
+
+		if (!isOwner && !isAdmin) {
+			throw new Error("You do not have permission to edit this track");
+		}
+
+		// verify version exists
+		const version = await db
+			.select()
+			.from(trackVersions)
+			.where(eq(trackVersions.id, data.versionId))
+			.limit(1);
+
+		if (!version[0]) {
+			throw new Error("Version not found");
+		}
+
+		// determine extension from mime type
+		const mimeToExt: Record<string, string> = {
+			"image/jpeg": "jpg",
+			"image/png": "png",
+			"image/gif": "gif",
+			"image/webp": "webp",
+		};
+		const ext = mimeToExt[data.file.type] ?? "jpg";
+		const albumArtKey = getAlbumArtKey(data.trackId, data.versionId, ext);
+
+		// upload to r2
+		await uploadFile(
+			albumArtKey,
+			await data.file.arrayBuffer(),
+			data.file.type,
+		);
+
+		// update version record
+		await db
+			.update(trackVersions)
+			.set({ albumArtKey })
+			.where(eq(trackVersions.id, data.versionId));
+
+		// queue job to regenerate download file with new album art
+		const queue = env.laptou_sound_audio_processing_queue;
+		const job: UpdateMetadataJob = {
+			type: "update_metadata",
+			trackId: data.trackId,
+			versionId: data.versionId,
+		};
+		await queue.send(job);
+
+		return { albumArtKey };
 	});

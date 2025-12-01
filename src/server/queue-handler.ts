@@ -4,10 +4,11 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as mm from "music-metadata";
+import NodeID3 from "node-id3";
 import { DrizzleLogger } from "@/db/logger";
 import * as schema from "@/db/schema";
 import { logDebug, logError } from "@/lib/logger";
-import { getAlbumArtKey, getStreamKey } from "./files";
+import { getAlbumArtKey, getDownloadKey, getStreamKey } from "./files";
 
 export interface AudioProcessingJob {
 	type: "process_audio";
@@ -21,7 +22,17 @@ export interface DeleteTrackJob {
 	trackId: string;
 }
 
-export type QueueMessage = AudioProcessingJob | DeleteTrackJob;
+// job to regenerate the download file with updated metadata/album art
+export interface UpdateMetadataJob {
+	type: "update_metadata";
+	trackId: string;
+	versionId: string;
+}
+
+export type QueueMessage =
+	| AudioProcessingJob
+	| DeleteTrackJob
+	| UpdateMetadataJob;
 
 // queue consumer handler - export this from your worker entry
 export async function handleQueueBatch(
@@ -33,6 +44,8 @@ export async function handleQueueBatch(
 		try {
 			if (message.body.type === "process_audio") {
 				await processAudioJob(message.body);
+			} else if (message.body.type === "update_metadata") {
+				await updateMetadataJob(message.body);
 			} else if (message.body.type === "delete_track") {
 				// handle delete job if needed
 			}
@@ -111,12 +124,44 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 			});
 		}
 
+		// generate download file with id3 tags embedded
+		const downloadKey = getDownloadKey(job.trackId, job.versionId);
+		const id3Tags: NodeID3.Tags = {
+			title: metadata.common.title ?? undefined,
+			artist: metadata.common.artist ?? undefined,
+			album: metadata.common.album ?? undefined,
+			genre: metadata.common.genre?.[0] ?? undefined,
+			year: metadata.common.year?.toString() ?? undefined,
+		};
+
+		// embed album art if present
+		if (picture) {
+			id3Tags.image = {
+				mime: picture.format,
+				type: { id: 3, name: "front cover" },
+				description: "Album Art",
+				imageBuffer: Buffer.from(picture.data),
+			};
+		}
+
+		// write id3 tags to create download file
+		const downloadBuffer = NodeID3.write(id3Tags, Buffer.from(originalData));
+		await bucket.put(downloadKey, downloadBuffer, {
+			httpMetadata: { contentType: "audio/mpeg" },
+		});
+
+		logDebug("stored download file with metadata", {
+			downloadKey,
+			tags: id3Tags,
+		});
+
 		// update status to complete with metadata
 		await db
 			.update(schema.trackVersions)
 			.set({
 				processingStatus: "complete",
 				streamKey: streamObject.key,
+				downloadKey,
 				albumArtKey,
 				// audio format metadata
 				duration: metadata.format.duration
@@ -145,6 +190,7 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 		logDebug("audio processing completed", {
 			job,
 			streamKey: streamObject.key,
+			downloadKey,
 			duration: metadata.format.duration,
 			bitrate: metadata.format.bitrate,
 			artist: metadata.common.artist,
@@ -158,6 +204,97 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 			.set({ processingStatus: "failed" })
 			.where(eq(schema.trackVersions.id, job.versionId));
 
+		throw error;
+	}
+}
+
+// regenerate download file with updated metadata from database
+async function updateMetadataJob(job: UpdateMetadataJob): Promise<void> {
+	logDebug("updating metadata job", { job });
+
+	const bucket = env.laptou_sound_files;
+	const db = drizzle(env.laptou_sound_db, {
+		schema,
+		logger: new DrizzleLogger(),
+	});
+
+	// get version from database
+	const version = await db
+		.select()
+		.from(schema.trackVersions)
+		.where(eq(schema.trackVersions.id, job.versionId))
+		.limit(1);
+
+	if (!version[0]) {
+		throw new Error("Version not found");
+	}
+
+	const versionData = version[0];
+
+	// get track title for the id3 tags
+	const track = await db
+		.select()
+		.from(schema.tracks)
+		.where(eq(schema.tracks.id, job.trackId))
+		.limit(1);
+
+	if (!track[0]) {
+		throw new Error("Track not found");
+	}
+
+	try {
+		// get original file
+		const original = await bucket.get(versionData.originalKey);
+		if (!original) {
+			throw new Error("Original file not found");
+		}
+
+		const originalData = await original.arrayBuffer();
+
+		// build id3 tags from database metadata
+		const id3Tags: NodeID3.Tags = {
+			title: track[0].title,
+			artist: versionData.artist ?? undefined,
+			album: versionData.album ?? undefined,
+			genre: versionData.genre ?? undefined,
+			year: versionData.year?.toString() ?? undefined,
+		};
+
+		// get album art if it exists
+		if (versionData.albumArtKey) {
+			const albumArt = await bucket.get(versionData.albumArtKey);
+			if (albumArt) {
+				const artData = await albumArt.arrayBuffer();
+				const mime = albumArt.httpMetadata?.contentType ?? "image/jpeg";
+				id3Tags.image = {
+					mime,
+					type: { id: 3, name: "front cover" },
+					description: "Album Art",
+					imageBuffer: Buffer.from(artData),
+				};
+			}
+		}
+
+		// write id3 tags to create new download file
+		const downloadKey = getDownloadKey(job.trackId, job.versionId);
+		const downloadBuffer = NodeID3.write(id3Tags, Buffer.from(originalData));
+		await bucket.put(downloadKey, downloadBuffer, {
+			httpMetadata: { contentType: "audio/mpeg" },
+		});
+
+		// update download key in database
+		await db
+			.update(schema.trackVersions)
+			.set({ downloadKey })
+			.where(eq(schema.trackVersions.id, job.versionId));
+
+		logDebug("metadata update completed", {
+			job,
+			downloadKey,
+			tags: { ...id3Tags, image: id3Tags.image ? "[present]" : undefined },
+		});
+	} catch (error) {
+		logError("[queue/update-metadata] failed", { error });
 		throw error;
 	}
 }

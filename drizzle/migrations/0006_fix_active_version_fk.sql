@@ -24,3 +24,4 @@ CREATE INDEX `tracks_created_idx` ON `tracks` (`created_at`);--> statement-break
 PRAGMA foreign_keys=ON;
 
 
+

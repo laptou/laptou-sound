@@ -35,6 +35,7 @@
 		"kysely-d1": "^0.4.0",
 		"lucide-solid": "^0.544.0",
 		"music-metadata": "^11.10.3",
+		"node-id3": "^0.2.9",
 		"solid-js": "^1.9.10",
 		"solid-sonner": "^0.2.8",
 		"tailwind-merge": "^3.4.0"

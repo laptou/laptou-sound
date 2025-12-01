@@ -31,6 +31,10 @@ export function getAlbumArtKey(
 	return `${getTrackVersionPrefix(trackId, versionId)}albumart.${ext}`;
 }
 
+export function getDownloadKey(trackId: string, versionId: string) {
+	return `${getTrackVersionPrefix(trackId, versionId)}download.mp3`;
+}
+
 // upload file to r2
 export async function uploadFile(
 	key: string,

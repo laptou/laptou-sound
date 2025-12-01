@@ -7,6 +7,7 @@ import {
 	setActiveVersion,
 	updateTrack,
 	updateVersionMetadata,
+	uploadAlbumArt,
 } from "@/server/tracks";
 
 // update track metadata mutation
@@ -68,9 +69,9 @@ export const uploadTrackVersionMutationOptions = () =>
 			});
 
 			if (!response.ok) {
-				const error = await response.json().catch(() => ({
+				const error = (await response.json().catch(() => ({
 					error: "Upload failed",
-				}));
+				}))) as { error?: string };
 				throw new Error(error.error || "Upload failed");
 			}
 
@@ -83,4 +84,21 @@ export const deleteTrackMutationOptions = () =>
 	({
 		mutationFn: async (variables: { trackId: string }) =>
 			await deleteTrack({ data: variables }),
+	}) satisfies MutationOptions;
+
+// upload album art mutation - calls server function with FormData
+export const uploadAlbumArtMutationOptions = () =>
+	({
+		mutationFn: async (variables: {
+			trackId: string;
+			versionId: string;
+			file: File;
+		}) => {
+			const formData = new FormData();
+			formData.append("file", variables.file);
+			formData.append("trackId", variables.trackId);
+			formData.append("versionId", variables.versionId);
+
+			return await uploadAlbumArt({ data: formData });
+		},
 	}) satisfies MutationOptions;

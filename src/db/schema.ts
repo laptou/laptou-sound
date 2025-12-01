@@ -58,6 +58,7 @@ export const trackVersions = sqliteTable(
 		// r2 keys for stored files
 		originalKey: text("original_key").notNull(),
 		streamKey: text("stream_key"), // 128kbps mp3
+		downloadKey: text("download_key"), // mp3 with embedded metadata for downloads
 		albumArtKey: text("album_art_key"), // extracted album art image
 		processingStatus: text("processing_status", {
 			enum: ["pending", "processing", "complete", "failed"],

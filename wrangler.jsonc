@@ -16,7 +16,7 @@
 		{
 			"binding": "laptou_sound_db",
 			"database_name": "laptou-sound-db",
-			"database_id": "0523bd7a-d231-44f1-aeb2-a99beb04b709",
+			"database_id": "230c35b1-0125-419d-806d-011f3eb58170",
 			"migrations_dir": "drizzle/migrations"
 		}
 	],

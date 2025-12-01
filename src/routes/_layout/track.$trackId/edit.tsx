@@ -24,7 +24,14 @@ import Plus from "lucide-solid/icons/plus";
 import Star from "lucide-solid/icons/star";
 import Trash2 from "lucide-solid/icons/trash-2";
 import X from "lucide-solid/icons/x";
-import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
+import {
+	createEffect,
+	createMemo,
+	createSignal,
+	For,
+	on,
+	Show,
+} from "solid-js";
 import { toast } from "solid-sonner";
 import { FileUploadZone } from "@/components/FileUploadZone";
 import { FormCheckboxSimple, FormField } from "@/components/FormField";
@@ -152,7 +159,10 @@ function TrackEditPage() {
 	const infoFormValues = infoForm.useStore((state) => state.values);
 	createEffect(
 		on(
-			() => ({ title: infoFormValues().title, desc: infoFormValues().description }),
+			() => ({
+				title: infoFormValues().title,
+				desc: infoFormValues().description,
+			}),
 			() => {
 				// clear existing timeout
 				if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
