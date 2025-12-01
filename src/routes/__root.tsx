@@ -16,6 +16,7 @@ import { AudioPlayerProvider } from "@/lib/audio-player-context";
 import { getSession } from "@/lib/auth";
 import { initializeTheme } from "@/lib/theme";
 import styleCss from "../styles.css?url";
+import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRouteWithContext()({
 	head: () => ({
@@ -77,6 +78,10 @@ function RootDocument() {
 					<AudioPlayerProvider>
 						<Outlet />
 						<MediaControls />
+
+						<ClientOnly>
+							<Toaster />
+						</ClientOnly>
 					</AudioPlayerProvider>
 					<TanStackRouterDevtools position="bottom-right" />
 					<SolidQueryDevtools buttonPosition="bottom-left" />

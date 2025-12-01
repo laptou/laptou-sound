@@ -9,7 +9,7 @@ import SkipBack from "lucide-solid/icons/skip-back";
 import SkipForward from "lucide-solid/icons/skip-forward";
 import Volume2 from "lucide-solid/icons/volume-2";
 import VolumeX from "lucide-solid/icons/volume-x";
-import { type Component, createSignal, Show } from "solid-js";
+import { type Component, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { useAudioPlayer } from "@/lib/audio-player-context";
 import { cn } from "@/lib/utils";
 import { QueuePanel } from "./QueuePanel";
@@ -24,10 +24,30 @@ const formatTime = (seconds: number) => {
 const MediaControlsInner: Component = () => {
 	const player = useAudioPlayer();
 	const [isMuted, setIsMuted] = createSignal(false);
-	const [isDragging, setIsDragging] = createSignal(false);
 	const [hoverProgress, setHoverProgress] = createSignal<number | null>(null);
 
 	let progressRef: HTMLDivElement | undefined;
+
+	// spacebar to toggle play/pause (skip when focused on inputs)
+	onMount(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.code !== "Space") return;
+			if (!player.currentTrack()) return;
+
+			const target = e.target as HTMLElement;
+			const isInput =
+				target.tagName === "INPUT" ||
+				target.tagName === "TEXTAREA" ||
+				target.isContentEditable;
+			if (isInput) return;
+
+			e.preventDefault();
+			player.togglePlayPause();
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+	});
 
 	const progress = () => {
 		const dur = player.duration();
@@ -82,7 +102,7 @@ const MediaControlsInner: Component = () => {
 			<div class="relative max-w-4xl mx-auto px-4 py-3">
 				<div class="flex items-center gap-4">
 					{/* track info */}
-					<div class="flex items-center gap-3 min-w-0 flex-shrink-0 w-48">
+					<div class="flex items-center gap-3 min-w-0 shrink-0 w-48">
 						<Show when={player.currentTrack()}>
 							{(track) => (
 								<>
@@ -164,7 +184,7 @@ const MediaControlsInner: Component = () => {
 							>
 								{/* filled progress */}
 								<div
-									class="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all"
+									class="absolute inset-y-0 left-0 bg-linear-to-r from-violet-500 to-indigo-500 rounded-full transition-all"
 									style={{ width: `${progress()}%` }}
 								/>
 								{/* hover indicator */}
@@ -187,7 +207,7 @@ const MediaControlsInner: Component = () => {
 					</div>
 
 					{/* right controls */}
-					<div class="flex items-center gap-2 flex-shrink-0 w-48 justify-end">
+					<div class="flex items-center gap-2 shrink-0 w-48 justify-end">
 						{/* volume */}
 						<button
 							type="button"
