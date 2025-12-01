@@ -250,11 +250,15 @@ function TrackDetailPage() {
 			>
 				{(version) => (
 					<WaveformPlayer
+						trackId={data().track.id}
+						versionId={version().id}
 						streamUrl={getStreamUrl(version())}
 						title={data().track.title}
 						artist={version().artist ?? "Artist"}
+						albumArtUrl={getAlbumArtUrl(version())}
 						duration={version().duration ?? undefined}
 						onPlay={handlePlay}
+						hideTitle
 					/>
 				)}
 			</Show>

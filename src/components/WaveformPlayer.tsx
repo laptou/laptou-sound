@@ -1,9 +1,10 @@
 // waveform audio player component
 // displays a soundcloud-style waveform with playback controls
-// waveform is computed client-side using web audio api
+// syncs with global audio player state for cross-page playback
 
 import { useQuery } from "@tanstack/solid-query";
 import { ClientOnly } from "@tanstack/solid-router";
+import ListPlus from "lucide-solid/icons/list-plus";
 import Pause from "lucide-solid/icons/pause";
 import Play from "lucide-solid/icons/play";
 import Volume2 from "lucide-solid/icons/volume-2";
@@ -17,18 +18,25 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
+import { toast } from "solid-sonner";
+import { type QueueTrack, useAudioPlayer } from "@/lib/audio-player-context";
 
 interface WaveformData {
 	peaks: number[];
 	samples: number;
 }
 
-interface WaveformPlayerProps {
+export interface WaveformPlayerProps {
+	trackId: string;
+	versionId: string;
 	streamUrl: string | null;
 	title: string;
 	artist: string;
+	albumArtUrl?: string | null;
 	duration?: number;
 	onPlay?: () => void;
+	// hide track title/artist when shown elsewhere on the page
+	hideTitle?: boolean;
 }
 
 // generate waveform data from audio buffer using web audio api
@@ -75,15 +83,29 @@ async function generateWaveformFromUrl(url: string): Promise<WaveformData> {
 }
 
 const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
-	let audioRef: HTMLAudioElement | undefined;
+	const player = useAudioPlayer();
 	let canvasRef: HTMLCanvasElement | undefined;
 	let containerRef: HTMLDivElement | undefined;
 
-	const [isPlaying, setIsPlaying] = createSignal(false);
 	const [isMuted, setIsMuted] = createSignal(false);
-	const [currentTime, setCurrentTime] = createSignal(0);
-	const [duration, setDuration] = createSignal(props.duration ?? 0);
 	const [canvasWidth, setCanvasWidth] = createSignal(600);
+
+	// check if this track is currently playing in the global player
+	const isCurrentTrack = createMemo(() => {
+		const current = player.currentTrack();
+		return (
+			current?.id === props.trackId && current?.versionId === props.versionId
+		);
+	});
+
+	// derive playback state from global player when this is the current track
+	const isPlaying = createMemo(() => isCurrentTrack() && player.isPlaying());
+	const currentTime = createMemo(() =>
+		isCurrentTrack() ? player.currentTime() : 0,
+	);
+	const duration = createMemo(() =>
+		isCurrentTrack() ? player.duration() : (props.duration ?? 0),
+	);
 
 	// compute waveform data client-side from audio stream
 	const waveformQuery = useQuery(() => ({
@@ -185,69 +207,64 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 		});
 	});
 
-	// audio event handlers
-	createEffect(() => {
-		const audio = audioRef;
-		if (!audio) return;
-
-		const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-		const handleDurationChange = () => setDuration(audio.duration || 0);
-		const handleEnded = () => setIsPlaying(false);
-		const handlePlay = () => {
-			setIsPlaying(true);
-			props.onPlay?.();
-		};
-		const handlePause = () => setIsPlaying(false);
-
-		if (audio.duration) {
-			setDuration(audio.duration || 0);
-		} else {
-			audio.addEventListener(
-				"loadedmetadata",
-				() => setDuration(audio.duration || 0),
-				{ once: true },
-			);
-		}
-
-		audio.addEventListener("timeupdate", handleTimeUpdate);
-		audio.addEventListener("durationchange", handleDurationChange);
-		audio.addEventListener("ended", handleEnded);
-		audio.addEventListener("play", handlePlay);
-		audio.addEventListener("pause", handlePause);
-
-		onCleanup(() => {
-			audio.removeEventListener("timeupdate", handleTimeUpdate);
-			audio.removeEventListener("durationchange", handleDurationChange);
-			audio.removeEventListener("ended", handleEnded);
-			audio.removeEventListener("play", handlePlay);
-			audio.removeEventListener("pause", handlePause);
-		});
+	// create queue track object
+	const createQueueTrack = (): QueueTrack => ({
+		id: props.trackId,
+		versionId: props.versionId,
+		title: props.title,
+		artist: props.artist,
+		streamUrl: props.streamUrl!,
+		albumArtUrl: props.albumArtUrl,
+		duration: props.duration,
 	});
 
 	const togglePlay = () => {
-		if (!audioRef || !props.streamUrl) return;
-		if (isPlaying()) {
-			audioRef.pause();
+		if (!props.streamUrl) return;
+
+		if (isCurrentTrack()) {
+			// toggle play/pause on global player
+			player.togglePlayPause();
 		} else {
-			audioRef.play().catch((error) => {
-				console.error("Failed to play audio:", error);
-			});
+			// start playing this track
+			player.play(createQueueTrack());
+			props.onPlay?.();
 		}
 	};
 
 	const toggleMute = () => {
-		if (!audioRef) return;
-		audioRef.muted = !audioRef.muted;
-		setIsMuted(audioRef.muted);
+		const audio = player.audioRef();
+		if (!audio) return;
+		audio.muted = !audio.muted;
+		setIsMuted(audio.muted);
 	};
 
 	const seek = (e: MouseEvent) => {
-		if (!canvasRef || !audioRef || !duration()) return;
+		if (!canvasRef || !duration()) return;
 
 		const rect = canvasRef.getBoundingClientRect();
 		const x = e.clientX - rect.left;
 		const percentage = x / rect.width;
-		audioRef.currentTime = percentage * duration();
+
+		if (isCurrentTrack()) {
+			player.seekPercent(percentage);
+		} else {
+			// start playing from this position
+			const track = createQueueTrack();
+			player.play(track);
+			// seek after a small delay to ensure audio is loaded
+			setTimeout(() => {
+				player.seekPercent(percentage);
+			}, 100);
+			props.onPlay?.();
+		}
+	};
+
+	const addToQueue = () => {
+		if (!props.streamUrl) return;
+		player.addToQueue(createQueueTrack());
+		toast.success("Added to queue", {
+			description: props.title,
+		});
 	};
 
 	const formatTime = (seconds: number) => {
@@ -258,14 +275,6 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 
 	return (
 		<div class="bg-stone-900/50 backdrop-blur-sm rounded-xl p-4 transition-all duration-300">
-			<Show when={props.streamUrl !== null}>
-				<audio
-					ref={audioRef}
-					src={props.streamUrl ?? undefined}
-					preload="metadata"
-				/>
-			</Show>
-
 			<div class="flex items-center gap-4">
 				{/* play button */}
 				<button
@@ -281,10 +290,12 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 
 				{/* track info and waveform */}
 				<div class="flex-1 min-w-0" ref={containerRef}>
-					<div class="flex items-baseline gap-2 mb-2">
-						<span class="text-white font-medium truncate">{props.title}</span>
-						<span class="text-sm truncate opacity-70">{props.artist}</span>
-					</div>
+					<Show when={!props.hideTitle}>
+						<div class="flex items-baseline gap-2 mb-2">
+							<span class="text-white font-medium truncate">{props.title}</span>
+							<span class="text-sm truncate opacity-70">{props.artist}</span>
+						</div>
+					</Show>
 
 					{/* waveform canvas */}
 					<div class="relative cursor-pointer" onClick={seek}>
@@ -318,16 +329,30 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 					</div>
 				</div>
 
-				{/* volume button */}
-				<button
-					type="button"
-					onClick={toggleMute}
-					class="p-2 opacity-70 hover:opacity-100 transition-opacity"
-				>
-					<Show when={isMuted()} fallback={<Volume2 class="w-5 h-5" />}>
-						<VolumeX class="w-5 h-5" />
-					</Show>
-				</button>
+				{/* action buttons */}
+				<div class="flex flex-col gap-1">
+					{/* add to queue button */}
+					<button
+						type="button"
+						onClick={addToQueue}
+						disabled={!props.streamUrl}
+						class="p-2 opacity-70 hover:opacity-100 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+						title="Add to queue"
+					>
+						<ListPlus class="w-5 h-5" />
+					</button>
+
+					{/* volume button */}
+					<button
+						type="button"
+						onClick={toggleMute}
+						class="p-2 opacity-70 hover:opacity-100 transition-opacity"
+					>
+						<Show when={isMuted()} fallback={<Volume2 class="w-5 h-5" />}>
+							<VolumeX class="w-5 h-5" />
+						</Show>
+					</button>
+				</div>
 			</div>
 		</div>
 	);

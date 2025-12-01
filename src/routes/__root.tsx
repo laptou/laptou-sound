@@ -2,6 +2,7 @@
 
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 import {
+	ClientOnly,
 	createRootRouteWithContext,
 	HeadContent,
 	Outlet,
@@ -10,6 +11,8 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
 import { onMount, Suspense } from "solid-js";
 import { HydrationScript } from "solid-js/web";
+import { MediaControls } from "@/components/MediaControls";
+import { AudioPlayerProvider } from "@/lib/audio-player-context";
 import { getSession } from "@/lib/auth";
 import { initializeTheme } from "@/lib/theme";
 import styleCss from "../styles.css?url";
@@ -70,11 +73,24 @@ function RootDocument() {
 			</head>
 			<body class="min-h-screen">
 				<HeadContent />
-				<Suspense>
-					<Outlet />
-					<TanStackRouterDevtools position="bottom-right" />
-					<SolidQueryDevtools buttonPosition="bottom-left" />
-				</Suspense>
+				<ClientOnly
+					fallback={
+						<Suspense>
+							<Outlet />
+							<TanStackRouterDevtools position="bottom-right" />
+							<SolidQueryDevtools buttonPosition="bottom-left" />
+						</Suspense>
+					}
+				>
+					<AudioPlayerProvider>
+						<Suspense>
+							<Outlet />
+							<TanStackRouterDevtools position="bottom-right" />
+							<SolidQueryDevtools buttonPosition="bottom-left" />
+						</Suspense>
+						<MediaControls />
+					</AudioPlayerProvider>
+				</ClientOnly>
 				<Scripts />
 			</body>
 		</html>

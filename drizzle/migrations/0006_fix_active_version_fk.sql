@@ -23,3 +23,4 @@ CREATE INDEX `tracks_owner_idx` ON `tracks` (`owner_id`);--> statement-breakpoin
 CREATE INDEX `tracks_created_idx` ON `tracks` (`created_at`);--> statement-breakpoint
 PRAGMA foreign_keys=ON;
 
+
