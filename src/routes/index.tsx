@@ -6,6 +6,7 @@ import Upload from "lucide-solid/icons/upload";
 import User from "lucide-solid/icons/user";
 import { For, Show } from "solid-js";
 import TrackCard from "@/components/TrackCard";
+import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth-client";
 import { wrapLoader } from "@/lib/loader-wrapper";
 import { getPublicTracks } from "@/server/tracks";
@@ -24,51 +25,42 @@ function HomePage() {
 	const sessionState = useSession();
 
 	return (
-		<div class="min-h-screen bg-linear-to-b from-stone-900 via-stone-950 to-stone-900">
+		<div class="min-h-screen bg-linear-to-b from-stone-900 via-stone-950 to-stone-900 relative">
+			<div class="absolute inset-0 bg-linear-to-br from-violet-500 via-indigo-500 to-purple-500 mask-radial-at-top mask-circle mask-radial-from-0% mask-contain opacity-50 z-0" />
+
 			{/* hero section */}
-			<section class="relative py-20 px-6 text-center overflow-hidden">
-				<div class="absolute inset-0 bg-linear-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10" />
-				<div class="relative max-w-4xl mx-auto">
-					<h1 class="text-5xl md:text-6xl font-black text-white mb-4 font-heading">
-						<span class="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
+			<section class="relative py-20 px-6 text-center overflow-hidden z-10">
+				<div class="relative max-w-7xl mx-auto grid grid-cols-3">
+					<h1 class="text-5xl md:text-6xl font-bold text-white mb-4 font-heading col-start-2">
+						<span class="bg-linear-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
 							laptou
 						</span>{" "}
 						<span class="text-gray-300">sound</span>
 					</h1>
-					<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+
+					<div class="col-start-3 justify-self-end self-center flex flex-col items-end gap-4">
 						<Show
 							when={sessionState?.data?.user}
 							fallback={
-								<>
-									<Link
-										to="/upload"
-										class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25"
-									>
-										<Upload class="w-5 h-5" />
-										Upload Track
-									</Link>
-									<Link
-										to="/login"
-										class="inline-flex items-center gap-2 px-6 py-3 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors"
-									>
+								<Link to="/login">
+									<Button variant="secondary">
+										<User class="w-5 h-5" />
 										Sign In
-									</Link>
-								</>
+									</Button>
+								</Link>
 							}
 						>
-							<Link
-								to="/upload"
-								class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-violet-500/25"
-							>
-								<Upload class="w-5 h-5" />
-								Upload Track
+							<Link to="/upload">
+								<Button variant="default">
+									<Upload class="w-5 h-5" />
+									Upload Track
+								</Button>
 							</Link>
-							<Link
-								to="/my-tracks"
-								class="inline-flex items-center gap-2 px-6 py-3 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors"
-							>
-								<User class="w-5 h-5" />
-								My Tracks
+							<Link to="/account">
+								<Button variant="secondary">
+									<User class="w-5 h-5" />
+									My Account
+								</Button>
 							</Link>
 						</Show>
 					</div>
@@ -76,14 +68,7 @@ function HomePage() {
 			</section>
 
 			{/* recent tracks */}
-			<section class="py-16 px-6 max-w-7xl mx-auto">
-				<div class="flex items-center justify-between mb-8">
-					<h2 class="text-2xl font-bold text-white">Recent Tracks</h2>
-					<span class="text-gray-500 text-sm">
-						{data().tracks.length} tracks
-					</span>
-				</div>
-
+			<section class="py-16 px-6 max-w-7xl mx-auto relative z-10">
 				<Show
 					when={data().tracks.length > 0}
 					fallback={
@@ -92,15 +77,19 @@ function HomePage() {
 								<Music class="w-10 h-10 text-gray-600" />
 							</div>
 							<p class="text-gray-400 text-lg">No tracks yet</p>
-							<p class="text-gray-500 mt-1">
-								Be the first to upload something!
-							</p>
+							<p class="text-gray-500 mt-1">Come back later.</p>
 						</div>
 					}
 				>
-					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					<div class="flex flex-col">
 						<For each={data().tracks}>
-							{(track) => <TrackCard track={track} />}
+							{(track) => (
+								<TrackCard
+									track={track}
+									ownerName={track.ownerName}
+									ownerImage={track.ownerImage}
+								/>
+							)}
 						</For>
 					</div>
 				</Show>

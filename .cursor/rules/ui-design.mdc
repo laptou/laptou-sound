@@ -1,0 +1,8 @@
+---
+description: For UI design considerations
+alwaysApply: false
+---
+
+- Use gentle corner radii and a minimal aesthetic (avoid excessive borders and such)
+- Use drop shadows and backdrop blur liberally
+- For muted text, use opacity instead of setting specific colors to make theming easier

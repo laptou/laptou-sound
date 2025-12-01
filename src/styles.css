@@ -5,7 +5,7 @@
 
 @theme {
 	--font-sans: "Spline Sans", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-	--font-heading: "Panchang", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+	--font-heading: "Panchang Variable", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 :root {
 	--background: oklch(1 0 0);

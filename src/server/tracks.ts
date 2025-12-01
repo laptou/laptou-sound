@@ -3,23 +3,73 @@
 import { env } from "cloudflare:workers";
 import { createServerFn } from "@tanstack/solid-start";
 import { getRequest } from "@tanstack/solid-start/server";
-import { desc, eq } from "drizzle-orm";
-import { getDb, type NewTrack, tracks, trackVersions } from "@/db";
+import { desc, eq, inArray } from "drizzle-orm";
+import { getDb, type NewTrack, tracks, trackVersions, user } from "@/db";
 import { createAuth } from "@/lib/auth";
 import { deleteTrackFiles, getOriginalKey, uploadFile } from "./files";
 
+// public track info including owner and album art
+export interface PublicTrackInfo {
+	id: string;
+	title: string;
+	description: string | null;
+	ownerId: string;
+	ownerName: string;
+	ownerImage: string | null;
+	albumArtKey: string | null;
+	createdAt: Date;
+}
+
 // get all public tracks (for home page)
 export const getPublicTracks = createServerFn({ method: "GET" }).handler(
-	async () => {
+	async (): Promise<PublicTrackInfo[]> => {
 		const db = getDb();
 		const result = await db
-			.select()
+			.select({
+				id: tracks.id,
+				title: tracks.title,
+				description: tracks.description,
+				ownerId: tracks.ownerId,
+				ownerName: user.name,
+				ownerImage: user.image,
+				activeVersion: tracks.activeVersion,
+				createdAt: tracks.createdAt,
+			})
 			.from(tracks)
+			.innerJoin(user, eq(tracks.ownerId, user.id))
 			.where(eq(tracks.isPublic, true))
 			.orderBy(desc(tracks.createdAt))
 			.limit(50);
 
-		return result;
+		// fetch album art keys for tracks with active versions
+		const tracksWithVersions = result.filter((t) => t.activeVersion);
+		const versionIds = tracksWithVersions.map((t) => t.activeVersion as string);
+
+		let albumArtMap: Record<string, string | null> = {};
+		if (versionIds.length > 0) {
+			const versions = await db
+				.select({
+					id: trackVersions.id,
+					albumArtKey: trackVersions.albumArtKey,
+				})
+				.from(trackVersions)
+				.where(inArray(trackVersions.id, versionIds));
+
+			albumArtMap = Object.fromEntries(
+				versions.map((v) => [v.id, v.albumArtKey]),
+			);
+		}
+
+		return result.map((t) => ({
+			id: t.id,
+			title: t.title,
+			description: t.description,
+			ownerId: t.ownerId,
+			ownerName: t.ownerName,
+			ownerImage: t.ownerImage,
+			albumArtKey: t.activeVersion ? (albumArtMap[t.activeVersion] ?? null) : null,
+			createdAt: t.createdAt,
+		}));
 	},
 );
 

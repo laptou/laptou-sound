@@ -1,43 +1,88 @@
-// track card component for displaying track in lists
+// track card component with album art and auto-fetched owner info
 
-import Play from "lucide-solid/icons/play";
-import type { Component } from "solid-js";
-import type { Track } from "@/db/schema";
+import { useQuery } from "@tanstack/solid-query";
+import Music from "lucide-solid/icons/music";
+import { type Component, Show } from "solid-js";
+import { getUserInfo } from "@/server/users";
+import { formatSmartDate } from "@/lib/utils";
+
+// minimal track shape required by the card
+interface TrackLike {
+	id: string;
+	ownerId: string;
+	title: string;
+	description?: string | null;
+	createdAt: Date;
+	albumArtKey?: string | null;
+}
 
 interface TrackCardProps {
-	track: Track;
+	track: TrackLike;
+	// optional pre-fetched info (skips query if provided)
 	ownerName?: string;
-	onPlay?: () => void;
+	ownerImage?: string | null;
 }
 
 export const TrackCard: Component<TrackCardProps> = (props) => {
+	// fetch owner info if not provided
+	const ownerQuery = useQuery(() => ({
+		queryKey: ["user", props.track.ownerId],
+		queryFn: () => getUserInfo({ data: { userId: props.track.ownerId } }),
+		enabled: props.ownerName === undefined,
+		staleTime: 1000 * 60 * 5, // cache for 5 min
+	}));
+
+	const displayName = () =>
+		props.ownerName ?? ownerQuery.data?.name ?? "Unknown";
+
+	const ownerImage = () =>
+		props.ownerImage !== undefined
+			? props.ownerImage
+			: (ownerQuery.data?.image ?? null);
+
+	const albumArtUrl = () =>
+		props.track.albumArtKey ? `/files/${props.track.albumArtKey}` : null;
+
 	return (
 		<a
 			href={`/track/${props.track.id}`}
-			class="group block bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 hover:border-violet-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10"
+			class="group flex bg-stone-900/50 hover:bg-stone-900/80 transition-colors"
 		>
-			<div class="flex items-start gap-4">
-				{/* play button overlay */}
-				<div class="relative w-16 h-16 flex-shrink-0">
-					<div class="absolute inset-0 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg opacity-80 group-hover:opacity-100 transition-opacity" />
-					<div class="absolute inset-0 flex items-center justify-center">
-						<Play class="w-8 h-8 text-white drop-shadow-lg group-hover:scale-110 transition-transform" />
-					</div>
-				</div>
-
-				{/* track info */}
-				<div class="flex-1 min-w-0">
-					<h3 class="text-white font-medium truncate group-hover:text-violet-300 transition-colors">
-						{props.track.title}
-					</h3>
-					<p class="text-gray-400 text-sm truncate">
-						{props.ownerName ?? "Unknown Artist"}
-					</p>
-					{props.track.description && (
-						<p class="text-gray-500 text-xs mt-1 line-clamp-2">
-							{props.track.description}
-						</p>
+			<div class="relative w-40 h-40 shrink-0 bg-stone-800">
+				<Show
+					when={albumArtUrl()}
+					fallback={
+						<div class="absolute inset-0 flex items-center justify-center">
+							<Music class="w-8 h-8 text-stone-600" />
+						</div>
+					}
+				>
+					{(url) => (
+						<img src={url()} alt="" class="w-full h-full object-cover" />
 					)}
+				</Show>
+			</div>
+
+			{/* track info */}
+			<div class="flex-1 min-w-0 px-8 py-3 flex flex-col justify-center group">
+				<h3 class="font-bold text-2xl transition-colors">
+					{props.track.title}
+				</h3>
+				<div class="flex items-center gap-2 mt-0.5">
+					<Show when={ownerImage()}>
+						{(img) => (
+							<img
+								src={img()}
+								alt=""
+								class="w-4 h-4 rounded-full object-cover"
+							/>
+						)}
+					</Show>
+					<span class="text-sm">
+						<span class="opacity-70">uploaded by </span>
+						<span class="opacity-70 group-hover:opacity-80">{displayName()}</span>
+						<span class="opacity-50">&nbsp;&bull;&nbsp;{formatSmartDate(props.track.createdAt)}</span>
+					</span>
 				</div>
 			</div>
 		</a>
