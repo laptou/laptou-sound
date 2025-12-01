@@ -19,7 +19,7 @@ type FileUploadZoneProps = {
 	onUpload?: () => void;
 	// optional: accepted file types (defaults to audio/*)
 	accept?: string;
-	// optional: max file size in bytes (defaults to 100MB)
+	// optional: max file size in bytes (defaults to 1GB)
 	maxSize?: number;
 	// optional: custom placeholder text
 	placeholder?: string;
@@ -27,7 +27,7 @@ type FileUploadZoneProps = {
 	class?: string;
 };
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
 
 export function FileUploadZone(props: FileUploadZoneProps) {
 	const [isDragOver, setIsDragOver] = createSignal(false);
