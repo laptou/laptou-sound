@@ -4,11 +4,11 @@
 import {
 	type Accessor,
 	type Component,
-	type JSX,
 	createContext,
 	createEffect,
 	createMemo,
 	createSignal,
+	type JSX,
 	onCleanup,
 	onMount,
 	useContext,
@@ -73,8 +73,7 @@ export const AudioPlayerProvider: Component<{ children: JSX.Element }> = (
 		setAudioRef(audioElement);
 
 		const handleTimeUpdate = () => setCurrentTime(audioElement!.currentTime);
-		const handleDurationChange = () =>
-			setDuration(audioElement!.duration || 0);
+		const handleDurationChange = () => setDuration(audioElement!.duration || 0);
 		const handleEnded = () => {
 			setIsPlaying(false);
 			// auto-play next track in queue
@@ -85,8 +84,7 @@ export const AudioPlayerProvider: Component<{ children: JSX.Element }> = (
 		};
 		const handlePlay = () => setIsPlaying(true);
 		const handlePause = () => setIsPlaying(false);
-		const handleLoadedMetadata = () =>
-			setDuration(audioElement!.duration || 0);
+		const handleLoadedMetadata = () => setDuration(audioElement!.duration || 0);
 
 		audioElement.addEventListener("timeupdate", handleTimeUpdate);
 		audioElement.addEventListener("durationchange", handleDurationChange);

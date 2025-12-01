@@ -9,7 +9,7 @@ import SkipBack from "lucide-solid/icons/skip-back";
 import SkipForward from "lucide-solid/icons/skip-forward";
 import Volume2 from "lucide-solid/icons/volume-2";
 import VolumeX from "lucide-solid/icons/volume-x";
-import { type Component, Show, createSignal } from "solid-js";
+import { type Component, createSignal, Show } from "solid-js";
 import { useAudioPlayer } from "@/lib/audio-player-context";
 import { cn } from "@/lib/utils";
 import { QueuePanel } from "./QueuePanel";

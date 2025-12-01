@@ -8,7 +8,7 @@ import Music from "lucide-solid/icons/music";
 import Play from "lucide-solid/icons/play";
 import Trash2 from "lucide-solid/icons/trash-2";
 import X from "lucide-solid/icons/x";
-import { type Component, For, Show, createSignal } from "solid-js";
+import { type Component, createSignal, For, Show } from "solid-js";
 import { type QueueTrack, useAudioPlayer } from "@/lib/audio-player-context";
 import { cn } from "@/lib/utils";
 
@@ -138,11 +138,7 @@ const QueueItem: Component<QueueItemProps> = (props) => {
 					}
 				>
 					{(url) => (
-						<img
-							src={url()}
-							alt=""
-							class="w-full h-full object-cover"
-						/>
+						<img src={url()} alt="" class="w-full h-full object-cover" />
 					)}
 				</Show>
 				{/* play overlay */}
