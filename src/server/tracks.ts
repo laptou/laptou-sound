@@ -3,7 +3,7 @@
 import { env } from "cloudflare:workers";
 import { createServerFn } from "@tanstack/solid-start";
 import { getRequest } from "@tanstack/solid-start/server";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb, type NewTrack, tracks, trackVersions, user } from "@/db";
 import { createAuth } from "@/lib/auth";
 import { deleteTrackFiles, getOriginalKey, uploadFile } from "./files";
@@ -120,7 +120,7 @@ export const getTrackVersions = createServerFn({ method: "GET" })
 			canViewAllVersions = isTrackOwner || isAdmin;
 		}
 
-		// if user can view all versions, return all
+		// if user can view all versions, return all (including archived)
 		if (canViewAllVersions) {
 			const result = await db
 				.select()
@@ -130,12 +130,17 @@ export const getTrackVersions = createServerFn({ method: "GET" })
 			return result;
 		}
 
-		// otherwise, only return the active version if it exists
+		// otherwise, only return the active version if it exists and not archived
 		if (track[0].activeVersion) {
 			const result = await db
 				.select()
 				.from(trackVersions)
-				.where(eq(trackVersions.id, track[0].activeVersion))
+				.where(
+					and(
+						eq(trackVersions.id, track[0].activeVersion),
+						isNull(trackVersions.archivedAt),
+					),
+				)
 				.limit(1);
 			return result;
 		}
@@ -401,7 +406,9 @@ export const uploadTrackVersion = createServerFn({ method: "POST" }).handler(
 	},
 );
 
-// delete a track version
+// hard-delete a track version (permanently removes from db and r2)
+// note: the FK constraint on tracks.active_version has ON DELETE SET NULL,
+// so sqlite will automatically clear active_version if this version is active
 export const deleteTrackVersion = createServerFn({ method: "POST" })
 	.inputValidator((data: { trackId: string; versionId: string }) => data)
 	.handler(async ({ data }) => {
@@ -437,7 +444,7 @@ export const deleteTrackVersion = createServerFn({ method: "POST" })
 		const { deleteTrackVersionFiles } = await import("./files");
 		await deleteTrackVersionFiles(data.trackId, data.versionId);
 
-		// delete from database
+		// delete from database (ON DELETE SET NULL handles clearing active_version)
 		await db.delete(trackVersions).where(eq(trackVersions.id, data.versionId));
 
 		return { success: true };
@@ -577,4 +584,94 @@ export const getTrackVersion = createServerFn({ method: "GET" })
 			.limit(1);
 
 		return result[0] ?? null;
+	});
+
+// archive (soft-delete) a track version
+export const archiveTrackVersion = createServerFn({ method: "POST" })
+	.inputValidator((data: { trackId: string; versionId: string }) => data)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		const db = getDb();
+
+		// verify ownership
+		const track = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, data.trackId))
+			.limit(1);
+
+		if (!track[0]) {
+			throw new Error("Track not found");
+		}
+
+		const isOwner = track[0].ownerId === session.user.id;
+		const isAdmin = session.user.role === "admin";
+
+		if (!isOwner && !isAdmin) {
+			throw new Error("You do not have permission to archive this version");
+		}
+
+		// if this version is the active version, clear it
+		if (track[0].activeVersion === data.versionId) {
+			await db
+				.update(tracks)
+				.set({ activeVersion: null, updatedAt: new Date() })
+				.where(eq(tracks.id, data.trackId));
+		}
+
+		// set archived_at timestamp
+		await db
+			.update(trackVersions)
+			.set({ archivedAt: new Date() })
+			.where(eq(trackVersions.id, data.versionId));
+
+		return { success: true };
+	});
+
+// unarchive (restore) a track version
+export const unarchiveTrackVersion = createServerFn({ method: "POST" })
+	.inputValidator((data: { trackId: string; versionId: string }) => data)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		const db = getDb();
+
+		// verify ownership
+		const track = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, data.trackId))
+			.limit(1);
+
+		if (!track[0]) {
+			throw new Error("Track not found");
+		}
+
+		const isOwner = track[0].ownerId === session.user.id;
+		const isAdmin = session.user.role === "admin";
+
+		if (!isOwner && !isAdmin) {
+			throw new Error("You do not have permission to unarchive this version");
+		}
+
+		// clear archived_at timestamp
+		await db
+			.update(trackVersions)
+			.set({ archivedAt: null })
+			.where(eq(trackVersions.id, data.versionId));
+
+		return { success: true };
 	});

@@ -36,6 +36,20 @@
       "when": 1764551777963,
       "tag": "0004_flimsy_dexter_bennett",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1764563894705,
+      "tag": "0005_exotic_maginty",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1764563900000,
+      "tag": "0006_fix_active_version_fk",
+      "breakpoints": true
     }
   ]
 }

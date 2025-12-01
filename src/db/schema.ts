@@ -76,6 +76,8 @@ export const trackVersions = sqliteTable(
 		genre: text("genre"),
 		year: integer("year"),
 		createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+		// soft-delete: when set, version is archived but not removed
+		archivedAt: integer("archived_at", { mode: "timestamp" }),
 	},
 	(table) => [
 		index("track_versions_track_idx").on(table.trackId),

@@ -16,7 +16,8 @@
 		{
 			"binding": "laptou_sound_db",
 			"database_name": "laptou-sound-db",
-			"database_id": "0523bd7a-d231-44f1-aeb2-a99beb04b709"
+			"database_id": "0523bd7a-d231-44f1-aeb2-a99beb04b709",
+			"migrations_dir": "drizzle/migrations"
 		}
 	],
 	// r2 bucket for audio files and assets
