@@ -326,6 +326,36 @@ function AccountPage() {
 						</p>
 					</div>
 
+					{/* role display (read-only) */}
+					<div>
+						<label class="text-sm font-medium text-gray-300 block mb-1">
+							Account Role
+						</label>
+						<div class="flex items-center gap-2">
+							{(() => {
+								const role = (currentUser() as { role?: string })?.role || "commenter";
+								const roleDisplay =
+									role.charAt(0).toUpperCase() + role.slice(1);
+								return (
+									<span
+										class={`px-3 py-2 rounded-lg text-sm font-medium ${
+											role === "admin"
+												? "bg-red-500/20 text-red-300 border border-red-500/50"
+												: role === "uploader"
+													? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
+													: "bg-gray-500/20 text-gray-300 border border-gray-500/50"
+										}`}
+									>
+										{roleDisplay}
+									</span>
+								);
+							})()}
+						</div>
+						<p class="text-gray-500 text-xs mt-1">
+							Redeem an invite code below to upgrade your role
+						</p>
+					</div>
+
 					<profileForm.Subscribe
 						selector={(state) => ({
 							canSubmit: state.canSubmit,
