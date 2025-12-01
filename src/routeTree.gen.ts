@@ -13,6 +13,8 @@ import { Route as HealthRouteImport } from './routes/health'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FilesSplatRouteImport } from './routes/files/$'
+import { Route as ApiUploadProfilePhotoRouteImport } from './routes/api/upload-profile-photo'
+import { Route as ApiUploadAlbumArtRouteImport } from './routes/api/upload-album-art'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as LayoutSignupRouteImport } from './routes/_layout/signup'
 import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
@@ -43,6 +45,16 @@ const IndexRoute = IndexRouteImport.update({
 const FilesSplatRoute = FilesSplatRouteImport.update({
   id: '/files/$',
   path: '/files/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadProfilePhotoRoute = ApiUploadProfilePhotoRouteImport.update({
+  id: '/api/upload-profile-photo',
+  path: '/api/upload-profile-photo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadAlbumArtRoute = ApiUploadAlbumArtRouteImport.update({
+  id: '/api/upload-album-art',
+  path: '/api/upload-album-art',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiUploadRoute = ApiUploadRouteImport.update({
@@ -111,6 +123,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LayoutLoginRoute
   '/signup': typeof LayoutSignupRoute
   '/api/upload': typeof ApiUploadRoute
+  '/api/upload-album-art': typeof ApiUploadAlbumArtRoute
+  '/api/upload-profile-photo': typeof ApiUploadProfilePhotoRoute
   '/files/$': typeof FilesSplatRoute
   '/account': typeof LayoutAuthedAccountRoute
   '/admin': typeof LayoutAuthedAdminRoute
@@ -127,6 +141,8 @@ export interface FileRoutesByTo {
   '/login': typeof LayoutLoginRoute
   '/signup': typeof LayoutSignupRoute
   '/api/upload': typeof ApiUploadRoute
+  '/api/upload-album-art': typeof ApiUploadAlbumArtRoute
+  '/api/upload-profile-photo': typeof ApiUploadProfilePhotoRoute
   '/files/$': typeof FilesSplatRoute
   '/account': typeof LayoutAuthedAccountRoute
   '/admin': typeof LayoutAuthedAdminRoute
@@ -146,6 +162,8 @@ export interface FileRoutesById {
   '/_layout/login': typeof LayoutLoginRoute
   '/_layout/signup': typeof LayoutSignupRoute
   '/api/upload': typeof ApiUploadRoute
+  '/api/upload-album-art': typeof ApiUploadAlbumArtRoute
+  '/api/upload-profile-photo': typeof ApiUploadProfilePhotoRoute
   '/files/$': typeof FilesSplatRoute
   '/_layout/_authed/account': typeof LayoutAuthedAccountRoute
   '/_layout/_authed/admin': typeof LayoutAuthedAdminRoute
@@ -164,6 +182,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/api/upload'
+    | '/api/upload-album-art'
+    | '/api/upload-profile-photo'
     | '/files/$'
     | '/account'
     | '/admin'
@@ -180,6 +200,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/api/upload'
+    | '/api/upload-album-art'
+    | '/api/upload-profile-photo'
     | '/files/$'
     | '/account'
     | '/admin'
@@ -198,6 +220,8 @@ export interface FileRouteTypes {
     | '/_layout/login'
     | '/_layout/signup'
     | '/api/upload'
+    | '/api/upload-album-art'
+    | '/api/upload-profile-photo'
     | '/files/$'
     | '/_layout/_authed/account'
     | '/_layout/_authed/admin'
@@ -214,6 +238,8 @@ export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
   HealthRoute: typeof HealthRoute
   ApiUploadRoute: typeof ApiUploadRoute
+  ApiUploadAlbumArtRoute: typeof ApiUploadAlbumArtRoute
+  ApiUploadProfilePhotoRoute: typeof ApiUploadProfilePhotoRoute
   FilesSplatRoute: typeof FilesSplatRoute
   ApiAdminErrorsRoute: typeof ApiAdminErrorsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -247,6 +273,20 @@ declare module '@tanstack/solid-router' {
       path: '/files/$'
       fullPath: '/files/$'
       preLoaderRoute: typeof FilesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload-profile-photo': {
+      id: '/api/upload-profile-photo'
+      path: '/api/upload-profile-photo'
+      fullPath: '/api/upload-profile-photo'
+      preLoaderRoute: typeof ApiUploadProfilePhotoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload-album-art': {
+      id: '/api/upload-album-art'
+      path: '/api/upload-album-art'
+      fullPath: '/api/upload-album-art'
+      preLoaderRoute: typeof ApiUploadAlbumArtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/upload': {
@@ -378,6 +418,8 @@ const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
   HealthRoute: HealthRoute,
   ApiUploadRoute: ApiUploadRoute,
+  ApiUploadAlbumArtRoute: ApiUploadAlbumArtRoute,
+  ApiUploadProfilePhotoRoute: ApiUploadProfilePhotoRoute,
   FilesSplatRoute: FilesSplatRoute,
   ApiAdminErrorsRoute: ApiAdminErrorsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

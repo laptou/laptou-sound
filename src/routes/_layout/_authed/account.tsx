@@ -10,12 +10,11 @@ import {
 	TextFieldInput,
 	TextFieldLabel,
 } from "@ui/text-field";
-import Camera from "lucide-solid/icons/camera";
 import Key from "lucide-solid/icons/key";
 import LogOut from "lucide-solid/icons/log-out";
 import User from "lucide-solid/icons/user";
-import { Show } from "solid-js";
 import { toast } from "solid-sonner";
+import { ImageUploadZone } from "@/components/ImageUploadZone";
 import { signOut, useSession } from "@/lib/auth-client";
 import {
 	changeEmailMutationOptions,
@@ -24,6 +23,11 @@ import {
 	updateProfileMutationOptions,
 } from "@/lib/auth-queries";
 import { getSession } from "@/server/auth";
+import {
+	getProfilePhotoUploadUrl,
+	confirmProfilePhotoUpload,
+	removeProfilePhoto,
+} from "@/server/profile-photos";
 
 export const Route = createFileRoute("/_layout/_authed/account")({
 	loader: async () => {
@@ -51,17 +55,15 @@ function AccountPage() {
 		redeemInviteCodeMutationOptions(),
 	);
 
-	// profile form
+	// profile form (name only - photo handled separately)
 	const profileForm = createForm(() => ({
 		defaultValues: {
 			name: data().user?.name ?? "",
-			image: data().user?.image ?? "",
 		},
 		onSubmit: async ({ value }) => {
 			try {
 				await updateProfileMutation.mutateAsync({
 					name: value.name,
-					image: value.image || null,
 				});
 				toast.success("Profile updated successfully");
 			} catch (err) {
@@ -72,6 +74,34 @@ function AccountPage() {
 			}
 		},
 	}));
+
+	// handle profile photo upload
+	const handleGetUploadUrl = async (contentType: string, ext: string) => {
+		return await getProfilePhotoUploadUrl({
+			data: { contentType, fileExtension: ext },
+		});
+	};
+
+	const handleConfirmUpload = async (tempKey: string) => {
+		await confirmProfilePhotoUpload({ data: { tempKey } });
+	};
+
+	const handlePhotoUploadComplete = () => {
+		// refresh session to get new photo url
+		queryClient.invalidateQueries({ queryKey: ["session"] });
+	};
+
+	const handleRemovePhoto = async () => {
+		try {
+			await removeProfilePhoto();
+			toast.success("Profile photo removed");
+			queryClient.invalidateQueries({ queryKey: ["session"] });
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : "Failed to remove photo",
+			);
+		}
+	};
 
 	// email form
 	const emailForm = createForm(() => ({
@@ -175,11 +205,6 @@ function AccountPage() {
 
 	const currentUser = () => session.data?.user ?? data().user;
 
-	// track whether avatar input is expanded
-	const showAvatarInput = profileForm.useStore(
-		(state) => state.values.image !== (data().user?.image ?? ""),
-	);
-
 	return (
 		<div class="max-w-2xl mx-auto">
 			<h1 class="text-3xl font-bold text-white mb-8">Account Settings</h1>
@@ -201,83 +226,23 @@ function AccountPage() {
 				>
 					{/* avatar */}
 					<div class="flex items-start gap-6">
-						<div class="relative shrink-0">
-							<profileForm.Field name="image">
-								{(field) => (
-									<div class="w-24 h-24 rounded-full bg-linear-to-br from-violet-500 to-indigo-600 flex items-center justify-center overflow-hidden">
-										<Show
-											when={field().state.value}
-											fallback={
-												<span class="text-3xl font-bold text-white">
-													{currentUser()?.name?.charAt(0).toUpperCase() ?? "?"}
-												</span>
-											}
-										>
-											{(src) => (
-												<img
-													src={src()}
-													alt="Avatar"
-													class="w-full h-full object-cover"
-												/>
-											)}
-										</Show>
-									</div>
-								)}
-							</profileForm.Field>
-							<button
-								type="button"
-								onClick={() => {
-									// toggle showing the avatar input by clearing or setting a placeholder
-									const currentImage = profileForm.getFieldValue("image");
-									if (currentImage === (data().user?.image ?? "")) {
-										// expand the input
-										profileForm.setFieldValue("image", currentImage || " ");
-									}
-								}}
-								class="absolute bottom-0 right-0 w-8 h-8 bg-violet-500 hover:bg-violet-600 rounded-full flex items-center justify-center cursor-pointer transition-colors shadow-lg"
-							>
-								<Camera class="w-4 h-4 text-white" />
-							</button>
-						</div>
-						<div class="flex-1">
-							<Show
-								when={showAvatarInput() || !data().user?.image}
-								fallback={
-									<div class="text-gray-400 text-sm pt-2">
-										<p>Click the camera icon to change your photo</p>
-									</div>
-								}
-							>
-								<profileForm.Field name="image">
-									{(field) => (
-										<TextField
-											value={field().state.value?.trim() ?? ""}
-											onChange={(v) => field().handleChange(v)}
-											validationState={
-												field().state.meta.errors.length > 0
-													? "invalid"
-													: "valid"
-											}
-										>
-											<TextFieldLabel class="text-gray-300">
-												Profile Picture URL
-											</TextFieldLabel>
-											<TextFieldInput
-												type="url"
-												placeholder="https://example.com/your-photo.jpg"
-												onBlur={field().handleBlur}
-												class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
-											/>
-											<TextFieldErrorMessage>
-												{field().state.meta.errors[0]}
-											</TextFieldErrorMessage>
-										</TextField>
-									)}
-								</profileForm.Field>
-								<p class="text-gray-500 text-xs mt-1">
-									Enter a URL to an image. Leave empty to remove.
-								</p>
-							</Show>
+						<ImageUploadZone
+							currentImage={currentUser()?.image}
+							placeholder={currentUser()?.name?.charAt(0).toUpperCase() ?? "?"}
+							getUploadUrl={handleGetUploadUrl}
+							confirmUpload={handleConfirmUpload}
+							onUploadComplete={handlePhotoUploadComplete}
+							onRemove={handleRemovePhoto}
+							previewSize="md"
+							shape="circle"
+						/>
+						<div class="flex-1 pt-2">
+							<p class="text-gray-400 text-sm">
+								Click the camera icon to upload a new photo
+							</p>
+							<p class="text-gray-500 text-xs mt-1">
+								Supported formats: PNG, JPG, GIF, WebP (max 5MB)
+							</p>
 						</div>
 					</div>
 

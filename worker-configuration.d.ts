@@ -11,6 +11,11 @@ declare namespace Cloudflare {
 		CLOUDFLARE_D1_DATABASE_ID: string;
 		R2_ACCESS_KEY_ID: string;
 		R2_SECRET_ACCESS_KEY: string;
+		// when set to "1" or "true", uploads go through the worker instead of presigned urls
+		// useful for local development where presigned urls don't work
+		R2_INDIRECT_ACCESS?: string;
+		// cloudflare images api token for resizing/transforming images
+		CLOUDFLARE_IMAGES_API_TOKEN?: string;
 		laptou_sound_files: R2Bucket;
 		laptou_sound_db: D1Database;
 		laptou_sound_audio_processing_queue: Queue;

@@ -29,7 +29,10 @@
 	],
 	"vars": {
 		"VITE_BETTER_AUTH_URL": "https://sound.laptou.net",
-		"CLOUDFLARE_ACCOUNT_ID": "808e55c8e94dc2bd77c7b37fdc5fd925"
+		"CLOUDFLARE_ACCOUNT_ID": "808e55c8e94dc2bd77c7b37fdc5fd925",
+		// set to "1" for local development where presigned urls don't work
+		// in production, this should not be set (or set to empty string)
+		"R2_INDIRECT_ACCESS": ""
 	},
 	// queues for async audio processing
 	"queues": {
