@@ -255,6 +255,7 @@ function TrackDetailPage() {
 						streamUrl={getStreamUrl(version())}
 						title={data().track.title}
 						artist={version().artist ?? "Artist"}
+						ownerName={ownerQuery.data?.name ?? null}
 						albumArtUrl={getAlbumArtUrl(version())}
 						duration={version().duration ?? undefined}
 						onPlay={handlePlay}

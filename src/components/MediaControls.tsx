@@ -129,7 +129,23 @@ const MediaControlsInner: Component = () => {
 											{track().title}
 										</p>
 										<p class="text-xs text-stone-400 truncate">
-											{track().artist}
+											<Show
+												when={track().artist && track().artist !== "Artist"}
+												fallback={
+													track().ownerName ?? "Unknown Artist"
+												}
+											>
+												{(artist) => (
+													<>
+														{artist()}
+														<Show when={track().ownerName}>
+															{(owner) => (
+																<> &bull; {owner()}</>
+															)}
+														</Show>
+													</>
+												)}
+											</Show>
 										</p>
 									</div>
 								</>

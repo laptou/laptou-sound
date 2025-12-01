@@ -81,7 +81,7 @@ function HomePage() {
 						</div>
 					}
 				>
-					<div class="flex flex-col">
+					<div class="flex flex-col gap-4">
 						<For each={data().tracks}>
 							{(track) => (
 								<TrackCard

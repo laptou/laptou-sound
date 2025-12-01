@@ -20,6 +20,7 @@ export interface QueueTrack {
 	versionId: string;
 	title: string;
 	artist: string;
+	ownerName?: string | null;
 	streamUrl: string;
 	albumArtUrl?: string | null;
 	duration?: number;

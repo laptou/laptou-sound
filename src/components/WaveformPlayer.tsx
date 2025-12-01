@@ -32,6 +32,7 @@ export interface WaveformPlayerProps {
 	streamUrl: string | null;
 	title: string;
 	artist: string;
+	ownerName?: string | null;
 	albumArtUrl?: string | null;
 	duration?: number;
 	onPlay?: () => void;
@@ -213,6 +214,7 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 		versionId: props.versionId,
 		title: props.title,
 		artist: props.artist,
+		ownerName: props.ownerName,
 		streamUrl: props.streamUrl!,
 		albumArtUrl: props.albumArtUrl,
 		duration: props.duration,
