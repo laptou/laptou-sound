@@ -1,7 +1,7 @@
 // account settings page - manage profile, email, and password
 
 import { createForm } from "@tanstack/solid-form";
-import { useMutation } from "@tanstack/solid-query";
+import { useMutation, useQueryClient } from "@tanstack/solid-query";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { Button } from "@ui/button";
 import {
@@ -35,6 +35,7 @@ function AccountPage() {
 	const data = Route.useLoaderData();
 	const navigate = useNavigate();
 	const session = useSession();
+	const queryClient = useQueryClient();
 
 	// mutations
 	const updateProfileMutation = useMutation(() =>
@@ -135,7 +136,7 @@ function AccountPage() {
 
 	const handleSignOut = async () => {
 		try {
-			await signOut();
+			await signOut(queryClient);
 			navigate({ to: "/" });
 		} catch (err) {
 			console.error("Sign out failed:", err);

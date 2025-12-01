@@ -1,7 +1,8 @@
 // better auth client for solidjs
 // provides hooks and methods for client-side auth
 
-import { useQuery, useQueryClient } from "@tanstack/solid-query";
+import type { QueryClient } from "@tanstack/solid-query";
+import { useQuery } from "@tanstack/solid-query";
 import { useRouteContext } from "@tanstack/solid-router";
 import { createClientOnlyFn } from "@tanstack/solid-start";
 import { magicLinkClient } from "better-auth/client/plugins";
@@ -40,61 +41,61 @@ function unwrapBetterAuthResult<T>(
 }
 
 export const signInEmail = createClientOnlyFn(
-	async (...params: Parameters<typeof authClient.signIn.email>) => {
+	async (client: QueryClient | null, ...params: Parameters<typeof authClient.signIn.email>) => {
 		const result = unwrapBetterAuthResult(
 			await authClient.signIn.email(...params),
 		);
 
-		useQueryClient().invalidateQueries({ queryKey: ["session"] });
+		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},
 );
 
 export const signInMagicLink = createClientOnlyFn(
-	async (...params: Parameters<typeof authClient.signIn.magicLink>) => {
+	async (client: QueryClient | null, ...params: Parameters<typeof authClient.signIn.magicLink>) => {
 		const result = unwrapBetterAuthResult(await authClient.signIn.magicLink(...params));
-		useQueryClient().invalidateQueries({ queryKey: ["session"] });
+		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},
 );
 
-export const signOut = createClientOnlyFn(async () => {
-	const result = 	unwrapBetterAuthResult(await authClient.signOut());
-	useQueryClient().invalidateQueries({ queryKey: ["session"] });
+export const signOut = createClientOnlyFn(async (client: QueryClient | null) => {
+	const result = unwrapBetterAuthResult(await authClient.signOut());
+	client?.invalidateQueries({ queryKey: ["session"] });
 	return result;
 });
 
 export const signUpEmail = createClientOnlyFn(
-	async (...params: Parameters<typeof authClient.signUp.email>) => {
+	async (client: QueryClient | null, ...params: Parameters<typeof authClient.signUp.email>) => {
 		const result = unwrapBetterAuthResult(await authClient.signUp.email(...params));
-		useQueryClient().invalidateQueries({ queryKey: ["session"] });
+		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},
 );
 
 // update user profile (name and image)
 export const updateUser = createClientOnlyFn(
-	async (data: { name?: string; image?: string | null }) => {
+	async (client: QueryClient | null, data: { name?: string; image?: string | null }) => {
 		const result = unwrapBetterAuthResult(await authClient.updateUser(data));
-		useQueryClient().invalidateQueries({ queryKey: ["session"] });
+		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},
 );
 
 // change email (sends verification email)
 export const changeEmail = createClientOnlyFn(
-	async (data: { newEmail: string }) => {
+	async (client: QueryClient | null, data: { newEmail: string }) => {
 		const result = unwrapBetterAuthResult(await authClient.changeEmail(data));
-		useQueryClient().invalidateQueries({ queryKey: ["session"] });
+		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},
 );
 
 // change password
 export const changePassword = createClientOnlyFn(
-	async (data: { currentPassword: string; newPassword: string }) => {
+	async (client: QueryClient | null, data: { currentPassword: string; newPassword: string }) => {
 		const result = unwrapBetterAuthResult(await authClient.changePassword(data));
-		useQueryClient().invalidateQueries({ queryKey: ["session"] });
+		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},
 );
