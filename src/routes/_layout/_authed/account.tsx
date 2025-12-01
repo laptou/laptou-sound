@@ -11,6 +11,7 @@ import {
 	TextFieldLabel,
 } from "@ui/text-field";
 import Camera from "lucide-solid/icons/camera";
+import Key from "lucide-solid/icons/key";
 import LogOut from "lucide-solid/icons/log-out";
 import User from "lucide-solid/icons/user";
 import { Show } from "solid-js";
@@ -19,6 +20,7 @@ import { signOut, useSession } from "@/lib/auth-client";
 import {
 	changeEmailMutationOptions,
 	changePasswordMutationOptions,
+	redeemInviteCodeMutationOptions,
 	updateProfileMutationOptions,
 } from "@/lib/auth-queries";
 import { getSession } from "@/server/auth";
@@ -44,6 +46,9 @@ function AccountPage() {
 	const changeEmailMutation = useMutation(() => changeEmailMutationOptions());
 	const changePasswordMutation = useMutation(() =>
 		changePasswordMutationOptions(),
+	);
+	const redeemInviteCodeMutation = useMutation(() =>
+		redeemInviteCodeMutationOptions(),
 	);
 
 	// profile form
@@ -131,6 +136,31 @@ function AccountPage() {
 				}
 				return undefined;
 			},
+		},
+	}));
+
+	// invite code form
+	const inviteCodeForm = createForm(() => ({
+		defaultValues: {
+			code: "",
+		},
+		onSubmit: async ({ value }) => {
+			try {
+				const result = await redeemInviteCodeMutation.mutateAsync({
+					code: value.code,
+				});
+				toast.success(`Role upgraded to ${result.newRole}!`, {
+					duration: 5000,
+				});
+				inviteCodeForm.reset();
+				// invalidate session to refresh user data
+				queryClient.invalidateQueries({ queryKey: ["session"] });
+			} catch (err) {
+				toast.error(
+					err instanceof Error ? err.message : "Failed to redeem invite code",
+				);
+				throw err;
+			}
 		},
 	}));
 
@@ -382,6 +412,82 @@ function AccountPage() {
 							</Button>
 						)}
 					</emailForm.Subscribe>
+				</form>
+			</section>
+
+			{/* invite code redemption section */}
+			<section class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 mb-6">
+				<h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+					<Key class="w-5 h-5 text-violet-400" />
+					Redeem Invite Code
+				</h2>
+
+				<p class="text-gray-400 mb-4 text-sm">
+					Enter an invite code to upgrade your account role. You can only upgrade
+					to a higher role, not downgrade.
+				</p>
+
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						inviteCodeForm.handleSubmit();
+					}}
+					class="space-y-4"
+				>
+					<inviteCodeForm.Field
+						name="code"
+						validators={{
+							onChange: ({ value }) => {
+								if (!value?.trim()) return "Invite code is required";
+								if (value.trim().length < 4)
+									return "Invite code must be at least 4 characters";
+								return undefined;
+							},
+						}}
+					>
+						{(field) => (
+							<TextField
+								value={field().state.value}
+								onChange={(v) => field().handleChange(v.toUpperCase())}
+								validationState={
+									field().state.meta.errors.length > 0 ? "invalid" : "valid"
+								}
+							>
+								<TextFieldLabel class="text-gray-300">
+									Invite Code
+								</TextFieldLabel>
+								<TextFieldInput
+									type="text"
+									placeholder="Enter invite code"
+									onBlur={field().handleBlur}
+									class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500 font-mono"
+									maxLength={20}
+								/>
+								<TextFieldErrorMessage>
+									{field().state.meta.errors[0]}
+								</TextFieldErrorMessage>
+							</TextField>
+						)}
+					</inviteCodeForm.Field>
+
+					<inviteCodeForm.Subscribe
+						selector={(state) => ({
+							canSubmit: state.canSubmit,
+							isSubmitting: state.isSubmitting,
+						})}
+					>
+						{(state) => (
+							<Button
+								type="submit"
+								disabled={!state().canSubmit || state().isSubmitting}
+								variant="outline"
+								class="border-violet-600 text-violet-300 hover:bg-violet-500/10"
+							>
+								{state().isSubmitting ? "Redeeming..." : "Redeem Code"}
+							</Button>
+						)}
+					</inviteCodeForm.Subscribe>
 				</form>
 			</section>
 

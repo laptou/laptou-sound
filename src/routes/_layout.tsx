@@ -4,6 +4,7 @@ import {
 	Link,
 	Outlet,
 } from "@tanstack/solid-router";
+import Shield from "lucide-solid/icons/shield";
 import Upload from "lucide-solid/icons/upload";
 import User from "lucide-solid/icons/user";
 import { Show } from "solid-js";
@@ -53,6 +54,14 @@ function RouteComponent() {
 									Upload Track
 								</Button>
 							</Link>
+							<Show when={sessionState?.data?.user?.role === "admin"}>
+								<Link to="/admin">
+									<Button variant="secondary">
+										<Shield class="w-5 h-5" />
+										Admin
+									</Button>
+								</Link>
+							</Show>
 							<Link to="/account">
 								<Button variant="secondary">
 									<User class="w-5 h-5" />
