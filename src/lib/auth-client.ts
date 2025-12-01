@@ -53,6 +53,37 @@ export const signUpEmail = createClientOnlyFn(
 	},
 );
 
+// update user profile (name and image)
+export const updateUser = createClientOnlyFn(
+	async (data: { name?: string; image?: string | null }) => {
+		const result = await authClient.updateUser(data);
+		if (result.error) throw result.error;
+
+		useQueryClient().invalidateQueries({ queryKey: ["session"] });
+		return result.data;
+	},
+);
+
+// change email (sends verification email)
+export const changeEmail = createClientOnlyFn(
+	async (data: { newEmail: string }) => {
+		const result = await authClient.changeEmail(data);
+		if (result.error) throw result.error;
+
+		return result.data;
+	},
+);
+
+// change password
+export const changePassword = createClientOnlyFn(
+	async (data: { currentPassword: string; newPassword: string }) => {
+		const result = await authClient.changePassword(data);
+		if (result.error) throw result.error;
+
+		return result.data;
+	},
+);
+
 export const useSession = () => {
 	const context = useRouteContext({ from: "__root__" });
 

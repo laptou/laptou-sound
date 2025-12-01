@@ -1,0 +1,1 @@
+ALTER TABLE `track_versions` ADD `album_art_key` text;

@@ -392,3 +392,139 @@ export const deleteTrackVersion = createServerFn({ method: "POST" })
 
 		return { success: true };
 	});
+
+// set active version for a track
+export const setActiveVersion = createServerFn({ method: "POST" })
+	.inputValidator((data: { trackId: string; versionId: string }) => data)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		const db = getDb();
+
+		// verify ownership
+		const track = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, data.trackId))
+			.limit(1);
+
+		if (!track[0]) {
+			throw new Error("Track not found");
+		}
+
+		const isOwner = track[0].ownerId === session.user.id;
+		const isAdmin = session.user.role === "admin";
+
+		if (!isOwner && !isAdmin) {
+			throw new Error("You do not have permission to edit this track");
+		}
+
+		// verify version exists and is complete
+		const version = await db
+			.select()
+			.from(trackVersions)
+			.where(eq(trackVersions.id, data.versionId))
+			.limit(1);
+
+		if (!version[0]) {
+			throw new Error("Version not found");
+		}
+
+		if (version[0].processingStatus !== "complete") {
+			throw new Error("Cannot set incomplete version as active");
+		}
+
+		await db
+			.update(tracks)
+			.set({ activeVersion: data.versionId, updatedAt: new Date() })
+			.where(eq(tracks.id, data.trackId));
+
+		return { success: true };
+	});
+
+// update version metadata
+export const updateVersionMetadata = createServerFn({ method: "POST" })
+	.inputValidator(
+		(data: {
+			trackId: string;
+			versionId: string;
+			artist?: string | null;
+			album?: string | null;
+			genre?: string | null;
+			year?: number | null;
+		}) => data,
+	)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		const db = getDb();
+
+		// verify ownership
+		const track = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, data.trackId))
+			.limit(1);
+
+		if (!track[0]) {
+			throw new Error("Track not found");
+		}
+
+		const isOwner = track[0].ownerId === session.user.id;
+		const isAdmin = session.user.role === "admin";
+
+		if (!isOwner && !isAdmin) {
+			throw new Error("You do not have permission to edit this track");
+		}
+
+		// verify version exists
+		const version = await db
+			.select()
+			.from(trackVersions)
+			.where(eq(trackVersions.id, data.versionId))
+			.limit(1);
+
+		if (!version[0]) {
+			throw new Error("Version not found");
+		}
+
+		const updates: Partial<typeof trackVersions.$inferInsert> = {};
+
+		if (data.artist !== undefined) updates.artist = data.artist;
+		if (data.album !== undefined) updates.album = data.album;
+		if (data.genre !== undefined) updates.genre = data.genre;
+		if (data.year !== undefined) updates.year = data.year;
+
+		await db
+			.update(trackVersions)
+			.set(updates)
+			.where(eq(trackVersions.id, data.versionId));
+
+		return { success: true };
+	});
+
+// get a single version by id
+export const getTrackVersion = createServerFn({ method: "GET" })
+	.inputValidator((data: { versionId: string }) => data)
+	.handler(async ({ data }) => {
+		const db = getDb();
+		const result = await db
+			.select()
+			.from(trackVersions)
+			.where(eq(trackVersions.id, data.versionId))
+			.limit(1);
+
+		return result[0] ?? null;
+	});

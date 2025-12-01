@@ -22,6 +22,20 @@
       "when": 1764540039955,
       "tag": "0002_fuzzy_pete_wisdom",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1764542857451,
+      "tag": "0003_serious_shaman",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1764551777963,
+      "tag": "0004_flimsy_dexter_bennett",
+      "breakpoints": true
     }
   ]
 }

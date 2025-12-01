@@ -26,3 +26,5 @@ If you need to modify `wrangler.jsonc`, prefer to do so using `bun wrangler` com
 Make sure to check the contents of the `llm-docs` folder so that you know which docs are available.
 
 In SolidJS, when using the `<Show>` component, take advantage of the fact that it can take a lambda as a child to reduce code verbosity / reduce the number of null checks required.
+
+Avoid using default exports when writing components if you can help it.

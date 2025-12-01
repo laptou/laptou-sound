@@ -1,28 +1,36 @@
 // track detail page with waveform player, versioning, and download
 
-import { createFileRoute } from "@tanstack/solid-router";
+import { createFileRoute, Link } from "@tanstack/solid-router";
 import Download from "lucide-solid/icons/download";
+import Music from "lucide-solid/icons/music";
+import Pencil from "lucide-solid/icons/pencil";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import SocialPromptModal from "@/components/SocialPromptModal";
-import WaveformPlayer from "@/components/WaveformPlayer";
+import { WaveformPlayer } from "@/components/WaveformPlayer";
 import type { TrackVersion } from "@/db/schema";
 import { wrapLoader } from "@/lib/loader-wrapper";
 import { getPlayCount, recordPlay } from "@/server/plays";
 import { getTrack, getTrackVersions } from "@/server/tracks";
 
-export const Route = createFileRoute("/track/$trackId")({
-	loader: wrapLoader("/track/$trackId", async ({ params }) => {
+export const Route = createFileRoute("/track/$trackId/")({
+	loader: wrapLoader("/track/$trackId", async ({ params, context }) => {
 		const [track, versions, playCount] = await Promise.all([
 			getTrack({ data: { trackId: params.trackId } }),
 			getTrackVersions({ data: { trackId: params.trackId } }),
 			getPlayCount({ data: { trackId: params.trackId } }),
-		]);
+		])
 
 		if (!track) {
 			throw new Error("Track not found");
 		}
 
-		return { track, versions, playCount: playCount.count };
+		// check if current user can edit
+		const session = context.session;
+		const canEdit =
+			session?.user &&
+			(track.ownerId === session.user.id || session.user.role === "admin");
+
+		return { track, versions, playCount: playCount.count, canEdit: !!canEdit };
 	}),
 	component: TrackDetailPage,
 });
@@ -33,14 +41,14 @@ function TrackDetailPage() {
 	// selected version id defaults to active version
 	const [selectedVersionId, setSelectedVersionId] = createSignal<string | null>(
 		data().track.activeVersion ?? null,
-	);
+	)
 
 	// derive selected version from id
 	const selectedVersion = createMemo(() => {
 		const id = selectedVersionId();
 		if (!id) return null;
 		return data().versions.find((v) => v.id === id) ?? null;
-	});
+	})
 
 	// playable version (complete and selected)
 	const playableVersion = createMemo(() => {
@@ -49,12 +57,12 @@ function TrackDetailPage() {
 			return version;
 		}
 		return null;
-	});
+	})
 
 	// check if there are any complete versions available
 	const hasCompleteVersion = createMemo(() =>
 		data().versions.some((v) => v.processingStatus === "complete"),
-	);
+	)
 
 	// check if there are any versions still processing
 	const hasProcessingVersions = createMemo(() =>
@@ -62,7 +70,7 @@ function TrackDetailPage() {
 			(v) =>
 				v.processingStatus === "pending" || v.processingStatus === "processing",
 		),
-	);
+	)
 	const [showSocialPrompt, setShowSocialPrompt] = createSignal(false);
 
 	const socialLinks = createMemo(() => {
@@ -73,11 +81,11 @@ function TrackDetailPage() {
 				instagram?: string;
 				soundcloud?: string;
 				tiktok?: string;
-			};
+			}
 		} catch {
 			return null;
 		}
-	});
+	})
 
 	const handlePlay = async () => {
 		const version = selectedVersion();
@@ -87,9 +95,9 @@ function TrackDetailPage() {
 					trackId: data().track.id,
 					versionId: version.id,
 				},
-			});
+			})
 		}
-	};
+	}
 
 	const handleDownloadClick = () => {
 		const track = data().track;
@@ -98,7 +106,7 @@ function TrackDetailPage() {
 		} else {
 			initiateDownload();
 		}
-	};
+	}
 
 	const initiateDownload = () => {
 		const version = selectedVersion();
@@ -109,39 +117,78 @@ function TrackDetailPage() {
 		link.download = `${data().track.title} v${version.versionNumber}`;
 		link.click();
 		setShowSocialPrompt(false);
-	};
+	}
 
 	const getStreamUrl = (version: TrackVersion): string | null => {
 		if (!version.streamKey) return null;
 		return `/files/${version.streamKey}`;
-	};
+	}
 
-	const getWaveformUrl = (version: TrackVersion): string | null => {
-		if (!version.waveformKey) return null;
-		return `/files/${version.waveformKey}`;
-	};
+	const getAlbumArtUrl = (version: TrackVersion): string | null => {
+		if (!version.albumArtKey) return null;
+		return `/files/${version.albumArtKey}`;
+	}
 
 	const formatPlayCount = (count: number) => {
 		if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
 		if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
 		return count.toString();
-	};
+	}
 
 	return (
-		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
+		<div class="min-h-screen bg-linear-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
 			<div class="max-w-4xl mx-auto">
 				{/* track header */}
-				<div class="mb-8">
-					<h1 class="text-4xl font-bold text-white mb-2">
-						{data().track.title}
-					</h1>
-					<Show when={data().track.description}>
-						<p class="text-gray-400 text-lg mb-4">{data().track.description}</p>
+				<div class="mb-8 flex gap-6">
+					{/* album art */}
+					<Show when={playableVersion()}>
+						{(version) => (
+							<Show
+								when={getAlbumArtUrl(version())}
+								fallback={
+									<div class="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center shrink-0">
+										<Music class="w-12 h-12 text-gray-600" />
+									</div>
+								}
+							>
+								{(url) => (
+									<img
+										src={url()}
+										alt="Album art"
+										class="w-32 h-32 rounded-lg object-cover shadow-lg shrink-0"
+									/>
+								)}
+							</Show>
+						)}
 					</Show>
-					<div class="flex items-center gap-4 text-sm text-gray-400">
-						<span>{formatPlayCount(data().playCount)} plays</span>
-						<span>•</span>
-						<span>{new Date(data().track.createdAt).toLocaleDateString()}</span>
+
+					<div class="min-w-0 flex-1">
+						<div class="flex items-start justify-between gap-4">
+							<h1 class="text-4xl font-bold text-white mb-2 truncate">
+								{data().track.title}
+							</h1>
+							<Show when={data().canEdit}>
+								<Link
+									to={`/track/${data().track.id}/edit`}
+									class="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-gray-300 rounded-lg text-sm font-medium transition-colors"
+								>
+									<Pencil class="w-4 h-4" />
+									Edit
+								</Link>
+							</Show>
+						</div>
+						<Show when={data().track.description}>
+							<p class="text-gray-400 text-lg mb-4">
+								{data().track.description}
+							</p>
+						</Show>
+						<div class="flex items-center gap-4 text-sm text-gray-400">
+							<span>{formatPlayCount(data().playCount)} plays</span>
+							<span>•</span>
+							<span>
+								{new Date(data().track.createdAt).toLocaleDateString()}
+							</span>
+						</div>
 					</div>
 				</div>
 
@@ -183,9 +230,8 @@ function TrackDetailPage() {
 					{(version) => (
 						<WaveformPlayer
 							streamUrl={getStreamUrl(version())}
-							waveformUrl={getWaveformUrl(version())}
 							title={data().track.title}
-							artist="Artist"
+							artist={version().artist ?? "Artist"}
 							duration={version().duration ?? undefined}
 							onPlay={handlePlay}
 						/>
@@ -217,7 +263,8 @@ function TrackDetailPage() {
 				<Show when={data().versions.length > 0}>
 					<div class="mt-6">
 						<h3 class="text-white font-medium mb-3">
-							Versions {data().versions.length > 1 && `(${data().versions.length})`}
+							Versions{" "}
+							{data().versions.length > 1 && `(${data().versions.length})`}
 						</h3>
 						<div class="flex flex-wrap gap-2">
 							<For each={data().versions}>
@@ -226,7 +273,7 @@ function TrackDetailPage() {
 										type="button"
 										onClick={() => {
 											if (version.processingStatus === "complete") {
-												setSelectedVersionId(version.id);
+												setSelectedVersionId(version.id)
 											}
 										}}
 										disabled={version.processingStatus !== "complete"}
@@ -267,7 +314,9 @@ function TrackDetailPage() {
 
 				{/* debug info */}
 				<div class="mt-8 bg-slate-900/50 border border-slate-700 rounded-lg p-4 text-xs">
-					<div class="text-gray-400 mb-2 font-medium">Debug Info (TrackDetailPage)</div>
+					<div class="text-gray-400 mb-2 font-medium">
+						Debug Info (TrackDetailPage)
+					</div>
 					<div class="space-y-1 text-gray-500 font-mono">
 						<div>versions.length: {data().versions.length}</div>
 						<div>selectedVersionId: {selectedVersionId() ?? "null"}</div>
@@ -277,9 +326,10 @@ function TrackDetailPage() {
 							{(version) => (
 								<div class="mt-2 pt-2 border-t border-slate-700">
 									<div>streamUrl: {getStreamUrl(version()) ?? "null"}</div>
-									<div>waveformUrl: {getWaveformUrl(version()) ?? "null"}</div>
 									<div>streamKey: {version().streamKey ?? "null"}</div>
-									<div>waveformKey: {version().waveformKey ?? "null"}</div>
+									<div>artist: {version().artist ?? "null"}</div>
+									<div>album: {version().album ?? "null"}</div>
+									<div>codec: {version().codec ?? "null"}</div>
 								</div>
 							)}
 						</Show>
@@ -296,5 +346,5 @@ function TrackDetailPage() {
 				socialLinks={socialLinks()}
 			/>
 		</div>
-	);
+	)
 }

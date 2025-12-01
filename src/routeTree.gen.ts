@@ -14,12 +14,14 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TrackTrackIdRouteImport } from './routes/track/$trackId'
 import { Route as FilesSplatRouteImport } from './routes/files/$'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as AuthedUploadRouteImport } from './routes/_authed/upload'
 import { Route as AuthedMyTracksRouteImport } from './routes/_authed/my-tracks'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
+import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
+import { Route as TrackTrackIdIndexRouteImport } from './routes/track.$trackId/index'
+import { Route as TrackTrackIdEditRouteImport } from './routes/track.$trackId/edit'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAdminErrorsRouteImport } from './routes/api/admin/errors'
 
@@ -47,11 +49,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TrackTrackIdRoute = TrackTrackIdRouteImport.update({
-  id: '/track/$trackId',
-  path: '/track/$trackId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FilesSplatRoute = FilesSplatRouteImport.update({
   id: '/files/$',
   path: '/files/$',
@@ -77,6 +74,21 @@ const AuthedAdminRoute = AuthedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAccountRoute = AuthedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const TrackTrackIdIndexRoute = TrackTrackIdIndexRouteImport.update({
+  id: '/track/$trackId/',
+  path: '/track/$trackId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackTrackIdEditRoute = TrackTrackIdEditRouteImport.update({
+  id: '/track/$trackId/edit',
+  path: '/track/$trackId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -93,28 +105,32 @@ export interface FileRoutesByFullPath {
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/account': typeof AuthedAccountRoute
   '/admin': typeof AuthedAdminRoute
   '/my-tracks': typeof AuthedMyTracksRoute
   '/upload': typeof AuthedUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
-  '/track/$trackId': typeof TrackTrackIdRoute
   '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/track/$trackId/edit': typeof TrackTrackIdEditRoute
+  '/track/$trackId': typeof TrackTrackIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/account': typeof AuthedAccountRoute
   '/admin': typeof AuthedAdminRoute
   '/my-tracks': typeof AuthedMyTracksRoute
   '/upload': typeof AuthedUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
-  '/track/$trackId': typeof TrackTrackIdRoute
   '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/track/$trackId/edit': typeof TrackTrackIdEditRoute
+  '/track/$trackId': typeof TrackTrackIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,14 +139,16 @@ export interface FileRoutesById {
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/_authed/account': typeof AuthedAccountRoute
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/my-tracks': typeof AuthedMyTracksRoute
   '/_authed/upload': typeof AuthedUploadRoute
   '/api/upload': typeof ApiUploadRoute
   '/files/$': typeof FilesSplatRoute
-  '/track/$trackId': typeof TrackTrackIdRoute
   '/api/admin/errors': typeof ApiAdminErrorsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/track/$trackId/edit': typeof TrackTrackIdEditRoute
+  '/track/$trackId/': typeof TrackTrackIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,28 +157,32 @@ export interface FileRouteTypes {
     | '/health'
     | '/login'
     | '/signup'
+    | '/account'
     | '/admin'
     | '/my-tracks'
     | '/upload'
     | '/api/upload'
     | '/files/$'
-    | '/track/$trackId'
     | '/api/admin/errors'
     | '/api/auth/$'
+    | '/track/$trackId/edit'
+    | '/track/$trackId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/health'
     | '/login'
     | '/signup'
+    | '/account'
     | '/admin'
     | '/my-tracks'
     | '/upload'
     | '/api/upload'
     | '/files/$'
-    | '/track/$trackId'
     | '/api/admin/errors'
     | '/api/auth/$'
+    | '/track/$trackId/edit'
+    | '/track/$trackId'
   id:
     | '__root__'
     | '/'
@@ -168,14 +190,16 @@ export interface FileRouteTypes {
     | '/health'
     | '/login'
     | '/signup'
+    | '/_authed/account'
     | '/_authed/admin'
     | '/_authed/my-tracks'
     | '/_authed/upload'
     | '/api/upload'
     | '/files/$'
-    | '/track/$trackId'
     | '/api/admin/errors'
     | '/api/auth/$'
+    | '/track/$trackId/edit'
+    | '/track/$trackId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -186,9 +210,10 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   ApiUploadRoute: typeof ApiUploadRoute
   FilesSplatRoute: typeof FilesSplatRoute
-  TrackTrackIdRoute: typeof TrackTrackIdRoute
   ApiAdminErrorsRoute: typeof ApiAdminErrorsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  TrackTrackIdEditRoute: typeof TrackTrackIdEditRoute
+  TrackTrackIdIndexRoute: typeof TrackTrackIdIndexRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -228,13 +253,6 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/track/$trackId': {
-      id: '/track/$trackId'
-      path: '/track/$trackId'
-      fullPath: '/track/$trackId'
-      preLoaderRoute: typeof TrackTrackIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/files/$': {
       id: '/files/$'
       path: '/files/$'
@@ -270,6 +288,27 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AuthedAdminRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/account': {
+      id: '/_authed/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthedAccountRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/track/$trackId/': {
+      id: '/track/$trackId/'
+      path: '/track/$trackId'
+      fullPath: '/track/$trackId'
+      preLoaderRoute: typeof TrackTrackIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/track/$trackId/edit': {
+      id: '/track/$trackId/edit'
+      path: '/track/$trackId/edit'
+      fullPath: '/track/$trackId/edit'
+      preLoaderRoute: typeof TrackTrackIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -288,12 +327,14 @@ declare module '@tanstack/solid-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedAccountRoute: typeof AuthedAccountRoute
   AuthedAdminRoute: typeof AuthedAdminRoute
   AuthedMyTracksRoute: typeof AuthedMyTracksRoute
   AuthedUploadRoute: typeof AuthedUploadRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAccountRoute: AuthedAccountRoute,
   AuthedAdminRoute: AuthedAdminRoute,
   AuthedMyTracksRoute: AuthedMyTracksRoute,
   AuthedUploadRoute: AuthedUploadRoute,
@@ -310,9 +351,10 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   ApiUploadRoute: ApiUploadRoute,
   FilesSplatRoute: FilesSplatRoute,
-  TrackTrackIdRoute: TrackTrackIdRoute,
   ApiAdminErrorsRoute: ApiAdminErrorsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  TrackTrackIdEditRoute: TrackTrackIdEditRoute,
+  TrackTrackIdIndexRoute: TrackTrackIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

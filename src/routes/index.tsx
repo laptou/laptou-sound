@@ -24,26 +24,17 @@ function HomePage() {
 	const sessionState = useSession();
 
 	return (
-		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+		<div class="min-h-screen bg-linear-to-b from-stone-900 via-stone-950 to-stone-900">
 			{/* hero section */}
 			<section class="relative py-20 px-6 text-center overflow-hidden">
-				<div class="absolute inset-0 bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10" />
+				<div class="absolute inset-0 bg-linear-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10" />
 				<div class="relative max-w-4xl mx-auto">
-					<div class="flex items-center justify-center gap-4 mb-6">
-						<div class="w-16 h-16 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
-							<Music class="w-8 h-8 text-white" />
-						</div>
-					</div>
-					<h1 class="text-5xl md:text-6xl font-black text-white mb-4">
+					<h1 class="text-5xl md:text-6xl font-black text-white mb-4 font-heading">
 						<span class="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
 							laptou
 						</span>{" "}
 						<span class="text-gray-300">sound</span>
 					</h1>
-					<p class="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
-						Share your music with the community. Upload tracks, get feedback,
-						and discover new sounds.
-					</p>
 					<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
 						<Show
 							when={sessionState?.data?.user}

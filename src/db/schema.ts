@@ -49,13 +49,23 @@ export const trackVersions = sqliteTable(
 		// r2 keys for stored files
 		originalKey: text("original_key").notNull(),
 		streamKey: text("stream_key"), // 128kbps mp3
-		waveformKey: text("waveform_key"), // json waveform data
+		albumArtKey: text("album_art_key"), // extracted album art image
 		processingStatus: text("processing_status", {
 			enum: ["pending", "processing", "complete", "failed"],
 		})
 			.notNull()
 			.default("pending"),
+		// audio metadata from music-metadata
 		duration: integer("duration"), // seconds
+		bitrate: integer("bitrate"), // bits per second
+		sampleRate: integer("sample_rate"), // hz
+		channels: integer("channels"),
+		codec: text("codec"),
+		// common metadata tags
+		artist: text("artist"),
+		album: text("album"),
+		genre: text("genre"),
+		year: integer("year"),
 		createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 	},
 	(table) => [

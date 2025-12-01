@@ -14,6 +14,9 @@
 		"postinstall": "npm run cf-typegen"
 	},
 	"dependencies": {
+		"@ffmpeg/core": "^0.12.10",
+		"@ffmpeg/ffmpeg": "^0.12.15",
+		"@ffmpeg/util": "^0.12.2",
 		"@kobalte/core": "^0.13.11",
 		"@tailwindcss/vite": "^4.0.6",
 		"@tanstack/router-plugin": "^1.139.11",
@@ -31,6 +34,7 @@
 		"kysely": "^0.28.8",
 		"kysely-d1": "^0.4.0",
 		"lucide-solid": "^0.544.0",
+		"music-metadata": "^11.10.3",
 		"solid-js": "^1.9.10",
 		"solid-sonner": "^0.2.8",
 		"tailwind-merge": "^3.4.0"

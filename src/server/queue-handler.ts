@@ -3,9 +3,10 @@
 import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
+import * as mm from "music-metadata";
 import * as schema from "@/db/schema";
-import { logDebug, logError, } from "@/lib/logger";
-import { getStreamKey, getWaveformKey } from "./files";
+import { logDebug, logError } from "@/lib/logger";
+import { getAlbumArtKey, getStreamKey } from "./files";
 import { DrizzleLogger } from "@/db/logger";
 
 export interface AudioProcessingJob {
@@ -65,37 +66,73 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 			throw new Error("Original file not found");
 		}
 
-		const streamKey = getStreamKey(job.trackId, job.versionId);
-		const waveformKey = getWaveformKey(job.trackId, job.versionId);
-
-		// note: real audio transcoding requires workers ai or external service
-		// for now, we copy the original as the stream file
-		// in production, use an audio processing service or workers ai
+		// read into buffer (stream can only be consumed once)
 		const originalData = await original.arrayBuffer();
 
+		// extract metadata using music-metadata
+		const metadata = await mm.parseBuffer(new Uint8Array(originalData), {
+			mimeType: original.httpMetadata?.contentType,
+		});
+
+		logDebug("extracted metadata", {
+			format: metadata.format,
+			common: metadata.common,
+			hasPicture: metadata.common.picture?.length ?? 0,
+		});
+
 		// store as stream file (in production, transcode to 128kbps mp3)
+		const streamKey = getStreamKey(job.trackId, job.versionId);
 		const streamObject = await bucket.put(streamKey, originalData, {
 			httpMetadata: { contentType: "audio/mpeg" },
 		});
 
-		// generate simplified waveform data
-		// in production, use an audio analysis library
-		const waveformData = generateSimplifiedWaveform(originalData);
-		const waveformObject = await bucket.put(waveformKey, JSON.stringify(waveformData), {
-			httpMetadata: { contentType: "application/json" },
-		});
+		// extract and store album art if present
+		let albumArtKey: string | null = null;
+		const picture = metadata.common.picture?.[0];
+		if (picture) {
+			// determine file extension from mime type
+			const mimeToExt: Record<string, string> = {
+				"image/jpeg": "jpg",
+				"image/png": "png",
+				"image/gif": "gif",
+				"image/webp": "webp",
+			};
+			const ext = mimeToExt[picture.format] ?? "jpg";
+			albumArtKey = getAlbumArtKey(job.trackId, job.versionId, ext);
 
-		// estimate duration (very rough, assumes ~128kbps mp3)
-		const estimatedDuration = Math.floor(originalData.byteLength / 16000);
+			await bucket.put(albumArtKey, picture.data, {
+				httpMetadata: { contentType: picture.format },
+			});
 
-		// update status to complete
+			logDebug("stored album art", {
+				albumArtKey,
+				format: picture.format,
+				size: picture.data.length,
+			});
+		}
+
+		// update status to complete with metadata
 		await db
 			.update(schema.trackVersions)
 			.set({
 				processingStatus: "complete",
 				streamKey: streamObject.key,
-				waveformKey: waveformObject.key,
-				duration: estimatedDuration,
+				albumArtKey,
+				// audio format metadata
+				duration: metadata.format.duration
+					? Math.round(metadata.format.duration)
+					: null,
+				bitrate: metadata.format.bitrate
+					? Math.round(metadata.format.bitrate)
+					: null,
+				sampleRate: metadata.format.sampleRate ?? null,
+				channels: metadata.format.numberOfChannels ?? null,
+				codec: metadata.format.codec ?? null,
+				// common tags
+				artist: metadata.common.artist ?? null,
+				album: metadata.common.album ?? null,
+				genre: metadata.common.genre?.[0] ?? null,
+				year: metadata.common.year ?? null,
 			})
 			.where(eq(schema.trackVersions.id, job.versionId));
 
@@ -108,9 +145,9 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 		logDebug("audio processing completed", {
 			job,
 			streamKey: streamObject.key,
-			waveformKey: waveformObject.key,
-			duration: estimatedDuration,
-			waveformDataSamples: waveformData.samples,
+			duration: metadata.format.duration,
+			bitrate: metadata.format.bitrate,
+			artist: metadata.common.artist,
 		});
 	} catch (error) {
 		logError("[queue/audio-processing] failed", { error });
@@ -123,38 +160,4 @@ async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 
 		throw error;
 	}
-}
-
-// generate simplified waveform data for visualization
-// in production, use proper audio analysis
-function generateSimplifiedWaveform(audioData: ArrayBuffer): {
-	peaks: number[];
-	samples: number;
-} {
-	// generate placeholder waveform with random-ish peaks
-	// real implementation would analyze actual audio samples
-	const numPeaks = 200;
-	const peaks: number[] = [];
-
-	// create a somewhat realistic-looking waveform shape
-	const dataView = new Uint8Array(audioData);
-	const chunkSize = Math.floor(dataView.length / numPeaks);
-
-	for (let i = 0; i < numPeaks; i++) {
-		const start = i * chunkSize;
-		const end = Math.min(start + chunkSize, dataView.length);
-
-		// sample some bytes and normalize to 0-1
-		let max = 0;
-		for (let j = start; j < end; j += 100) {
-			max = Math.max(max, dataView[j] ?? 0);
-		}
-
-		peaks.push(max / 255);
-	}
-
-	return {
-		peaks,
-		samples: numPeaks,
-	};
 }

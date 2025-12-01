@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 // r2 key structure:
 // tracks/{trackId}/versions/{versionId}/original.{ext}
 // tracks/{trackId}/versions/{versionId}/stream.mp3
-// tracks/{trackId}/versions/{versionId}/waveform.json
+// tracks/{trackId}/versions/{versionId}/albumart.{ext}
 
 export function getTrackVersionPrefix(trackId: string, versionId: string) {
 	return `tracks/${trackId}/versions/${versionId}/`;
@@ -23,8 +23,8 @@ export function getStreamKey(trackId: string, versionId: string) {
 	return `${getTrackVersionPrefix(trackId, versionId)}stream.mp3`;
 }
 
-export function getWaveformKey(trackId: string, versionId: string) {
-	return `${getTrackVersionPrefix(trackId, versionId)}waveform.json`;
+export function getAlbumArtKey(trackId: string, versionId: string, ext: string) {
+	return `${getTrackVersionPrefix(trackId, versionId)}albumart.${ext}`;
 }
 
 // upload file to r2

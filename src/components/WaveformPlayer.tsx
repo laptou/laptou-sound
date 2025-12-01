@@ -1,7 +1,9 @@
 // waveform audio player component
 // displays a soundcloud-style waveform with playback controls
+// waveform is computed client-side using web audio api
 
-import { useQuery } from "@tanstack/solid-query";
+import { createQuery, useQuery } from "@tanstack/solid-query";
+import { ClientOnly } from "@tanstack/solid-router";
 import Pause from "lucide-solid/icons/pause";
 import Play from "lucide-solid/icons/play";
 import Volume2 from "lucide-solid/icons/volume-2";
@@ -23,14 +25,56 @@ interface WaveformData {
 
 interface WaveformPlayerProps {
 	streamUrl: string | null;
-	waveformUrl: string | null;
 	title: string;
 	artist: string;
 	duration?: number;
 	onPlay?: () => void;
 }
 
-export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
+// generate waveform data from audio buffer using web audio api
+async function generateWaveformFromUrl(url: string): Promise<WaveformData> {
+	const response = await fetch(url);
+	if (!response.ok) {
+		throw new Error("Failed to fetch audio file");
+	}
+
+	const arrayBuffer = await response.arrayBuffer();
+	const audioContext = new AudioContext();
+
+	try {
+		const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+		const channelData = audioBuffer.getChannelData(0);
+
+		// downsample to ~200 peaks for visualization
+		const numPeaks = 200;
+		const blockSize = Math.floor(channelData.length / numPeaks);
+		const peaks: number[] = [];
+
+		for (let i = 0; i < numPeaks; i++) {
+			const start = i * blockSize;
+			const end = Math.min(start + blockSize, channelData.length);
+
+			// find max absolute value in this block
+			let max = 0;
+			for (let j = start; j < end; j++) {
+				const abs = Math.abs(channelData[j]);
+				if (abs > max) max = abs;
+			}
+
+			peaks.push(max);
+		}
+
+		// normalize peaks to 0-1 range
+		const maxPeak = Math.max(...peaks, 0.01);
+		const normalizedPeaks = peaks.map((p) => p / maxPeak);
+
+		return { peaks: normalizedPeaks, samples: numPeaks };
+	} finally {
+		await audioContext.close();
+	}
+}
+
+const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 	let audioRef: HTMLAudioElement | undefined;
 	let canvasRef: HTMLCanvasElement | undefined;
 	let containerRef: HTMLDivElement | undefined;
@@ -41,26 +85,19 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 	const [duration, setDuration] = createSignal(props.duration ?? 0);
 	const [canvasWidth, setCanvasWidth] = createSignal(600);
 
-	// load waveform data using tanstack query
+	// compute waveform data client-side from audio stream
 	const waveformQuery = useQuery(() => ({
-		queryKey: ["waveform", props.waveformUrl],
+		queryKey: ["waveform", props.streamUrl],
 		queryFn: async (): Promise<WaveformData> => {
-			if (!props.waveformUrl) {
-				throw new Error("No waveform URL provided");
+			if (!props.streamUrl) {
+				throw new Error("No stream URL provided");
 			}
-			const response = await fetch(props.waveformUrl);
-			if (!response.ok) {
-				throw new Error("Failed to load waveform");
-			}
-			return response.json();
+			return generateWaveformFromUrl(props.streamUrl);
 		},
-		enabled: !!props.waveformUrl && props.waveformUrl !== null,
+		enabled: !!props.streamUrl,
 		retry: 1,
-		// generate fallback waveform on error
-		placeholderData: () => ({
-			peaks: Array.from({ length: 200 }, () => Math.random() * 0.8 + 0.2),
-			samples: 200,
-		}),
+		staleTime: Number.POSITIVE_INFINITY, // waveform won't change for same url
+		gcTime: 1000 * 60 * 30, // cache for 30 minutes
 	}));
 
 	// get waveform data with fallback
@@ -153,17 +190,10 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 		const audio = audioRef;
 		if (!audio) return;
 
-		const handleTimeUpdate = () => {
-			console.log("timeupdate", audio.currentTime);
-			setCurrentTime(audio.currentTime);
-		};
-		const handleDurationChange = () => {
-			console.log("durationchange", audio.duration);
-			setDuration(audio.duration || 0);
-		};
+		const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+		const handleDurationChange = () => setDuration(audio.duration || 0);
 		const handleEnded = () => setIsPlaying(false);
 		const handlePlay = () => {
-			console.log("play");
 			setIsPlaying(true);
 			props.onPlay?.();
 		};
@@ -174,10 +204,7 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 		} else {
 			audio.addEventListener(
 				"loadedmetadata",
-				() => {
-					console.log("loadedmetadata", audio.duration);
-					setDuration(audio.duration || 0);
-				},
+				() => setDuration(audio.duration || 0),
 				{ once: true },
 			);
 		}
@@ -220,7 +247,6 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 		const rect = canvasRef.getBoundingClientRect();
 		const x = e.clientX - rect.left;
 		const percentage = x / rect.width;
-		console.log("seeking",  x, rect.width, percentage, duration(), percentage * duration());
 		audioRef.currentTime = percentage * duration();
 	};
 
@@ -239,33 +265,6 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 					preload="metadata"
 				/>
 			</Show>
-
-			{/* debug info */}
-			<div class="mb-4 bg-slate-900/50 border border-slate-700 rounded p-2 text-xs">
-				<div class="text-gray-400 mb-1 font-medium">
-					Debug Info (WaveformPlayer)
-				</div>
-				<div class="space-y-1 text-gray-500 font-mono">
-					<div>streamUrl: {props.streamUrl ?? "null"}</div>
-					<div>waveformUrl: {props.waveformUrl ?? "null"}</div>
-					<div>title: {props.title}</div>
-					<div>artist: {props.artist}</div>
-					<div>duration: {props.duration ?? "undefined"}</div>
-					<div>
-						waveformQuery.enabled:{" "}
-						{!!props.waveformUrl && props.waveformUrl !== null
-							? "true"
-							: "false"}
-					</div>
-					<div>
-						waveformQuery.isLoading:{" "}
-						{waveformQuery.isLoading ? "true" : "false"}
-					</div>
-					<div>
-						waveformQuery.isError: {waveformQuery.isError ? "true" : "false"}
-					</div>
-				</div>
-			</div>
 
 			<div class="flex items-center gap-4">
 				{/* play button */}
@@ -290,18 +289,20 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 					{/* waveform canvas */}
 					<div class="relative cursor-pointer" onClick={seek}>
 						<Show
-							when={props.waveformUrl !== null && !isLoading()}
+							when={!isLoading() && waveformData()}
 							fallback={
 								<Show
-									when={props.waveformUrl === null}
+									when={props.streamUrl === null}
 									fallback={
-										<div class="h-20 bg-slate-700/50 rounded animate-pulse" />
+										<div class="h-20 bg-slate-700/50 rounded animate-pulse flex items-center justify-center">
+											<span class="text-gray-500 text-xs">
+												Computing waveform...
+											</span>
+										</div>
 									}
 								>
 									<div class="h-20 bg-slate-800/50 rounded flex items-center justify-center">
-										<p class="text-gray-500 text-xs">
-											No waveform data available
-										</p>
+										<p class="text-gray-500 text-xs">No audio available</p>
 									</div>
 								</Show>
 							}
@@ -332,4 +333,10 @@ export const WaveformPlayer: Component<WaveformPlayerProps> = (props) => {
 	);
 };
 
-export default WaveformPlayer;
+export const WaveformPlayer = (props: WaveformPlayerProps) => {
+	return (
+		<ClientOnly>
+			<WaveformPlayerInner {...props} />
+		</ClientOnly>
+	);
+};
