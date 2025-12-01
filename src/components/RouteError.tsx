@@ -81,7 +81,7 @@ export function RouteError(props: ErrorComponentProps) {
 						when={!isAnticipated}
 						fallback={
 							<Link
-								href="/"
+								to="/"
 								class="flex-1 px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white text-center font-medium rounded-lg transition-all shadow-lg shadow-violet-500/25"
 							>
 								<Home class="w-4 h-4 inline mr-2" />

@@ -9,7 +9,7 @@ import Shield from "lucide-solid/icons/shield";
 import Trash2 from "lucide-solid/icons/trash-2";
 import Users from "lucide-solid/icons/users";
 import { createEffect, createSignal, For, Show } from "solid-js";
-import type { InviteCode, Track, User } from "@/db/schema";
+import type { InviteCode, User } from "@/db/schema";
 import type { ErrorReport } from "@/lib/error-reporter";
 import { AccessDeniedError } from "@/lib/errors";
 import { wrapLoader } from "@/lib/loader-wrapper";
@@ -64,7 +64,7 @@ function AdminDashboard() {
 		try {
 			const response = await fetch("/api/admin/errors");
 			if (response.ok) {
-				const data = await response.json();
+				const data = (await response.json()) as { errors?: ErrorReport[] };
 				setErrors(data.errors || []);
 			}
 		} catch (error) {
@@ -108,7 +108,7 @@ function AdminDashboard() {
 		}
 	};
 
-	const handleDeleteTrack = async (track: Track) => {
+	const handleDeleteTrack = async (track: { id: string; title: string }) => {
 		if (!confirm(`Delete "${track.title}"?`)) return;
 		try {
 			await deleteTrack({ data: { trackId: track.id } });
@@ -121,7 +121,7 @@ function AdminDashboard() {
 	return (
 		<div class="max-w-6xl mx-auto">
 			<div class="flex items-center gap-4 mb-8">
-				<div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center">
+				<div class="w-12 h-12 bg-linear-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center">
 					<Shield class="w-6 h-6 text-white" />
 				</div>
 				<h1 class="text-3xl font-bold text-white">Admin Dashboard</h1>
@@ -276,7 +276,7 @@ function AdminDashboard() {
 										</p>
 									</div>
 									<select
-										value={user.role}
+										value={user.role || "commenter"}
 										onChange={(e) =>
 											handleUpdateRole(
 												user,
@@ -321,7 +321,8 @@ function AdminDashboard() {
 									<div class="flex items-center justify-between bg-slate-700/50 rounded-lg p-4">
 										<div>
 											<Link
-												to={`/track/${track.id}`}
+												to="/track/$trackId"
+												params={{ trackId: track.id }}
 												class="text-white font-medium hover:text-violet-300 transition-colors"
 											>
 												{track.title}

@@ -2,7 +2,7 @@
 
 import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
-import { createFileRoute, useNavigate } from "@tanstack/solid-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/solid-router";
 import { Button } from "@ui/button";
 import { toast } from "solid-sonner";
 import { FormField } from "@/components/FormField";
@@ -178,12 +178,12 @@ function SignupPage() {
 				<div class="mt-6 text-center">
 					<p class="text-gray-400">
 						Already have an account?{" "}
-						<a
-							href="/login"
+						<Link
+							to="/login"
 							class="text-violet-400 hover:text-violet-300 font-medium transition-colors"
 						>
 							Sign in
-						</a>
+						</Link>
 					</p>
 				</div>
 			</div>

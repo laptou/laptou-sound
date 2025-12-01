@@ -1,5 +1,6 @@
 // shared layout component for login page
 
+import { Link } from "@tanstack/solid-router";
 import type { JSX } from "solid-js";
 
 type LoginLayoutProps = {
@@ -20,12 +21,12 @@ export function LoginLayout(props: LoginLayoutProps) {
 				<div class="mt-6 text-center">
 					<p class="text-gray-400">
 						Don't have an account?{" "}
-						<a
-							href="/signup"
+						<Link
+							to="/signup"
 							class="text-violet-400 hover:text-violet-300 font-medium transition-colors"
 						>
 							Sign up
-						</a>
+						</Link>
 					</p>
 				</div>
 			</div>
