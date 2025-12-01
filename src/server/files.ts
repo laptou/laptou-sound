@@ -3,7 +3,7 @@
 import { env } from "cloudflare:workers";
 import { createServerOnlyFn } from "@tanstack/solid-start";
 import { AwsClient } from "aws4fetch";
-import { logTrace } from "@/lib/logger";
+import { logTrace, logWarn } from "@/lib/logger";
 
 // r2 key structure:
 // tracks/{trackId}/versions/{versionId}/original.{ext}
@@ -278,7 +278,7 @@ export async function processImage(
 	// if no api token, fall back to storing without transformation
 	const apiToken = env.CLOUDFLARE_IMAGES_API_TOKEN;
 	if (!apiToken) {
-		logTrace("[images] no api token, storing without transformation", {
+		logWarn("[images] no api token, storing without transformation", {
 			sourceKey,
 			destKey,
 		});
