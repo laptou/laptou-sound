@@ -43,6 +43,9 @@ type FormFieldProps = {
 	required?: boolean;
 	class?: string;
 	inputClass?: string;
+	autocomplete?: JSX.HTMLAutocomplete;
+	autocapitalize?: JSX.HTMLAutocapitalize;
+	autocorrect?: JSX.HTMLAttributes<HTMLInputElement>["autocorrect"];
 };
 
 export function FormField(props: FormFieldProps) {
@@ -67,6 +70,9 @@ export function FormField(props: FormFieldProps) {
 				type={props.type ?? "text"}
 				placeholder={props.placeholder}
 				onBlur={props.field().handleBlur}
+				autocomplete={props.autocomplete}
+				autocorrect={props.autocorrect}
+				autocapitalize={props.autocapitalize}
 				class={props.inputClass}
 			/>
 			<TextFieldErrorMessage>{firstError()}</TextFieldErrorMessage>
