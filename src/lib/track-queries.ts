@@ -2,16 +2,16 @@
 
 import type { MutationOptions } from "@tanstack/solid-query";
 import {
+	confirmAlbumArtUpload,
+	confirmTrackUpload,
 	deleteTrack,
 	deleteTrackVersion,
+	getAlbumArtUploadUrl,
+	getTrackUploadUrl,
 	setActiveVersion,
 	updateTrack,
 	updateVersionMetadata,
 	uploadAlbumArt,
-	getAlbumArtUploadUrl,
-	confirmAlbumArtUpload,
-	getTrackUploadUrl,
-	confirmTrackUpload,
 } from "@/server/tracks";
 
 // update track metadata mutation

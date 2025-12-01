@@ -24,13 +24,11 @@ type BetterAuthErrorShape = {
 	status: number;
 };
 
-type BetterAuthResult<T> = 
-| { data: T; error?: null | undefined }
-| { error: BetterAuthErrorShape }
+type BetterAuthResult<T> =
+	| { data: T; error?: null | undefined }
+	| { error: BetterAuthErrorShape };
 
-function unwrapBetterAuthResult<T>(
-	result: BetterAuthResult<T>,
-): T {
+function unwrapBetterAuthResult<T>(result: BetterAuthResult<T>): T {
 	if (result.error) {
 		throw new BetterAuthError(
 			result.error.message || result.error.statusText,
@@ -41,7 +39,10 @@ function unwrapBetterAuthResult<T>(
 }
 
 export const signInEmail = createClientOnlyFn(
-	async (client: QueryClient | null, ...params: Parameters<typeof authClient.signIn.email>) => {
+	async (
+		client: QueryClient | null,
+		...params: Parameters<typeof authClient.signIn.email>
+	) => {
 		const result = unwrapBetterAuthResult(
 			await authClient.signIn.email(...params),
 		);
@@ -52,22 +53,34 @@ export const signInEmail = createClientOnlyFn(
 );
 
 export const signInMagicLink = createClientOnlyFn(
-	async (client: QueryClient | null, ...params: Parameters<typeof authClient.signIn.magicLink>) => {
-		const result = unwrapBetterAuthResult(await authClient.signIn.magicLink(...params));
+	async (
+		client: QueryClient | null,
+		...params: Parameters<typeof authClient.signIn.magicLink>
+	) => {
+		const result = unwrapBetterAuthResult(
+			await authClient.signIn.magicLink(...params),
+		);
 		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},
 );
 
-export const signOut = createClientOnlyFn(async (client: QueryClient | null) => {
-	const result = unwrapBetterAuthResult(await authClient.signOut());
-	client?.invalidateQueries({ queryKey: ["session"] });
-	return result;
-});
+export const signOut = createClientOnlyFn(
+	async (client: QueryClient | null) => {
+		const result = unwrapBetterAuthResult(await authClient.signOut());
+		client?.invalidateQueries({ queryKey: ["session"] });
+		return result;
+	},
+);
 
 export const signUpEmail = createClientOnlyFn(
-	async (client: QueryClient | null, ...params: Parameters<typeof authClient.signUp.email>) => {
-		const result = unwrapBetterAuthResult(await authClient.signUp.email(...params));
+	async (
+		client: QueryClient | null,
+		...params: Parameters<typeof authClient.signUp.email>
+	) => {
+		const result = unwrapBetterAuthResult(
+			await authClient.signUp.email(...params),
+		);
 		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},
@@ -75,7 +88,10 @@ export const signUpEmail = createClientOnlyFn(
 
 // update user profile (name and image)
 export const updateUser = createClientOnlyFn(
-	async (client: QueryClient | null, data: { name?: string; image?: string | null }) => {
+	async (
+		client: QueryClient | null,
+		data: { name?: string; image?: string | null },
+	) => {
 		const result = unwrapBetterAuthResult(await authClient.updateUser(data));
 		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
@@ -93,8 +109,13 @@ export const changeEmail = createClientOnlyFn(
 
 // change password
 export const changePassword = createClientOnlyFn(
-	async (client: QueryClient | null, data: { currentPassword: string; newPassword: string }) => {
-		const result = unwrapBetterAuthResult(await authClient.changePassword(data));
+	async (
+		client: QueryClient | null,
+		data: { currentPassword: string; newPassword: string },
+	) => {
+		const result = unwrapBetterAuthResult(
+			await authClient.changePassword(data),
+		);
 		client?.invalidateQueries({ queryKey: ["session"] });
 		return result;
 	},

@@ -86,7 +86,9 @@ export const Route = createFileRoute("/api/upload-album-art")({
 
 				if (!isOwner && !isAdmin) {
 					return new Response(
-						JSON.stringify({ error: "You do not have permission to edit this track" }),
+						JSON.stringify({
+							error: "You do not have permission to edit this track",
+						}),
 						{
 							status: 403,
 							headers: { "Content-Type": "application/json" },
@@ -114,15 +116,11 @@ export const Route = createFileRoute("/api/upload-album-art")({
 				};
 				await queue.send(job);
 
-				return new Response(
-					JSON.stringify({ success: true, tempKey }),
-					{
-						status: 200,
-						headers: { "Content-Type": "application/json" },
-					},
-				);
+				return new Response(JSON.stringify({ success: true, tempKey }), {
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				});
 			},
 		},
 	},
 });
-

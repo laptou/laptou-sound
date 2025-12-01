@@ -130,9 +130,7 @@ function AdminDashboard() {
 			await deleteUser({ data: { userId: user.id } });
 			window.location.reload();
 		} catch (error) {
-			alert(
-				error instanceof Error ? error.message : "Failed to delete user",
-			);
+			alert(error instanceof Error ? error.message : "Failed to delete user");
 		}
 	};
 

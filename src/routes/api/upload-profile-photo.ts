@@ -70,15 +70,11 @@ export const Route = createFileRoute("/api/upload-profile-photo")({
 				};
 				await queue.send(job);
 
-				return new Response(
-					JSON.stringify({ success: true, tempKey }),
-					{
-						status: 200,
-						headers: { "Content-Type": "application/json" },
-					},
-				);
+				return new Response(JSON.stringify({ success: true, tempKey }), {
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				});
 			},
 		},
 	},
 });
-

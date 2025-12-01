@@ -24,8 +24,8 @@ import {
 } from "@/lib/auth-queries";
 import { getSession } from "@/server/auth";
 import {
-	getProfilePhotoUploadUrl,
 	confirmProfilePhotoUpload,
+	getProfilePhotoUploadUrl,
 	removeProfilePhoto,
 } from "@/server/profile-photos";
 
@@ -298,7 +298,8 @@ function AccountPage() {
 						</label>
 						<div class="flex items-center gap-2">
 							{(() => {
-								const role = (currentUser() as { role?: string })?.role || "commenter";
+								const role =
+									(currentUser() as { role?: string })?.role || "commenter";
 								const roleDisplay =
 									role.charAt(0).toUpperCase() + role.slice(1);
 								return (
@@ -418,8 +419,8 @@ function AccountPage() {
 				</h2>
 
 				<p class="text-gray-400 mb-4 text-sm">
-					Enter an invite code to upgrade your account role. You can only upgrade
-					to a higher role, not downgrade.
+					Enter an invite code to upgrade your account role. You can only
+					upgrade to a higher role, not downgrade.
 				</p>
 
 				<form

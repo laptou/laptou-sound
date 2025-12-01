@@ -55,4 +55,3 @@ export async function processProfilePhotoJob(
 		throw error;
 	}
 }
-

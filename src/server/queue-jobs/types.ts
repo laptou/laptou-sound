@@ -40,4 +40,3 @@ export type QueueMessage =
 	| UpdateMetadataJob
 	| ProcessProfilePhotoJob
 	| ProcessAlbumArtJob;
-

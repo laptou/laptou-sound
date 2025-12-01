@@ -3,7 +3,6 @@
 import { Button } from "@ui/button";
 import Music from "lucide-solid/icons/music";
 import Upload from "lucide-solid/icons/upload";
-import X from "lucide-solid/icons/x";
 import { createSignal, Show } from "solid-js";
 import { toast } from "solid-sonner";
 

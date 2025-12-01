@@ -1,18 +1,18 @@
 // cloudflare queue consumer - routes messages to appropriate job handlers
 
 import { logDebug } from "@/lib/logger";
-import { processAudioJob } from "./queue-jobs/process-audio";
-import { updateMetadataJob } from "./queue-jobs/update-metadata";
-import { processProfilePhotoJob } from "./queue-jobs/process-profile-photo";
 import { processAlbumArtJob } from "./queue-jobs/process-album-art";
+import { processAudioJob } from "./queue-jobs/process-audio";
+import { processProfilePhotoJob } from "./queue-jobs/process-profile-photo";
 import type {
-	QueueMessage,
 	AudioProcessingJob,
 	DeleteTrackJob,
-	UpdateMetadataJob,
-	ProcessProfilePhotoJob,
 	ProcessAlbumArtJob,
+	ProcessProfilePhotoJob,
+	QueueMessage,
+	UpdateMetadataJob,
 } from "./queue-jobs/types";
+import { updateMetadataJob } from "./queue-jobs/update-metadata";
 
 // re-export types for backward compatibility
 export type {
@@ -50,4 +50,3 @@ export async function handleQueueBatch(
 		}
 	}
 }
-

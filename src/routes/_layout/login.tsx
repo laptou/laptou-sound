@@ -19,19 +19,19 @@ function LoginPage() {
 		if (err) {
 			toast.error(err);
 		}
-	}
+	};
 
 	const handleMagicLinkError = (err: string | null) => {
 		if (err) {
 			toast.error(err);
 		}
-	}
+	};
 
 	const handleMagicLinkSuccess = () => {
 		toast.success("Check your email for a magic link to sign in.", {
 			duration: Infinity, // don't auto-dismiss - user needs to check email
-		})
-	}
+		});
+	};
 
 	return (
 		<LoginLayout>
@@ -54,5 +54,5 @@ function LoginPage() {
 				<EmailPasswordLoginForm onError={handleEmailPasswordError} />
 			</Show>
 		</LoginLayout>
-	)
+	);
 }

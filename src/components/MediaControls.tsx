@@ -9,7 +9,13 @@ import SkipBack from "lucide-solid/icons/skip-back";
 import SkipForward from "lucide-solid/icons/skip-forward";
 import Volume2 from "lucide-solid/icons/volume-2";
 import VolumeX from "lucide-solid/icons/volume-x";
-import { type Component, createSignal, onCleanup, onMount, Show } from "solid-js";
+import {
+	type Component,
+	createSignal,
+	onCleanup,
+	onMount,
+	Show,
+} from "solid-js";
 import { useAudioPlayer } from "@/lib/audio-player-context";
 import { cn } from "@/lib/utils";
 import { QueuePanel } from "./QueuePanel";
@@ -128,17 +134,13 @@ const MediaControlsInner: Component = () => {
 										<p class="text-xs text-stone-400 truncate">
 											<Show
 												when={track().artist && track().artist !== "Artist"}
-												fallback={
-													track().ownerName ?? "Unknown Artist"
-												}
+												fallback={track().ownerName ?? "Unknown Artist"}
 											>
 												{(artist) => (
 													<>
 														{artist()}
 														<Show when={track().ownerName}>
-															{(owner) => (
-																<> &bull; {owner()}</>
-															)}
+															{(owner) => <> &bull; {owner()}</>}
 														</Show>
 													</>
 												)}
@@ -248,4 +250,3 @@ export const MediaControls: Component = () => {
 		</ClientOnly>
 	);
 };
-

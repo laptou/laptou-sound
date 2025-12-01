@@ -10,9 +10,8 @@ import { createAuth } from "@/lib/auth";
 import {
 	generatePresignedUrl,
 	getTempUploadKey,
-	getProfilePhotoKey,
-	useIndirectAccess,
 	uploadFile,
+	useIndirectAccess,
 } from "./files";
 import type { ProcessProfilePhotoJob } from "./queue-handler";
 
@@ -186,4 +185,3 @@ export const removeProfilePhoto = createServerFn({ method: "POST" }).handler(
 		return { success: true };
 	},
 );
-

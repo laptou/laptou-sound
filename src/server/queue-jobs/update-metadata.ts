@@ -10,9 +10,7 @@ import { logDebug, logError } from "@/lib/logger";
 import { getDownloadKey } from "../files";
 import type { UpdateMetadataJob } from "./types";
 
-export async function updateMetadataJob(
-	job: UpdateMetadataJob,
-): Promise<void> {
+export async function updateMetadataJob(job: UpdateMetadataJob): Promise<void> {
 	logDebug("updating metadata job", { job });
 
 	const bucket = env.laptou_sound_files;
@@ -101,4 +99,3 @@ export async function updateMetadataJob(
 		throw error;
 	}
 }
-

@@ -48,7 +48,11 @@ export function hasRole(
 // redeem an invite code to upgrade the current user's role
 export const redeemInviteCode = createServerFn({ method: "POST" })
 	.inputValidator((data: { code: string }) => {
-		if (!data.code || typeof data.code !== "string" || data.code.trim().length === 0) {
+		if (
+			!data.code ||
+			typeof data.code !== "string" ||
+			data.code.trim().length === 0
+		) {
 			throw new Error("Invite code is required");
 		}
 		return { code: data.code.trim().toUpperCase() };

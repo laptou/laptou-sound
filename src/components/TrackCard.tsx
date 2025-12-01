@@ -75,9 +75,7 @@ export const TrackCard: Component<TrackCardProps> = (props) => {
 				</h3>
 				<Show when={props.track.description}>
 					{(desc) => (
-						<p class="text-sm opacity-70 mt-1 line-clamp-2">
-							{desc()}
-						</p>
+						<p class="text-sm opacity-70 mt-1 line-clamp-2">{desc()}</p>
 					)}
 				</Show>
 				<div class="flex items-center gap-2 mt-0.5">

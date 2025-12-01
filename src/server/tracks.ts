@@ -8,14 +8,14 @@ import { getDb, type NewTrack, tracks, trackVersions, user } from "@/db";
 import { createAuth } from "@/lib/auth";
 import {
 	deleteTrackFiles,
+	generatePresignedUrl,
 	getAlbumArtKey,
 	getOriginalKey,
 	getTempUploadKey,
 	uploadFile,
-	generatePresignedUrl,
 	useIndirectAccess,
 } from "./files";
-import type { UpdateMetadataJob, ProcessAlbumArtJob } from "./queue-handler";
+import type { ProcessAlbumArtJob, UpdateMetadataJob } from "./queue-handler";
 
 // public track info including owner and album art
 export interface PublicTrackInfo {
@@ -1120,7 +1120,11 @@ export const getTrackUploadUrl = createServerFn({ method: "GET" })
 			: 1;
 
 		const versionId = crypto.randomUUID();
-		const originalKey = getOriginalKey(data.trackId, versionId, data.fileExtension);
+		const originalKey = getOriginalKey(
+			data.trackId,
+			versionId,
+			data.fileExtension,
+		);
 
 		if (useIndirectAccess()) {
 			// return indirect upload endpoint for development

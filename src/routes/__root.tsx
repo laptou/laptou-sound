@@ -12,11 +12,11 @@ import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
 import { onMount, Suspense } from "solid-js";
 import { HydrationScript } from "solid-js/web";
 import { MediaControls } from "@/components/MediaControls";
+import { Toaster } from "@/components/ui/sonner";
 import { AudioPlayerProvider } from "@/lib/audio-player-context";
 import { getSession } from "@/lib/auth";
 import { initializeTheme } from "@/lib/theme";
 import styleCss from "../styles.css?url";
-import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRouteWithContext()({
 	head: () => ({

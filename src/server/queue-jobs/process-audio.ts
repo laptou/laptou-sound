@@ -8,11 +8,7 @@ import NodeID3 from "node-id3";
 import { DrizzleLogger } from "@/db/logger";
 import * as schema from "@/db/schema";
 import { logDebug, logError } from "@/lib/logger";
-import {
-	getAlbumArtKey,
-	getDownloadKey,
-	getStreamKey,
-} from "../files";
+import { getAlbumArtKey, getDownloadKey, getStreamKey } from "../files";
 import type { AudioProcessingJob } from "./types";
 
 export async function processAudioJob(job: AudioProcessingJob): Promise<void> {
@@ -165,4 +161,3 @@ export async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 		throw error;
 	}
 }
-

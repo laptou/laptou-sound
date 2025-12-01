@@ -1,14 +1,8 @@
-import {
-	ClientOnly,
-	createFileRoute,
-	Link,
-	Outlet,
-} from "@tanstack/solid-router";
+import { createFileRoute, Link, Outlet } from "@tanstack/solid-router";
 import Shield from "lucide-solid/icons/shield";
 import Upload from "lucide-solid/icons/upload";
 import User from "lucide-solid/icons/user";
 import { Show } from "solid-js";
-import { Toaster } from "solid-sonner";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth-client";
 

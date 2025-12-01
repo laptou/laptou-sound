@@ -16,7 +16,10 @@ type ImageUploadZoneProps = {
 	// callback when image is removed
 	onRemove?: () => void;
 	// upload url getter - returns presigned url or indirect upload endpoint
-	getUploadUrl: (contentType: string, ext: string) => Promise<{
+	getUploadUrl: (
+		contentType: string,
+		ext: string,
+	) => Promise<{
 		mode: "presigned" | "indirect";
 		uploadUrl: string;
 		uploadId: string;
@@ -161,11 +164,7 @@ export function ImageUploadZone(props: ImageUploadZoneProps) {
 					}
 				>
 					{(src) => (
-						<img
-							src={src()}
-							alt="Preview"
-							class="w-full h-full object-cover"
-						/>
+						<img src={src()} alt="Preview" class="w-full h-full object-cover" />
 					)}
 				</Show>
 				<Show when={isUploading()}>
@@ -202,4 +201,3 @@ export function ImageUploadZone(props: ImageUploadZoneProps) {
 		</div>
 	);
 }
-
