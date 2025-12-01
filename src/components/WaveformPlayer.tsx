@@ -17,6 +17,7 @@ import {
 	onCleanup,
 	onMount,
 	Show,
+	Suspense,
 } from "solid-js";
 import { toast } from "solid-sonner";
 import { type QueueTrack, useAudioPlayer } from "@/lib/audio-player-context";
@@ -363,7 +364,9 @@ const WaveformPlayerInner: Component<WaveformPlayerProps> = (props) => {
 export const WaveformPlayer = (props: WaveformPlayerProps) => {
 	return (
 		<ClientOnly>
-			<WaveformPlayerInner {...props} />
+			<Suspense fallback={<div>Loading...</div>}>
+				<WaveformPlayerInner {...props} />
+			</Suspense>
 		</ClientOnly>
 	);
 };
