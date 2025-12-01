@@ -1,24 +1,26 @@
 // account settings page - manage profile, email, and password
 
+import { createForm } from "@tanstack/solid-form";
+import { useMutation } from "@tanstack/solid-query";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { Button } from "@ui/button";
 import {
 	TextField,
+	TextFieldErrorMessage,
 	TextFieldInput,
 	TextFieldLabel,
 } from "@ui/text-field";
 import Camera from "lucide-solid/icons/camera";
 import LogOut from "lucide-solid/icons/log-out";
 import User from "lucide-solid/icons/user";
-import { createSignal, Show } from "solid-js";
+import { Show } from "solid-js";
 import { toast } from "solid-sonner";
+import { signOut, useSession } from "@/lib/auth-client";
 import {
-	changeEmail,
-	changePassword,
-	signOut,
-	updateUser,
-	useSession,
-} from "@/lib/auth-client";
+	changeEmailMutationOptions,
+	changePasswordMutationOptions,
+	updateProfileMutationOptions,
+} from "@/lib/auth-queries";
 import { getSession } from "@/server/auth";
 
 export const Route = createFileRoute("/_layout/_authed/account")({
@@ -34,112 +36,98 @@ function AccountPage() {
 	const navigate = useNavigate();
 	const session = useSession();
 
-	// profile section state
-	const [name, setName] = createSignal(data().user?.name ?? "");
-	const [profileSaving, setProfileSaving] = createSignal(false);
+	// mutations
+	const updateProfileMutation = useMutation(() => updateProfileMutationOptions());
+	const changeEmailMutation = useMutation(() => changeEmailMutationOptions());
+	const changePasswordMutation = useMutation(() => changePasswordMutationOptions());
 
-	// avatar state
-	const [avatarUrl, setAvatarUrl] = createSignal(data().user?.image ?? "");
-	const [showAvatarInput, setShowAvatarInput] = createSignal(false);
+	// profile form
+	const profileForm = createForm(() => ({
+		defaultValues: {
+			name: data().user?.name ?? "",
+			image: data().user?.image ?? "",
+		},
+		onSubmit: async ({ value }) => {
+			try {
+				await updateProfileMutation.mutateAsync({
+					name: value.name,
+					image: value.image || null,
+				});
+				toast.success("Profile updated successfully");
+			} catch (err) {
+				toast.error(
+					err instanceof Error ? err.message : "Failed to update profile",
+				);
+				throw err;
+			}
+		},
+	}));
 
-	// email section state
-	const [newEmail, setNewEmail] = createSignal("");
-	const [emailSaving, setEmailSaving] = createSignal(false);
+	// email form
+	const emailForm = createForm(() => ({
+		defaultValues: {
+			newEmail: "",
+		},
+		onSubmit: async ({ value }) => {
+			try {
+				await changeEmailMutation.mutateAsync({
+					newEmail: value.newEmail,
+				});
+				toast.success("Verification email sent! Check your inbox.", {
+					duration: Number.POSITIVE_INFINITY,
+				});
+				emailForm.reset();
+			} catch (err) {
+				toast.error(
+					err instanceof Error ? err.message : "Failed to change email",
+				);
+				throw err;
+			}
+		},
+	}));
 
-	// password section state
-	const [currentPassword, setCurrentPassword] = createSignal("");
-	const [newPassword, setNewPassword] = createSignal("");
-	const [confirmPassword, setConfirmPassword] = createSignal("");
-	const [passwordSaving, setPasswordSaving] = createSignal(false);
-
-	const handleProfileSave = async (e: Event) => {
-		e.preventDefault();
-		setProfileSaving(true);
-
-		try {
-			await updateUser({
-				name: name(),
-				image: avatarUrl() || null,
-			})
-
-			toast.success("Profile updated successfully");
-			setShowAvatarInput(false);
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to update profile",
-			)
-		} finally {
-			setProfileSaving(false);
-		}
-	}
-
-	const handleEmailChange = async (e: Event) => {
-		e.preventDefault();
-
-		if (!newEmail().trim()) {
-			toast.error("Please enter a new email address");
-			return
-		}
-
-		setEmailSaving(true);
-
-		try {
-			await changeEmail({ newEmail: newEmail() });
-			toast.success("Verification email sent! Check your inbox.", {
-				duration: Infinity, // don't auto-dismiss - user needs to check email
-			});
-			setNewEmail("");
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to change email",
-			)
-		} finally {
-			setEmailSaving(false);
-		}
-	}
-
-	const handlePasswordChange = async (e: Event) => {
-		e.preventDefault();
-
-		if (!currentPassword()) {
-			toast.error("Please enter your current password");
-			return
-		}
-
-		if (!newPassword()) {
-			toast.error("Please enter a new password");
-			return
-		}
-
-		if (newPassword().length < 8) {
-			toast.error("New password must be at least 8 characters");
-			return
-		}
-
-		if (newPassword() !== confirmPassword()) {
-			toast.error("Passwords don't match");
-			return
-		}
-
-		setPasswordSaving(true);
-
-		try {
-			await changePassword({
-				currentPassword: currentPassword(),
-				newPassword: newPassword(),
-			})
-			toast.success("Password changed successfully");
-			setCurrentPassword("");
-			setNewPassword("");
-			setConfirmPassword("");
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to change password",
-			)
-		} finally {
-			setPasswordSaving(false);
-		}
-	}
+	// password form
+	const passwordForm = createForm(() => ({
+		defaultValues: {
+			currentPassword: "",
+			newPassword: "",
+			confirmPassword: "",
+		},
+		onSubmit: async ({ value }) => {
+			try {
+				await changePasswordMutation.mutateAsync({
+					currentPassword: value.currentPassword,
+					newPassword: value.newPassword,
+				});
+				toast.success("Password changed successfully");
+				passwordForm.reset();
+			} catch (err) {
+				toast.error(
+					err instanceof Error ? err.message : "Failed to change password",
+				);
+				throw err;
+			}
+		},
+		validators: {
+			onSubmit: ({ value }) => {
+				if (value.newPassword.length < 8) {
+					return {
+						fields: {
+							newPassword: "Password must be at least 8 characters",
+						},
+					};
+				}
+				if (value.newPassword !== value.confirmPassword) {
+					return {
+						fields: {
+							confirmPassword: "Passwords don't match",
+						},
+					};
+				}
+				return undefined;
+			},
+		},
+	}));
 
 	const handleSignOut = async () => {
 		try {
@@ -148,12 +136,17 @@ function AccountPage() {
 		} catch (err) {
 			console.error("Sign out failed:", err);
 		}
-	}
+	};
 
 	const currentUser = () => session.data?.user ?? data().user;
 
+	// track whether avatar input is expanded
+	const showAvatarInput = profileForm.useStore(
+		(state) => state.values.image !== (data().user?.image ?? ""),
+	);
+
 	return (
-		<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
+		<div class="min-h-screen bg-linear-to-b from-slate-900 via-slate-800 to-slate-900 py-12 px-6">
 			<div class="max-w-2xl mx-auto">
 				<h1 class="text-3xl font-bold text-white mb-8">Account Settings</h1>
 
@@ -164,31 +157,49 @@ function AccountPage() {
 						Profile
 					</h2>
 
-					<form onSubmit={handleProfileSave} class="space-y-6">
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							profileForm.handleSubmit();
+						}}
+						class="space-y-6"
+					>
 						{/* avatar */}
 						<div class="flex items-start gap-6">
 							<div class="relative shrink-0">
-								<div class="w-24 h-24 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center overflow-hidden">
-									<Show
-										when={avatarUrl()}
-										fallback={
-											<span class="text-3xl font-bold text-white">
-												{currentUser()?.name?.charAt(0).toUpperCase() ?? "?"}
-											</span>
-										}
-									>
-										{(src) => (
-											<img
-												src={src()}
-												alt="Avatar"
-												class="w-full h-full object-cover"
-											/>
-										)}
-									</Show>
-								</div>
+								<profileForm.Field name="image">
+									{(field) => (
+										<div class="w-24 h-24 rounded-full bg-linear-to-br from-violet-500 to-indigo-600 flex items-center justify-center overflow-hidden">
+											<Show
+												when={field().state.value}
+												fallback={
+													<span class="text-3xl font-bold text-white">
+														{currentUser()?.name?.charAt(0).toUpperCase() ?? "?"}
+													</span>
+												}
+											>
+												{(src) => (
+													<img
+														src={src()}
+														alt="Avatar"
+														class="w-full h-full object-cover"
+													/>
+												)}
+											</Show>
+										</div>
+									)}
+								</profileForm.Field>
 								<button
 									type="button"
-									onClick={() => setShowAvatarInput(!showAvatarInput())}
+									onClick={() => {
+										// toggle showing the avatar input by clearing or setting a placeholder
+										const currentImage = profileForm.getFieldValue("image");
+										if (currentImage === (data().user?.image ?? "")) {
+											// expand the input
+											profileForm.setFieldValue("image", currentImage || " ");
+										}
+									}}
 									class="absolute bottom-0 right-0 w-8 h-8 bg-violet-500 hover:bg-violet-600 rounded-full flex items-center justify-center cursor-pointer transition-colors shadow-lg"
 								>
 									<Camera class="w-4 h-4 text-white" />
@@ -196,23 +207,39 @@ function AccountPage() {
 							</div>
 							<div class="flex-1">
 								<Show
-									when={showAvatarInput()}
+									when={showAvatarInput() || !data().user?.image}
 									fallback={
 										<div class="text-gray-400 text-sm pt-2">
 											<p>Click the camera icon to change your photo</p>
 										</div>
 									}
 								>
-									<TextField value={avatarUrl()} onChange={setAvatarUrl}>
-										<TextFieldLabel class="text-gray-300">
-											Profile Picture URL
-										</TextFieldLabel>
-										<TextFieldInput
-											type="url"
-											placeholder="https://example.com/your-photo.jpg"
-											class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
-										/>
-									</TextField>
+									<profileForm.Field name="image">
+										{(field) => (
+											<TextField
+												value={field().state.value?.trim() ?? ""}
+												onChange={(v) => field().handleChange(v)}
+												validationState={
+													field().state.meta.errors.length > 0
+														? "invalid"
+														: "valid"
+												}
+											>
+												<TextFieldLabel class="text-gray-300">
+													Profile Picture URL
+												</TextFieldLabel>
+												<TextFieldInput
+													type="url"
+													placeholder="https://example.com/your-photo.jpg"
+													onBlur={field().handleBlur}
+													class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
+												/>
+												<TextFieldErrorMessage>
+													{field().state.meta.errors[0]}
+												</TextFieldErrorMessage>
+											</TextField>
+										)}
+									</profileForm.Field>
 									<p class="text-gray-500 text-xs mt-1">
 										Enter a URL to an image. Leave empty to remove.
 									</p>
@@ -221,14 +248,36 @@ function AccountPage() {
 						</div>
 
 						{/* name */}
-						<TextField value={name()} onChange={setName}>
-							<TextFieldLabel class="text-gray-300">Display Name</TextFieldLabel>
-							<TextFieldInput
-								type="text"
-								placeholder="Your display name"
-								class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
-							/>
-						</TextField>
+						<profileForm.Field
+							name="name"
+							validators={{
+								onChange: ({ value }) =>
+									!value?.trim() ? "Name is required" : undefined,
+							}}
+						>
+							{(field) => (
+								<TextField
+									value={field().state.value}
+									onChange={(v) => field().handleChange(v)}
+									validationState={
+										field().state.meta.errors.length > 0 ? "invalid" : "valid"
+									}
+								>
+									<TextFieldLabel class="text-gray-300">
+										Display Name
+									</TextFieldLabel>
+									<TextFieldInput
+										type="text"
+										placeholder="Your display name"
+										onBlur={field().handleBlur}
+										class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
+									/>
+									<TextFieldErrorMessage>
+										{field().state.meta.errors[0]}
+									</TextFieldErrorMessage>
+								</TextField>
+							)}
+						</profileForm.Field>
 
 						{/* email display (read-only) */}
 						<div>
@@ -243,13 +292,22 @@ function AccountPage() {
 							</p>
 						</div>
 
-						<Button
-							type="submit"
-							disabled={profileSaving()}
-							class="bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600"
+						<profileForm.Subscribe
+							selector={(state) => ({
+								canSubmit: state.canSubmit,
+								isSubmitting: state.isSubmitting,
+							})}
 						>
-							{profileSaving() ? "Saving..." : "Save Profile"}
-						</Button>
+							{(state) => (
+								<Button
+									type="submit"
+									disabled={!state().canSubmit || state().isSubmitting}
+									class="bg-linear-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600"
+								>
+									{state().isSubmitting ? "Saving..." : "Save Profile"}
+								</Button>
+							)}
+						</profileForm.Subscribe>
 					</form>
 				</section>
 
@@ -257,28 +315,69 @@ function AccountPage() {
 				<section class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 mb-6">
 					<h2 class="text-xl font-semibold text-white mb-6">Change Email</h2>
 
-					<form onSubmit={handleEmailChange} class="space-y-4">
-						<TextField value={newEmail()} onChange={setNewEmail}>
-							<TextFieldLabel class="text-gray-300">New Email Address</TextFieldLabel>
-							<TextFieldInput
-								type="email"
-								placeholder="Enter new email address"
-								class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
-							/>
-						</TextField>
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							emailForm.handleSubmit();
+						}}
+						class="space-y-4"
+					>
+						<emailForm.Field
+							name="newEmail"
+							validators={{
+								onChange: ({ value }) => {
+									if (!value?.trim()) return "Email is required";
+									if (!value.includes("@")) return "Invalid email address";
+									return undefined;
+								},
+							}}
+						>
+							{(field) => (
+								<TextField
+									value={field().state.value}
+									onChange={(v) => field().handleChange(v)}
+									validationState={
+										field().state.meta.errors.length > 0 ? "invalid" : "valid"
+									}
+								>
+									<TextFieldLabel class="text-gray-300">
+										New Email Address
+									</TextFieldLabel>
+									<TextFieldInput
+										type="email"
+										placeholder="Enter new email address"
+										onBlur={field().handleBlur}
+										class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
+									/>
+									<TextFieldErrorMessage>
+										{field().state.meta.errors[0]}
+									</TextFieldErrorMessage>
+								</TextField>
+							)}
+						</emailForm.Field>
 
 						<p class="text-gray-500 text-sm">
 							A verification link will be sent to your new email address.
 						</p>
 
-						<Button
-							type="submit"
-							disabled={emailSaving()}
-							variant="outline"
-							class="border-slate-600 text-gray-300 hover:bg-slate-700"
+						<emailForm.Subscribe
+							selector={(state) => ({
+								canSubmit: state.canSubmit,
+								isSubmitting: state.isSubmitting,
+							})}
 						>
-							{emailSaving() ? "Sending..." : "Change Email"}
-						</Button>
+							{(state) => (
+								<Button
+									type="submit"
+									disabled={!state().canSubmit || state().isSubmitting}
+									variant="outline"
+									class="border-slate-600 text-gray-300 hover:bg-slate-700"
+								>
+									{state().isSubmitting ? "Sending..." : "Change Email"}
+								</Button>
+							)}
+						</emailForm.Subscribe>
 					</form>
 				</section>
 
@@ -286,42 +385,133 @@ function AccountPage() {
 				<section class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 mb-6">
 					<h2 class="text-xl font-semibold text-white mb-6">Change Password</h2>
 
-					<form onSubmit={handlePasswordChange} class="space-y-4">
-						<TextField value={currentPassword()} onChange={setCurrentPassword}>
-							<TextFieldLabel class="text-gray-300">Current Password</TextFieldLabel>
-							<TextFieldInput
-								type="password"
-								placeholder="Enter current password"
-								class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
-							/>
-						</TextField>
-
-						<TextField value={newPassword()} onChange={setNewPassword}>
-							<TextFieldLabel class="text-gray-300">New Password</TextFieldLabel>
-							<TextFieldInput
-								type="password"
-								placeholder="Enter new password"
-								class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
-							/>
-						</TextField>
-
-						<TextField value={confirmPassword()} onChange={setConfirmPassword}>
-							<TextFieldLabel class="text-gray-300">Confirm New Password</TextFieldLabel>
-							<TextFieldInput
-								type="password"
-								placeholder="Confirm new password"
-								class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
-							/>
-						</TextField>
-
-						<Button
-							type="submit"
-							disabled={passwordSaving()}
-							variant="outline"
-							class="border-slate-600 text-gray-300 hover:bg-slate-700"
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							passwordForm.handleSubmit();
+						}}
+						class="space-y-4"
+					>
+						<passwordForm.Field
+							name="currentPassword"
+							validators={{
+								onChange: ({ value }) =>
+									!value ? "Current password is required" : undefined,
+							}}
 						>
-							{passwordSaving() ? "Changing..." : "Change Password"}
-						</Button>
+							{(field) => (
+								<TextField
+									value={field().state.value}
+									onChange={(v) => field().handleChange(v)}
+									validationState={
+										field().state.meta.errors.length > 0 ? "invalid" : "valid"
+									}
+								>
+									<TextFieldLabel class="text-gray-300">
+										Current Password
+									</TextFieldLabel>
+									<TextFieldInput
+										type="password"
+										placeholder="Enter current password"
+										onBlur={field().handleBlur}
+										class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
+									/>
+									<TextFieldErrorMessage>
+										{field().state.meta.errors[0]}
+									</TextFieldErrorMessage>
+								</TextField>
+							)}
+						</passwordForm.Field>
+
+						<passwordForm.Field
+							name="newPassword"
+							validators={{
+								onChange: ({ value }) => {
+									if (!value) return "New password is required";
+									if (value.length < 8)
+										return "Password must be at least 8 characters";
+									return undefined;
+								},
+							}}
+						>
+							{(field) => (
+								<TextField
+									value={field().state.value}
+									onChange={(v) => field().handleChange(v)}
+									validationState={
+										field().state.meta.errors.length > 0 ? "invalid" : "valid"
+									}
+								>
+									<TextFieldLabel class="text-gray-300">
+										New Password
+									</TextFieldLabel>
+									<TextFieldInput
+										type="password"
+										placeholder="Enter new password"
+										onBlur={field().handleBlur}
+										class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
+									/>
+									<TextFieldErrorMessage>
+										{field().state.meta.errors[0]}
+									</TextFieldErrorMessage>
+								</TextField>
+							)}
+						</passwordForm.Field>
+
+						<passwordForm.Field
+							name="confirmPassword"
+							validators={{
+								onChangeListenTo: ["newPassword"],
+								onChange: ({ value, fieldApi }) => {
+									const newPassword = fieldApi.form.getFieldValue("newPassword");
+									if (!value) return "Please confirm your password";
+									if (value !== newPassword) return "Passwords don't match";
+									return undefined;
+								},
+							}}
+						>
+							{(field) => (
+								<TextField
+									value={field().state.value}
+									onChange={(v) => field().handleChange(v)}
+									validationState={
+										field().state.meta.errors.length > 0 ? "invalid" : "valid"
+									}
+								>
+									<TextFieldLabel class="text-gray-300">
+										Confirm New Password
+									</TextFieldLabel>
+									<TextFieldInput
+										type="password"
+										placeholder="Confirm new password"
+										onBlur={field().handleBlur}
+										class="bg-slate-900/50 border-slate-600 text-white placeholder:text-gray-500"
+									/>
+									<TextFieldErrorMessage>
+										{field().state.meta.errors[0]}
+									</TextFieldErrorMessage>
+								</TextField>
+							)}
+						</passwordForm.Field>
+
+						<passwordForm.Subscribe
+							selector={(state) => ({
+								canSubmit: state.canSubmit,
+								isSubmitting: state.isSubmitting,
+							})}
+						>
+							{(state) => (
+								<Button
+									type="submit"
+									disabled={!state().canSubmit || state().isSubmitting}
+									variant="outline"
+									class="border-slate-600 text-gray-300 hover:bg-slate-700"
+								>
+									{state().isSubmitting ? "Changing..." : "Change Password"}
+								</Button>
+							)}
+						</passwordForm.Subscribe>
 					</form>
 				</section>
 
@@ -343,5 +533,5 @@ function AccountPage() {
 				</section>
 			</div>
 		</div>
-	)
+	);
 }

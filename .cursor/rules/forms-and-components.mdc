@@ -1,0 +1,127 @@
+---
+description: Rules for forms and reusable components
+globs:
+  - src/routes/**
+  - src/components/**
+---
+# Forms and Reusable Components
+
+## TanStack Form
+
+Use TanStack Form (`@tanstack/solid-form`) for all form state management:
+
+```typescript
+import { createForm } from "@tanstack/solid-form";
+
+const form = createForm(() => ({
+  defaultValues: {
+    title: "",
+    description: "",
+  },
+  onSubmit: async ({ value }) => {
+    // handle submission
+  },
+}));
+```
+
+### Form Field Components
+
+Use the reusable form field components from `@/components/FormField`:
+
+```typescript
+import { FormField, FormTextArea, FormCheckbox, FormCheckboxSimple } from "@/components/FormField";
+
+// text input
+<form.Field name="title" validators={{ onChange: ({ value }) => !value ? "Required" : undefined }}>
+  {(field) => <FormField field={field} label="Title" placeholder="Enter title" required />}
+</form.Field>
+
+// textarea
+<form.Field name="description">
+  {(field) => <FormTextArea field={field} label="Description" rows={3} />}
+</form.Field>
+
+// checkbox with description
+<form.Field name="isPublic">
+  {(field) => <FormCheckbox field={field} label="Public" description="Anyone can see this" />}
+</form.Field>
+
+// simple checkbox (no description)
+<form.Field name="allowDownload">
+  {(field) => <FormCheckboxSimple field={field} label="Allow Downloads" />}
+</form.Field>
+```
+
+### Form Submission
+
+Use `form.Subscribe` to handle submit button state:
+
+```typescript
+<form.Subscribe selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}>
+  {(state) => (
+    <Button type="submit" disabled={!state().canSubmit || state().isSubmitting}>
+      {state().isSubmitting ? "Saving..." : "Save"}
+    </Button>
+  )}
+</form.Subscribe>
+```
+
+## TanStack Query Mutations
+
+For API calls that modify data, use TanStack Query mutations:
+
+1. Define mutation options in a queries file (e.g., `@/lib/track-queries.ts`):
+
+```typescript
+export const updateTrackMutationOptions = () => ({
+  mutationFn: async (variables: { trackId: string; title: string }) =>
+    await updateTrack({ data: variables }),
+});
+```
+
+2. Use in components:
+
+```typescript
+import { useMutation } from "@tanstack/solid-query";
+
+const updateMutation = useMutation(() => updateTrackMutationOptions());
+
+// in form onSubmit
+await updateMutation.mutateAsync({ trackId, title });
+```
+
+## File Upload
+
+Use the `FileUploadZone` component for file uploads:
+
+```typescript
+import { FileUploadZone } from "@/components/FileUploadZone";
+
+const [file, setFile] = createSignal<File | null>(null);
+
+<FileUploadZone
+  file={file()}
+  onFileChange={setFile}
+  isUploading={mutation.isPending}
+  onUpload={handleUpload}
+  uploadLabel="Upload"
+  placeholder="Drop your file here"
+/>
+```
+
+## Component Extraction
+
+When a component has its own form state, extract it into a separate component file. This:
+- Gives each instance its own form instance
+- Simplifies the parent component
+- Makes the code more maintainable
+
+Example: `VersionEditor` component has its own TanStack Form for editing version metadata.
+
+## Styling Conventions
+
+- Use Tailwind classes for styling
+- Use `stone-*` colors for dark backgrounds (stone-800, stone-900)
+- Use `slate-*` colors for lighter/different themed sections
+- Use `violet-*` for accent colors and interactive elements
+- Use opacity classes (opacity-50, opacity-70) for muted text

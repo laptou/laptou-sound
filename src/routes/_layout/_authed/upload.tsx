@@ -1,19 +1,16 @@
 // upload page for creating new tracks
 
+import { createForm } from "@tanstack/solid-form";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { Button } from "@ui/button";
-import { Label } from "@ui/label";
-import {
-	TextField,
-	TextFieldInput,
-	TextFieldLabel,
-	TextFieldTextArea,
-} from "@ui/text-field";
-import Music from "lucide-solid/icons/music";
-import Upload from "lucide-solid/icons/upload";
-import X from "lucide-solid/icons/x";
 import { createSignal, Show } from "solid-js";
 import { toast } from "solid-sonner";
+import { FileUploadZone } from "@/components/FileUploadZone";
+import {
+	FormCheckbox,
+	FormField,
+	FormTextArea,
+} from "@/components/FormField";
 import { AccessDeniedError } from "@/lib/errors";
 import { hasRole } from "@/server/auth";
 import { createTrack } from "@/server/tracks";
@@ -32,119 +29,77 @@ export const Route = createFileRoute("/_layout/_authed/upload")({
 
 function UploadPage() {
 	const navigate = useNavigate();
-	const [title, setTitle] = createSignal("");
-	const [description, setDescription] = createSignal("");
-	const [isPublic, setIsPublic] = createSignal(true);
-	const [allowDownload, setAllowDownload] = createSignal(false);
 	const [file, setFile] = createSignal<File | null>(null);
 	const [isUploading, setIsUploading] = createSignal(false);
 	const [uploadProgress, setUploadProgress] = createSignal(0);
 
-	const handleFileSelect = (e: Event) => {
-		const input = e.target as HTMLInputElement;
-		const selectedFile = input.files?.[0];
+	// track form
+	const form = createForm(() => ({
+		defaultValues: {
+			title: "",
+			description: "",
+			isPublic: true,
+			allowDownload: false,
+		},
+		onSubmit: async ({ value }) => {
+			const currentFile = file();
 
-		if (selectedFile) {
-			// validate file type
-			if (!selectedFile.type.startsWith("audio/")) {
-				toast.error("Please select an audio file");
-				return;
+			if (!currentFile) {
+				toast.error("Please select a file to upload");
+				throw new Error("No file selected");
 			}
 
-			// validate file size (100MB max)
-			if (selectedFile.size > 100 * 1024 * 1024) {
-				toast.error("File size must be less than 100MB");
-				return;
-			}
+			setIsUploading(true);
+			setUploadProgress(10);
 
-			setFile(selectedFile);
+			try {
+				// create track metadata
+				const { id: trackId } = await createTrack({
+					data: {
+						title: value.title.trim(),
+						description: value.description.trim() || undefined,
+						isPublic: value.isPublic,
+						allowDownload: value.allowDownload,
+					},
+				});
 
-			// auto-fill title if empty
-			if (!title()) {
-				const fileName = selectedFile.name.replace(/\.[^/.]+$/, "");
-				setTitle(fileName);
+				setUploadProgress(30);
+
+				// upload file
+				const formData = new FormData();
+				formData.append("file", currentFile);
+				formData.append("trackId", trackId);
+
+				const response = await fetch("/api/upload", {
+					method: "POST",
+					body: formData,
+				});
+
+				if (!response.ok) {
+					throw new Error("Upload failed");
+				}
+
+				setUploadProgress(100);
+
+				toast.success("Track uploaded successfully");
+				navigate({ to: `/track/${trackId}` });
+			} catch (err) {
+				toast.error(err instanceof Error ? err.message : "Upload failed");
+				throw err;
+			} finally {
+				setIsUploading(false);
 			}
+		},
+	}));
+
+	// auto-fill title when file is selected
+	const handleFileChange = (newFile: File | null) => {
+		setFile(newFile);
+
+		if (newFile && !form.getFieldValue("title")) {
+			const fileName = newFile.name.replace(/\.[^/.]+$/, "");
+			form.setFieldValue("title", fileName);
 		}
-	};
-
-	const handleDrop = (e: DragEvent) => {
-		e.preventDefault();
-		const droppedFile = e.dataTransfer?.files[0];
-
-		if (droppedFile) {
-			if (!droppedFile.type.startsWith("audio/")) {
-				toast.error("Please drop an audio file");
-				return;
-			}
-
-			setFile(droppedFile);
-
-			if (!title()) {
-				const fileName = droppedFile.name.replace(/\.[^/.]+$/, "");
-				setTitle(fileName);
-			}
-		}
-	};
-
-	const handleSubmit = async (e: Event) => {
-		e.preventDefault();
-
-		const currentFile = file();
-
-		if (!currentFile) {
-			toast.error("Please select a file to upload");
-			return;
-		}
-
-		if (!title().trim()) {
-			toast.error("Please enter a title");
-			return;
-		}
-
-		setIsUploading(true);
-		setUploadProgress(10);
-
-		try {
-			// create track metadata
-			const { id: trackId } = await createTrack({
-				data: {
-					title: title().trim(),
-					description: description().trim() || undefined,
-					isPublic: isPublic(),
-					allowDownload: allowDownload(),
-				},
-			});
-
-			setUploadProgress(30);
-
-			// upload file
-			const formData = new FormData();
-			formData.append("file", currentFile);
-			formData.append("trackId", trackId);
-
-			const response = await fetch("/api/upload", {
-				method: "POST",
-				body: formData,
-			});
-
-			if (!response.ok) {
-				throw new Error("Upload failed");
-			}
-
-			setUploadProgress(100);
-
-			toast.success("Track uploaded successfully");
-			// redirect to track page
-			navigate({ to: `/track/${trackId}` });
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Upload failed");
-		} finally {
-			setIsUploading(false);
-		}
-	};
-
-	const removeFile = () => {
-		setFile(null);
 	};
 
 	return (
@@ -154,117 +109,71 @@ function UploadPage() {
 				<p class="text-gray-400">Share your music with the community</p>
 			</div>
 
-			<form onSubmit={handleSubmit} class="space-y-6">
-				{/* file drop zone */}
-				<div
-					onDrop={handleDrop}
-					onDragOver={(e) => e.preventDefault()}
-					class={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-						file()
-							? "border-violet-500 bg-violet-500/10"
-							: "border-slate-600 hover:border-slate-500"
-					}`}
+			<form
+				onSubmit={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					form.handleSubmit();
+				}}
+				class="space-y-6"
+			>
+				<FileUploadZone
+					file={file()}
+					onFileChange={handleFileChange}
+					placeholder="Drop your audio file here"
+				/>
+
+				<form.Field
+					name="title"
+					validators={{
+						onChange: ({ value }) =>
+							!value?.trim() ? "Title is required" : undefined,
+					}}
 				>
-					<Show
-						when={file()}
-						fallback={
-							<>
-								<Upload class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-								<p class="text-white font-medium mb-2">
-									Drop your audio file here
-								</p>
-								<p class="text-gray-400 text-sm mb-4">
-									or click to browse (MP3, WAV, FLAC up to 100MB)
-								</p>
-								<input
-									type="file"
-									accept="audio/*"
-									onChange={handleFileSelect}
-									class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-								/>
-							</>
-						}
-					>
-						{(f) => (
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-3">
-									<div class="w-12 h-12 bg-violet-500/20 rounded-lg flex items-center justify-center">
-										<Music class="w-6 h-6 text-violet-400" />
-									</div>
-									<div class="text-left">
-										<p class="text-white font-medium">{f()?.name}</p>
-										<p class="text-gray-400 text-sm">
-											{(f()?.size / (1024 * 1024)).toFixed(2)} MB
-										</p>
-									</div>
-								</div>
-								<Button
-									type="button"
-									onClick={removeFile}
-									variant="ghost"
-									size="icon"
-									class="p-2 text-gray-400 hover:text-white"
-								>
-									<X class="w-5 h-5" />
-								</Button>
-							</div>
-						)}
-					</Show>
-				</div>
+					{(field) => (
+						<FormField
+							field={field}
+							label="Title *"
+							placeholder="Enter track title"
+							required
+						/>
+					)}
+				</form.Field>
 
-				{/* title */}
-				<TextField value={title()} onChange={setTitle} required>
-					<TextFieldLabel for="title">Title *</TextFieldLabel>
-					<TextFieldInput
-						id="title"
-						type="text"
-						placeholder="Enter track title"
-					/>
-				</TextField>
+				<form.Field name="description">
+					{(field) => (
+						<FormTextArea
+							field={field}
+							label="Description"
+							placeholder="Add a description (optional)"
+							rows={3}
+							textareaClass="resize-none"
+						/>
+					)}
+				</form.Field>
 
-				{/* description */}
-				<TextField value={description()} onChange={setDescription}>
-					<TextFieldLabel for="description">Description</TextFieldLabel>
-					<TextFieldTextArea
-						id="description"
-						rows={3}
-						placeholder="Add a description (optional)"
-						class="resize-none"
-					/>
-				</TextField>
-
-				{/* options */}
 				<div class="space-y-4">
-					<label class="flex items-center gap-3 cursor-pointer">
-						<input
-							type="checkbox"
-							checked={isPublic()}
-							onChange={(e) => setIsPublic(e.currentTarget.checked)}
-							class="w-5 h-5 rounded border-slate-600 bg-slate-700 text-violet-500 focus:ring-violet-500"
-						/>
-						<div>
-							<Label class="text-white font-medium">Public</Label>
-							<p class="text-gray-400 text-sm">Anyone can see this track</p>
-						</div>
-					</label>
+					<form.Field name="isPublic">
+						{(field) => (
+							<FormCheckbox
+								field={field}
+								label="Public"
+								description="Anyone can see this track"
+							/>
+						)}
+					</form.Field>
 
-					<label class="flex items-center gap-3 cursor-pointer">
-						<input
-							type="checkbox"
-							checked={allowDownload()}
-							onChange={(e) => setAllowDownload(e.currentTarget.checked)}
-							class="w-5 h-5 rounded border-slate-600 bg-slate-700 text-violet-500 focus:ring-violet-500"
-						/>
-						<div>
-							<Label class="text-white font-medium">Allow Downloads</Label>
-							<p class="text-gray-400 text-sm">
-								Let others download the original file
-							</p>
-						</div>
-					</label>
+					<form.Field name="allowDownload">
+						{(field) => (
+							<FormCheckbox
+								field={field}
+								label="Allow Downloads"
+								description="Let others download the original file"
+							/>
+						)}
+					</form.Field>
 				</div>
 
-				{/* upload progress */}
 				<Show when={isUploading()}>
 					<div class="bg-slate-700/50 rounded-lg p-4">
 						<div class="flex justify-between text-sm mb-2">
@@ -280,14 +189,22 @@ function UploadPage() {
 					</div>
 				</Show>
 
-				{/* submit button */}
-				<Button
-					type="submit"
-					disabled={isUploading() || !file()}
-					class="w-full"
+				<form.Subscribe
+					selector={(state) => ({
+						canSubmit: state.canSubmit,
+						isSubmitting: state.isSubmitting,
+					})}
 				>
-					{isUploading() ? "Uploading..." : "Upload Track"}
-				</Button>
+					{(state) => (
+						<Button
+							type="submit"
+							disabled={!state().canSubmit || state().isSubmitting || !file()}
+							class="w-full"
+						>
+							{state().isSubmitting ? "Uploading..." : "Upload Track"}
+						</Button>
+					)}
+				</form.Subscribe>
 			</form>
 		</div>
 	);

@@ -18,6 +18,10 @@ On the client side:
 - Use SolidJS for all client-side components
 - For common components, use Solid-UI
   - Solid-UI doesn't natively support Tailwind v4 yet, so we can install new Solid-UI components using `shadcn`'s CLI for now: `bunx shadcn@beta add @solid-ui/text-field`
+- Use TanStack Form (`@tanstack/solid-form`) for form state management
+- Use TanStack Query mutations for API calls that modify data
+- Use reusable form components from `@/components/FormField` (FormField, FormTextArea, FormCheckbox, FormCheckboxSimple)
+- Use `@/components/FileUploadZone` for file upload UI
 
 If you don't know how something works, refer to the documentation so you can implement it properly instead of guessing. I have downloaded a lot of the relevant documentation into the `llm-docs` folder.
 
