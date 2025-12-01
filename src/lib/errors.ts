@@ -40,6 +40,16 @@ export class ValidationError extends AnticipatedError {
 	}
 }
 
+export class BetterAuthError extends AnticipatedError {
+	constructor(
+		message: string,
+		public readonly betterAuthStatusCode: string,
+	) {
+		super(message, "Better Auth Error", 400);
+		this.name = "BetterAuthError";
+	}
+}
+
 // type guard to check if an error is anticipated
 export function isAnticipatedError(error: unknown): error is AnticipatedError {
 	return error instanceof AnticipatedError;
