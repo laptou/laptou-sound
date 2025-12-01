@@ -134,6 +134,10 @@ export const AudioPlayerProvider: Component<{ children: JSX.Element }> = (
 		
 		const handleError = (e: Event) => {
 			console.error("audio error:", e);
+			audioElement?.pause();
+			setCurrentTime(0);
+			setDuration(0);
+			setCurrentTrack(null);
 			setIsPlaying(false);
 			// don't auto-play next track on error
 		};
