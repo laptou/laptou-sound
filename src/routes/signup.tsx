@@ -4,8 +4,8 @@ import { createForm } from "@tanstack/solid-form";
 import { useMutation } from "@tanstack/solid-query";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { Button } from "@ui/button";
-import { Callout, CalloutContent } from "@ui/callout";
 import { Show } from "solid-js";
+import { toast } from "solid-sonner";
 import { FormField } from "@/components/FormField";
 import { signupMutationOptions } from "@/lib/auth-queries";
 
@@ -45,14 +45,16 @@ function SignupPage() {
 					password: value.password,
 					name: value.name,
 				});
+				toast.success("Account created successfully");
 				navigate({ to: "/" });
-			} catch {
-				// error is handled by mutation state
+			} catch (err) {
+				toast.error(
+					err instanceof Error ? err.message : "Failed to create account",
+				);
 			}
 		},
 	}));
 
-	const error = () => signup.error?.message || null;
 	const loading = () => signup.isPending;
 
 	return (
@@ -63,16 +65,6 @@ function SignupPage() {
 						<h1 class="text-3xl font-bold text-white mb-2">Create account</h1>
 						<p class="text-gray-400">Join the community</p>
 					</div>
-
-					<Show when={error()}>
-						{(err) => (
-							<Callout variant="error" class="mb-6">
-								<CalloutContent>
-									<p class="text-center">{err()}</p>
-								</CalloutContent>
-							</Callout>
-						)}
-					</Show>
 
 					<form
 						onSubmit={(e) => {

@@ -1,11 +1,8 @@
 // shared layout component for login page
 
-import { Callout, CalloutContent } from "@ui/callout";
-import { type JSX, Show } from "solid-js";
+import { type JSX } from "solid-js";
 
 type LoginLayoutProps = {
-	error?: () => string | null;
-	magicLinkSent?: () => boolean;
 	children: JSX.Element;
 };
 
@@ -18,26 +15,6 @@ export function LoginLayout(props: LoginLayoutProps) {
 						<h1 class="text-3xl font-bold text-white mb-2">Welcome back</h1>
 						<p class="text-gray-400">Sign in to your account</p>
 					</div>
-
-					<Show when={props.magicLinkSent?.()}>
-						<Callout variant="default" class="mb-6">
-							<CalloutContent>
-								<p class="text-center">
-									Check your email for a magic link to sign in.
-								</p>
-							</CalloutContent>
-						</Callout>
-					</Show>
-
-					<Show when={props.error?.()}>
-						{(error) => (
-							<Callout variant="error" class="mb-6">
-								<CalloutContent>
-									<p class="text-center">{error()}</p>
-								</CalloutContent>
-							</Callout>
-						)}
-					</Show>
 
 					{props.children}
 

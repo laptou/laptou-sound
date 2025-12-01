@@ -318,7 +318,7 @@ function TrackEditPage() {
 								<img
 									src={url()}
 									alt="Album art"
-									class="w-32 h-32 rounded-md object-cover shadow-lg shrink-0"
+									class="w-32 h-32 rounded-md object-cover shadow-lg shrink-0 vt-track-album-art"
 								/>
 							)}
 						</Show>
@@ -343,7 +343,7 @@ function TrackEditPage() {
 							<TextFieldInput
 								type="text"
 								placeholder="Track title"
-								class="text-4xl py-4 font-bold text-white vt-track-name"
+								class="text-4xl py-6 font-bold text-white vt-track-name"
 							/>
 						</TextField>
 					</div>
@@ -424,7 +424,7 @@ function TrackEditPage() {
 							disabled={updateTrackMutation.isPending}
 							class="w-full"
 						>
-							{updateTrackMutation.isPending ? "Saving..." : "Save Track Details"}
+							{updateTrackMutation.isPending ? "Saving..." : "Save Permissions"}
 						</Button>
 					</div>
 				</div>

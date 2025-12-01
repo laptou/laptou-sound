@@ -2,6 +2,7 @@
 
 import { createFileRoute } from "@tanstack/solid-router";
 import { createSignal, Show } from "solid-js";
+import { toast } from "solid-sonner";
 import { EmailPasswordLoginForm } from "@/components/login/EmailPasswordLoginForm";
 import { LoginLayout } from "@/components/login/LoginLayout";
 import { LoginMethodToggle } from "@/components/login/LoginMethodToggle";
@@ -13,29 +14,31 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
 	const [useMagicLink, setUseMagicLink] = createSignal(false);
-	const [magicLinkSent, setMagicLinkSent] = createSignal(false);
-	const [error, setError] = createSignal<string | null>(null);
 
 	const handleEmailPasswordError = (err: string | null) => {
-		setError(err);
+		if (err) {
+			toast.error(err);
+		}
 	};
 
 	const handleMagicLinkError = (err: string | null) => {
-		setError(err);
+		if (err) {
+			toast.error(err);
+		}
 	};
 
 	const handleMagicLinkSuccess = () => {
-		setMagicLinkSent(true);
-		setError(null);
+		toast.success("Check your email for a magic link to sign in.", {
+			duration: Infinity, // don't auto-dismiss - user needs to check email
+		});
 	};
 
 	return (
-		<LoginLayout error={() => error()} magicLinkSent={() => magicLinkSent()}>
+		<LoginLayout>
 			<LoginMethodToggle
 				useMagicLink={useMagicLink}
 				onToggle={(value) => {
 					setUseMagicLink(value);
-					setError(null);
 				}}
 			/>
 

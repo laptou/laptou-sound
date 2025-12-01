@@ -2,17 +2,16 @@
 
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { Button } from "@ui/button";
-import { Callout, CalloutContent } from "@ui/callout";
 import {
 	TextField,
 	TextFieldInput,
 	TextFieldLabel,
 } from "@ui/text-field";
 import Camera from "lucide-solid/icons/camera";
-import Check from "lucide-solid/icons/check";
 import LogOut from "lucide-solid/icons/log-out";
 import User from "lucide-solid/icons/user";
 import { createSignal, Show } from "solid-js";
+import { toast } from "solid-sonner";
 import {
 	changeEmail,
 	changePassword,
@@ -38,8 +37,6 @@ function AccountPage() {
 	// profile section state
 	const [name, setName] = createSignal(data().user?.name ?? "");
 	const [profileSaving, setProfileSaving] = createSignal(false);
-	const [profileSuccess, setProfileSuccess] = createSignal(false);
-	const [profileError, setProfileError] = createSignal<string | null>(null);
 
 	// avatar state
 	const [avatarUrl, setAvatarUrl] = createSignal(data().user?.image ?? "");
@@ -48,21 +45,15 @@ function AccountPage() {
 	// email section state
 	const [newEmail, setNewEmail] = createSignal("");
 	const [emailSaving, setEmailSaving] = createSignal(false);
-	const [emailSuccess, setEmailSuccess] = createSignal(false);
-	const [emailError, setEmailError] = createSignal<string | null>(null);
 
 	// password section state
 	const [currentPassword, setCurrentPassword] = createSignal("");
 	const [newPassword, setNewPassword] = createSignal("");
 	const [confirmPassword, setConfirmPassword] = createSignal("");
 	const [passwordSaving, setPasswordSaving] = createSignal(false);
-	const [passwordSuccess, setPasswordSuccess] = createSignal(false);
-	const [passwordError, setPasswordError] = createSignal<string | null>(null);
 
 	const handleProfileSave = async (e: Event) => {
 		e.preventDefault();
-		setProfileError(null);
-		setProfileSuccess(false);
 		setProfileSaving(true);
 
 		try {
@@ -71,11 +62,10 @@ function AccountPage() {
 				image: avatarUrl() || null,
 			})
 
-			setProfileSuccess(true);
+			toast.success("Profile updated successfully");
 			setShowAvatarInput(false);
-			setTimeout(() => setProfileSuccess(false), 3000);
 		} catch (err) {
-			setProfileError(
+			toast.error(
 				err instanceof Error ? err.message : "Failed to update profile",
 			)
 		} finally {
@@ -85,11 +75,9 @@ function AccountPage() {
 
 	const handleEmailChange = async (e: Event) => {
 		e.preventDefault();
-		setEmailError(null);
-		setEmailSuccess(false);
 
 		if (!newEmail().trim()) {
-			setEmailError("Please enter a new email address");
+			toast.error("Please enter a new email address");
 			return
 		}
 
@@ -97,10 +85,12 @@ function AccountPage() {
 
 		try {
 			await changeEmail({ newEmail: newEmail() });
-			setEmailSuccess(true);
+			toast.success("Verification email sent! Check your inbox.", {
+				duration: Infinity, // don't auto-dismiss - user needs to check email
+			});
 			setNewEmail("");
 		} catch (err) {
-			setEmailError(
+			toast.error(
 				err instanceof Error ? err.message : "Failed to change email",
 			)
 		} finally {
@@ -110,26 +100,24 @@ function AccountPage() {
 
 	const handlePasswordChange = async (e: Event) => {
 		e.preventDefault();
-		setPasswordError(null);
-		setPasswordSuccess(false);
 
 		if (!currentPassword()) {
-			setPasswordError("Please enter your current password");
+			toast.error("Please enter your current password");
 			return
 		}
 
 		if (!newPassword()) {
-			setPasswordError("Please enter a new password");
+			toast.error("Please enter a new password");
 			return
 		}
 
 		if (newPassword().length < 8) {
-			setPasswordError("New password must be at least 8 characters");
+			toast.error("New password must be at least 8 characters");
 			return
 		}
 
 		if (newPassword() !== confirmPassword()) {
-			setPasswordError("Passwords don't match");
+			toast.error("Passwords don't match");
 			return
 		}
 
@@ -140,13 +128,12 @@ function AccountPage() {
 				currentPassword: currentPassword(),
 				newPassword: newPassword(),
 			})
-			setPasswordSuccess(true);
+			toast.success("Password changed successfully");
 			setCurrentPassword("");
 			setNewPassword("");
 			setConfirmPassword("");
-			setTimeout(() => setPasswordSuccess(false), 3000);
 		} catch (err) {
-			setPasswordError(
+			toast.error(
 				err instanceof Error ? err.message : "Failed to change password",
 			)
 		} finally {
@@ -176,23 +163,6 @@ function AccountPage() {
 						<User class="w-5 h-5 text-violet-400" />
 						Profile
 					</h2>
-
-					<Show when={profileError()}>
-						{(err) => (
-							<Callout variant="error" class="mb-4">
-								<CalloutContent>{err()}</CalloutContent>
-							</Callout>
-						)}
-					</Show>
-
-					<Show when={profileSuccess()}>
-						<Callout variant="success" class="mb-4">
-							<CalloutContent class="flex items-center gap-2">
-								<Check class="w-4 h-4" />
-								Profile updated successfully
-							</CalloutContent>
-						</Callout>
-					</Show>
 
 					<form onSubmit={handleProfileSave} class="space-y-6">
 						{/* avatar */}
@@ -287,23 +257,6 @@ function AccountPage() {
 				<section class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 mb-6">
 					<h2 class="text-xl font-semibold text-white mb-6">Change Email</h2>
 
-					<Show when={emailError()}>
-						{(err) => (
-							<Callout variant="error" class="mb-4">
-								<CalloutContent>{err()}</CalloutContent>
-							</Callout>
-						)}
-					</Show>
-
-					<Show when={emailSuccess()}>
-						<Callout variant="success" class="mb-4">
-							<CalloutContent class="flex items-center gap-2">
-								<Check class="w-4 h-4" />
-								Verification email sent! Check your inbox.
-							</CalloutContent>
-						</Callout>
-					</Show>
-
 					<form onSubmit={handleEmailChange} class="space-y-4">
 						<TextField value={newEmail()} onChange={setNewEmail}>
 							<TextFieldLabel class="text-gray-300">New Email Address</TextFieldLabel>
@@ -332,23 +285,6 @@ function AccountPage() {
 				{/* password change section */}
 				<section class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 mb-6">
 					<h2 class="text-xl font-semibold text-white mb-6">Change Password</h2>
-
-					<Show when={passwordError()}>
-						{(err) => (
-							<Callout variant="error" class="mb-4">
-								<CalloutContent>{err()}</CalloutContent>
-							</Callout>
-						)}
-					</Show>
-
-					<Show when={passwordSuccess()}>
-						<Callout variant="success" class="mb-4">
-							<CalloutContent class="flex items-center gap-2">
-								<Check class="w-4 h-4" />
-								Password changed successfully
-							</CalloutContent>
-						</Callout>
-					</Show>
 
 					<form onSubmit={handlePasswordChange} class="space-y-4">
 						<TextField value={currentPassword()} onChange={setCurrentPassword}>
