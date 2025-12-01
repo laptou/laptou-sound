@@ -95,7 +95,7 @@ const TextFieldTextArea = <T extends ValidComponent = "textarea">(
 };
 
 const labelVariants = cva(
-	"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+	"ms-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
 	{
 		variants: {
 			variant: {

@@ -99,7 +99,7 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 			onDrop={handleDrop}
 			onDragOver={handleDragOver}
 			onDragLeave={handleDragLeave}
-			class={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+			class={`w-full overflow-clip flex relative border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
 				props.file
 					? "border-violet-500 bg-violet-500/10"
 					: isDragOver()
@@ -110,7 +110,7 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 			<Show
 				when={props.file}
 				fallback={
-					<>
+					<div class="grid place-content-center h-full w-full">
 						<Upload class="w-10 h-10 text-stone-500 mx-auto mb-3" />
 						<p class="text-white font-medium mb-1">{placeholder()}</p>
 						<p class="text-stone-400 text-sm">
@@ -122,23 +122,23 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 							onChange={handleFileSelect}
 							class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
 						/>
-					</>
+					</div>
 				}
 			>
 				{(file) => (
-					<div class="flex items-center justify-between">
-						<div class="flex items-center gap-3">
+					<div class="flex items-center justify-between w-full gap-6 basis-0">
+						<div class="flex items-center gap-3 min-w-0">
 							<div class="w-12 h-12 bg-violet-500/20 rounded-lg flex items-center justify-center shrink-0">
 								<Music class="w-6 h-6 text-violet-400" />
 							</div>
-							<div class="text-left min-w-0">
+							<div class="text-left min-w-0 basis-0 flex-1">
 								<p class="text-white font-medium truncate">{file().name}</p>
 								<p class="text-stone-400 text-sm">
 									{formatFileSize(file().size)}
 								</p>
 							</div>
 						</div>
-						<div class="flex gap-2 shrink-0">
+						<div class="flex gap-2 shrink-0 w-fit">
 							<Show when={props.onUpload}>
 								<Button
 									size="sm"
@@ -151,12 +151,12 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 								</Button>
 							</Show>
 							<Button
-								variant="ghost"
-								size="icon"
+								variant="destructive"
+								size="sm"
 								onClick={clearFile}
 								disabled={props.isUploading}
 							>
-								<X class="w-4 h-4" />
+								Remove
 							</Button>
 						</div>
 					</div>

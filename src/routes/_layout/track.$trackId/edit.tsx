@@ -15,14 +15,16 @@ import {
 	TextFieldInput,
 	TextFieldTextArea,
 } from "@ui/text-field";
+import Check from "lucide-solid/icons/check";
 import ChevronLeft from "lucide-solid/icons/chevron-left";
+import Loader2 from "lucide-solid/icons/loader-2";
 import Music from "lucide-solid/icons/music";
 import Pencil from "lucide-solid/icons/pencil";
 import Plus from "lucide-solid/icons/plus";
 import Star from "lucide-solid/icons/star";
 import Trash2 from "lucide-solid/icons/trash-2";
 import X from "lucide-solid/icons/x";
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
 import { toast } from "solid-sonner";
 import { FileUploadZone } from "@/components/FileUploadZone";
 import { FormCheckboxSimple, FormField } from "@/components/FormField";
@@ -110,15 +112,70 @@ function TrackEditPage() {
 	);
 	const deleteTrackMutation = useMutation(() => deleteTrackMutationOptions());
 
-	// track metadata form
-	const trackForm = createForm(() => {
+	// autosave state for title/description
+	const [autoSaveStatus, setAutoSaveStatus] = createSignal<
+		"idle" | "saving" | "saved"
+	>("idle");
+	let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// title/description form with autosave
+	const infoForm = createForm(() => {
+		const track = data().track;
+		return {
+			defaultValues: {
+				title: track.title,
+				description: track.description ?? "",
+			},
+			onSubmit: async ({ value }) => {
+				setAutoSaveStatus("saving");
+				try {
+					await updateTrackMutation.mutateAsync({
+						trackId: data().track.id,
+						title: value.title,
+						description: value.description || undefined,
+					});
+					setAutoSaveStatus("saved");
+					// reset to idle after a bit
+					setTimeout(() => setAutoSaveStatus("idle"), 2000);
+				} catch (err) {
+					setAutoSaveStatus("idle");
+					toast.error(
+						err instanceof Error ? err.message : "Failed to save track info",
+					);
+					throw err;
+				}
+			},
+		};
+	});
+
+	// watch for changes and trigger autosave
+	const infoFormValues = infoForm.useStore((state) => state.values);
+	createEffect(
+		on(
+			() => ({ title: infoFormValues().title, desc: infoFormValues().description }),
+			() => {
+				// clear existing timeout
+				if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+				// set new timeout to save after 800ms of no changes
+				autoSaveTimeout = setTimeout(() => {
+					const values = infoFormValues();
+					// only save if there's a title
+					if (values.title?.trim()) {
+						infoForm.handleSubmit();
+					}
+				}, 800);
+			},
+			{ defer: true },
+		),
+	);
+
+	// permissions form - requires explicit save
+	const permissionsForm = createForm(() => {
 		const track = data().track;
 		const socialLinks = parseSocialLinks(track.socialLinks);
 
 		return {
 			defaultValues: {
-				title: track.title,
-				description: track.description ?? "",
 				isPublic: track.isPublic,
 				allowDownload: track.allowDownload,
 				socialPromptEnabled: track.socialPromptEnabled,
@@ -130,8 +187,6 @@ function TrackEditPage() {
 				try {
 					await updateTrackMutation.mutateAsync({
 						trackId: data().track.id,
-						title: value.title,
-						description: value.description || undefined,
 						isPublic: value.isPublic,
 						allowDownload: value.allowDownload,
 						socialPromptEnabled: value.socialPromptEnabled,
@@ -141,11 +196,11 @@ function TrackEditPage() {
 							tiktok: value.tiktok || undefined,
 						},
 					});
-					toast.success("Track saved successfully");
+					toast.success("Permissions saved");
 					router.load();
 				} catch (err) {
 					toast.error(
-						err instanceof Error ? err.message : "Failed to save track",
+						err instanceof Error ? err.message : "Failed to save permissions",
 					);
 					throw err;
 				}
@@ -241,7 +296,7 @@ function TrackEditPage() {
 	};
 
 	// watch social prompt toggle to show/hide social links
-	const socialPromptEnabled = trackForm.useStore(
+	const socialPromptEnabled = permissionsForm.useStore(
 		(state) => state.values.socialPromptEnabled,
 	);
 
@@ -271,19 +326,38 @@ function TrackEditPage() {
 				</Show>
 
 				<div class="min-w-0 flex-1">
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={() => navigate({ to: `/track/${data().track.id}` })}
-						class="mb-2"
-					>
-						<ChevronLeft class="w-4 h-4 mr-1" />
-						Back
-					</Button>
+					<div class="flex items-center justify-between mb-2">
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => navigate({ to: `/track/${data().track.id}` })}
+						>
+							<ChevronLeft class="w-4 h-4 mr-1" />
+							Back
+						</Button>
 
-					{/* title field - custom styling so not using FormField */}
+						{/* autosave indicator */}
+						<Show when={autoSaveStatus() !== "idle"}>
+							<div class="flex items-center gap-1.5 text-xs opacity-70">
+								<Show
+									when={autoSaveStatus() === "saving"}
+									fallback={
+										<>
+											<Check class="w-3 h-3 text-green-400" />
+											<span class="text-green-400">Saved</span>
+										</>
+									}
+								>
+									<Loader2 class="w-3 h-3 animate-spin" />
+									<span>Saving...</span>
+								</Show>
+							</div>
+						</Show>
+					</div>
+
+					{/* title field - autosaves */}
 					<div class="flex items-start justify-between gap-4">
-						<trackForm.Field
+						<infoForm.Field
 							name="title"
 							validators={{
 								onChange: ({ value }) =>
@@ -310,11 +384,11 @@ function TrackEditPage() {
 									</TextFieldErrorMessage>
 								</TextField>
 							)}
-						</trackForm.Field>
+						</infoForm.Field>
 					</div>
 
-					{/* description field - custom styling */}
-					<trackForm.Field name="description">
+					{/* description field - autosaves */}
+					<infoForm.Field name="description">
 						{(field) => (
 							<TextField
 								value={field().state.value}
@@ -329,42 +403,42 @@ function TrackEditPage() {
 								/>
 							</TextField>
 						)}
-					</trackForm.Field>
+					</infoForm.Field>
 				</div>
 			</div>
 
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				{/* track metadata section */}
-				<div class="bg-stone-900/50 rounded-xl p-6">
-					<h2 class="text-lg font-semibold text-white mb-4">Permissions</h2>
+				<div class="flex flex-col gap-4">
+					<h2 class="text-lg font-semibold text-white">Permissions</h2>
 
 					<form
 						onSubmit={(e) => {
 							e.preventDefault();
 							e.stopPropagation();
-							trackForm.handleSubmit();
+							permissionsForm.handleSubmit();
 						}}
-						class="space-y-4"
+						class="flex flex-col gap-4"
 					>
-						<div class="space-y-3">
-							<trackForm.Field name="isPublic">
+						<div class="flex flex-col gap-3 flex-1">
+							<permissionsForm.Field name="isPublic">
 								{(field) => <FormCheckboxSimple field={field} label="Public" />}
-							</trackForm.Field>
+							</permissionsForm.Field>
 
-							<trackForm.Field name="allowDownload">
+							<permissionsForm.Field name="allowDownload">
 								{(field) => (
 									<FormCheckboxSimple field={field} label="Allow Downloads" />
 								)}
-							</trackForm.Field>
+							</permissionsForm.Field>
 
-							<trackForm.Field name="socialPromptEnabled">
+							<permissionsForm.Field name="socialPromptEnabled">
 								{(field) => (
 									<FormCheckboxSimple
 										field={field}
 										label="Prompt for Social Follow"
 									/>
 								)}
-							</trackForm.Field>
+							</permissionsForm.Field>
 						</div>
 
 						{/* social links */}
@@ -372,7 +446,7 @@ function TrackEditPage() {
 							<div class="pt-4 border-t border-stone-800 space-y-3">
 								<Label class="text-sm opacity-70">Social Links</Label>
 
-								<trackForm.Field name="instagram">
+								<permissionsForm.Field name="instagram">
 									{(field) => (
 										<FormField
 											field={field}
@@ -380,9 +454,9 @@ function TrackEditPage() {
 											placeholder="Instagram username"
 										/>
 									)}
-								</trackForm.Field>
+								</permissionsForm.Field>
 
-								<trackForm.Field name="soundcloud">
+								<permissionsForm.Field name="soundcloud">
 									{(field) => (
 										<FormField
 											field={field}
@@ -390,9 +464,9 @@ function TrackEditPage() {
 											placeholder="SoundCloud URL"
 										/>
 									)}
-								</trackForm.Field>
+								</permissionsForm.Field>
 
-								<trackForm.Field name="tiktok">
+								<permissionsForm.Field name="tiktok">
 									{(field) => (
 										<FormField
 											field={field}
@@ -400,11 +474,11 @@ function TrackEditPage() {
 											placeholder="TikTok username"
 										/>
 									)}
-								</trackForm.Field>
+								</permissionsForm.Field>
 							</div>
 						</Show>
 
-						<trackForm.Subscribe
+						<permissionsForm.Subscribe
 							selector={(state) => ({
 								canSubmit: state.canSubmit,
 								isSubmitting: state.isSubmitting,
@@ -419,12 +493,12 @@ function TrackEditPage() {
 									{state().isSubmitting ? "Saving..." : "Save Permissions"}
 								</Button>
 							)}
-						</trackForm.Subscribe>
+						</permissionsForm.Subscribe>
 					</form>
 				</div>
 
 				{/* versions section */}
-				<div class="bg-stone-900/50 rounded-xl p-6">
+				<div>
 					<div class="flex items-center justify-between mb-4">
 						<h2 class="text-lg font-semibold text-white">Versions</h2>
 						<Button
