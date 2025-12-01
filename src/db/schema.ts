@@ -121,6 +121,10 @@ export const comments = sqliteTable(
 			.references(() => user.id, { onDelete: "cascade" }),
 		content: text("content").notNull(),
 		createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+		// hidden comments are not shown to other users, but visible to owner and admins
+		hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
+		// soft delete - only admins can delete, this preserves the record
+		deletedAt: integer("deleted_at", { mode: "timestamp" }),
 	},
 	(table) => [
 		index("comments_track_idx").on(table.trackId),
@@ -160,6 +164,7 @@ export type TrackVersion = typeof trackVersions.$inferSelect;
 export type NewTrackVersion = typeof trackVersions.$inferInsert;
 export type Play = typeof plays.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
+export type NewComment = typeof comments.$inferInsert;
 export type InviteCode = typeof inviteCodes.$inferSelect;
 export type NewInviteCode = typeof inviteCodes.$inferInsert;
 export type UserRole = "commenter" | "uploader" | "admin";

@@ -1,15 +1,28 @@
-// track detail page with waveform player, versioning, and download
+// track detail page with waveform player, versioning, comments, and download
 
-import { useQuery } from "@tanstack/solid-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import Download from "lucide-solid/icons/download";
+import EyeOff from "lucide-solid/icons/eye-off";
+import Eye from "lucide-solid/icons/eye";
+import MessageCircle from "lucide-solid/icons/message-circle";
 import Music from "lucide-solid/icons/music";
 import Pencil from "lucide-solid/icons/pencil";
+import Send from "lucide-solid/icons/send";
+import Trash2 from "lucide-solid/icons/trash-2";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { WaveformPlayer } from "@/components/WaveformPlayer";
 import type { TrackVersion } from "@/db/schema";
 import { wrapLoader } from "@/lib/loader-wrapper";
 import { formatSmartDate } from "@/lib/utils";
+import {
+	type CommentInfo,
+	createComment,
+	deleteComment,
+	getTrackComments,
+	hideComment,
+	unhideComment,
+} from "@/server/comments";
 import { getPlayCount, recordPlay } from "@/server/plays";
 import {
 	getStreamPresignedUrl,
@@ -35,14 +48,24 @@ export const Route = createFileRoute("/_layout/track/$trackId/")({
 		const canEdit =
 			session?.user &&
 			(track.ownerId === session.user.id || session.user.role === "admin");
+		const isAdmin = session?.user?.role === "admin";
+		const isLoggedIn = !!session?.user;
 
-		return { track, versions, playCount: playCount.count, canEdit: !!canEdit };
+		return {
+			track,
+			versions,
+			playCount: playCount.count,
+			canEdit: !!canEdit,
+			isAdmin: !!isAdmin,
+			isLoggedIn,
+		};
 	}),
 	component: TrackDetailPage,
 });
 
 function TrackDetailPage() {
 	const data = Route.useLoaderData();
+	const queryClient = useQueryClient();
 
 	// fetch owner info using tanstack query
 	const ownerQuery = useQuery(() => ({
@@ -50,6 +73,61 @@ function TrackDetailPage() {
 		queryFn: () => getUserInfo({ data: { userId: data().track.ownerId } }),
 		staleTime: 1000 * 60 * 5, // cache for 5 min
 	}));
+
+	// fetch comments
+	const commentsQuery = useQuery(() => ({
+		queryKey: ["comments", data().track.id],
+		queryFn: () => getTrackComments({ data: { trackId: data().track.id } }),
+		staleTime: 1000 * 60, // cache for 1 min
+	}));
+
+	// comment form state
+	const [newComment, setNewComment] = createSignal("");
+
+	// comment mutations
+	const createCommentMutation = useMutation(() => ({
+		mutationFn: async (content: string) => {
+			return createComment({ data: { trackId: data().track.id, content } });
+		},
+		onSuccess: () => {
+			setNewComment("");
+			queryClient.invalidateQueries({ queryKey: ["comments", data().track.id] });
+		},
+	}));
+
+	const hideCommentMutation = useMutation(() => ({
+		mutationFn: async (commentId: string) => {
+			return hideComment({ data: { commentId } });
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["comments", data().track.id] });
+		},
+	}));
+
+	const unhideCommentMutation = useMutation(() => ({
+		mutationFn: async (commentId: string) => {
+			return unhideComment({ data: { commentId } });
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["comments", data().track.id] });
+		},
+	}));
+
+	const deleteCommentMutation = useMutation(() => ({
+		mutationFn: async (commentId: string) => {
+			return deleteComment({ data: { commentId } });
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["comments", data().track.id] });
+		},
+	}));
+
+	const handleSubmitComment = async (e: Event) => {
+		e.preventDefault();
+		const content = newComment().trim();
+		if (!content) return;
+		await createCommentMutation.mutateAsync(content);
+	};
 
 	// selected version id defaults to active version
 	const [selectedVersionId, setSelectedVersionId] = createSignal<string | null>(
@@ -360,6 +438,95 @@ function TrackDetailPage() {
 				</div>
 			</Show>
 
+			{/* comments section */}
+			<div class="mt-10">
+				<div class="flex items-center gap-2 mb-4">
+					<MessageCircle class="w-5 h-5 text-white/70" />
+					<h3 class="text-white font-medium">
+						Comments
+						<Show when={commentsQuery.data?.length}>
+							<span class="ml-2 text-white/50">
+								({commentsQuery.data?.length})
+							</span>
+						</Show>
+					</h3>
+				</div>
+
+				{/* add comment form */}
+				<Show
+					when={data().isLoggedIn}
+					fallback={
+						<div class="bg-stone-900/30 rounded-lg p-4 text-center text-white/50 text-sm mb-6">
+							<Link to="/login" class="text-violet-400 hover:text-violet-300">
+								Log in
+							</Link>{" "}
+							to leave a comment
+						</div>
+					}
+				>
+					<form onSubmit={handleSubmitComment} class="mb-6">
+						<div class="flex gap-3">
+							<textarea
+								value={newComment()}
+								onInput={(e) => setNewComment(e.currentTarget.value)}
+								placeholder="Write a comment..."
+								rows={2}
+								class="flex-1 bg-stone-900/50 border border-stone-700/50 rounded-lg px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
+								disabled={createCommentMutation.isPending}
+							/>
+							<button
+								type="submit"
+								disabled={
+									!newComment().trim() || createCommentMutation.isPending
+								}
+								class="self-end px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:bg-stone-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+							>
+								<Send class="w-4 h-4" />
+							</button>
+						</div>
+						<Show when={createCommentMutation.isError}>
+							<p class="mt-2 text-red-400 text-sm">
+								{createCommentMutation.error?.message ?? "Failed to post comment"}
+							</p>
+						</Show>
+					</form>
+				</Show>
+
+				{/* comments list */}
+				<Show
+					when={!commentsQuery.isLoading}
+					fallback={
+						<div class="text-white/50 text-sm">Loading comments...</div>
+					}
+				>
+					<Show
+						when={commentsQuery.data && commentsQuery.data.length > 0}
+						fallback={
+							<div class="text-white/40 text-sm py-4">
+								No comments yet. Be the first to comment!
+							</div>
+						}
+					>
+						<div class="space-y-4">
+							<For each={commentsQuery.data}>
+								{(comment) => (
+									<CommentCard
+										comment={comment}
+										isAdmin={data().isAdmin}
+										onHide={() => hideCommentMutation.mutate(comment.id)}
+										onUnhide={() => unhideCommentMutation.mutate(comment.id)}
+										onDelete={() => deleteCommentMutation.mutate(comment.id)}
+										isHiding={hideCommentMutation.isPending}
+										isUnhiding={unhideCommentMutation.isPending}
+										isDeleting={deleteCommentMutation.isPending}
+									/>
+								)}
+							</For>
+						</div>
+					</Show>
+				</Show>
+			</div>
+
 			{/* debug info */}
 			<Show when={import.meta.env.DEV}>
 				<div class="mt-8 bg-stone-900/30 rounded-lg p-4 text-xs">
@@ -386,5 +553,123 @@ function TrackDetailPage() {
 				</div>
 			</Show>
 		</>
+	);
+}
+
+// individual comment card component
+function CommentCard(props: {
+	comment: CommentInfo;
+	isAdmin: boolean;
+	onHide: () => void;
+	onUnhide: () => void;
+	onDelete: () => void;
+	isHiding: boolean;
+	isUnhiding: boolean;
+	isDeleting: boolean;
+}) {
+	const isHidden = () => props.comment.hidden;
+	const canHide = () => props.comment.isOwn || props.isAdmin;
+	const canUnhide = () => props.isAdmin;
+	const canDelete = () => props.isAdmin;
+
+	return (
+		<div
+			class={`p-4 rounded-lg transition-all ${
+				isHidden()
+					? "bg-stone-900/20 border border-stone-800/50"
+					: "bg-stone-900/40"
+			}`}
+		>
+			<div class="flex items-start gap-3">
+				{/* avatar */}
+				<Show
+					when={props.comment.userImage}
+					fallback={
+						<div class="w-9 h-9 rounded-full bg-stone-700 flex items-center justify-center shrink-0">
+							<span class="text-sm text-white/60">
+								{props.comment.userName.charAt(0).toUpperCase()}
+							</span>
+						</div>
+					}
+				>
+					{(imageUrl) => (
+						<img
+							src={imageUrl()}
+							alt={props.comment.userName}
+							class="w-9 h-9 rounded-full object-cover shrink-0"
+						/>
+					)}
+				</Show>
+
+				<div class="flex-1 min-w-0">
+					{/* header */}
+					<div class="flex items-center gap-2 flex-wrap">
+						<span class="font-medium text-white/90 text-sm">
+							{props.comment.userName}
+						</span>
+						<span class="text-white/40 text-xs">
+							{formatSmartDate(props.comment.createdAt)}
+						</span>
+						<Show when={isHidden()}>
+							<span class="text-amber-500/70 text-xs flex items-center gap-1">
+								<EyeOff class="w-3 h-3" />
+								hidden
+							</span>
+						</Show>
+					</div>
+
+					{/* content */}
+					<p
+						class={`mt-1 text-sm whitespace-pre-wrap break-words ${
+							isHidden() ? "text-white/40 italic" : "text-white/80"
+						}`}
+					>
+						{props.comment.content}
+					</p>
+
+					{/* actions */}
+					<div class="flex items-center gap-2 mt-2">
+						<Show when={canHide() && !isHidden()}>
+							<button
+								type="button"
+								onClick={props.onHide}
+								disabled={props.isHiding}
+								class="text-xs text-white/40 hover:text-white/70 flex items-center gap-1 transition-colors disabled:opacity-50"
+								title="Hide comment"
+							>
+								<EyeOff class="w-3.5 h-3.5" />
+								Hide
+							</button>
+						</Show>
+
+						<Show when={canUnhide() && isHidden()}>
+							<button
+								type="button"
+								onClick={props.onUnhide}
+								disabled={props.isUnhiding}
+								class="text-xs text-white/40 hover:text-white/70 flex items-center gap-1 transition-colors disabled:opacity-50"
+								title="Unhide comment"
+							>
+								<Eye class="w-3.5 h-3.5" />
+								Unhide
+							</button>
+						</Show>
+
+						<Show when={canDelete()}>
+							<button
+								type="button"
+								onClick={props.onDelete}
+								disabled={props.isDeleting}
+								class="text-xs text-red-400/60 hover:text-red-400 flex items-center gap-1 transition-colors disabled:opacity-50"
+								title="Delete comment"
+							>
+								<Trash2 class="w-3.5 h-3.5" />
+								Delete
+							</button>
+						</Show>
+					</div>
+				</div>
+			</div>
+		</div>
 	);
 }

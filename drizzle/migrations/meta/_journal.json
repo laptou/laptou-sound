@@ -50,6 +50,20 @@
       "when": 1764563900000,
       "tag": "0006_fix_active_version_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1764563910000,
+      "tag": "0007_add_download_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1764563920000,
+      "tag": "0008_add_comment_visibility",
+      "breakpoints": true
     }
   ]
 }
