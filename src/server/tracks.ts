@@ -159,8 +159,19 @@ export const getTrackVersions = createServerFn({ method: "GET" })
 	});
 
 // get user's own tracks
+// my track info including album art
+export interface MyTrackInfo {
+	id: string;
+	title: string;
+	description: string | null;
+	ownerId: string;
+	albumArtKey: string | null;
+	createdAt: Date;
+	isPublic: boolean;
+}
+
 export const getMyTracks = createServerFn({ method: "GET" }).handler(
-	async () => {
+	async (): Promise<MyTrackInfo[]> => {
 		const request = getRequest();
 		const auth = createAuth();
 		const session = await auth.api.getSession({ headers: request.headers });
@@ -171,12 +182,49 @@ export const getMyTracks = createServerFn({ method: "GET" }).handler(
 
 		const db = getDb();
 		const result = await db
-			.select()
+			.select({
+				id: tracks.id,
+				title: tracks.title,
+				description: tracks.description,
+				ownerId: tracks.ownerId,
+				activeVersion: tracks.activeVersion,
+				createdAt: tracks.createdAt,
+				isPublic: tracks.isPublic,
+			})
 			.from(tracks)
 			.where(eq(tracks.ownerId, session.user.id))
 			.orderBy(desc(tracks.createdAt));
 
-		return result;
+		// fetch album art keys for tracks with active versions
+		const tracksWithVersions = result.filter((t) => t.activeVersion);
+		const versionIds = tracksWithVersions.map((t) => t.activeVersion as string);
+
+		let albumArtMap: Record<string, string | null> = {};
+		if (versionIds.length > 0) {
+			const versions = await db
+				.select({
+					id: trackVersions.id,
+					albumArtKey: trackVersions.albumArtKey,
+				})
+				.from(trackVersions)
+				.where(inArray(trackVersions.id, versionIds));
+
+			albumArtMap = Object.fromEntries(
+				versions.map((v) => [v.id, v.albumArtKey]),
+			);
+		}
+
+		return result.map((t) => ({
+			id: t.id,
+			title: t.title,
+			description: t.description,
+			ownerId: t.ownerId,
+			albumArtKey: t.activeVersion
+				? (albumArtMap[t.activeVersion] ?? null)
+				: null,
+			createdAt: t.createdAt,
+			isPublic: t.isPublic,
+		}));
 	},
 );
 

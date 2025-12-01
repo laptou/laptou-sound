@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/solid-router";
+import Music from "lucide-solid/icons/music";
 import Shield from "lucide-solid/icons/shield";
 import Upload from "lucide-solid/icons/upload";
 import User from "lucide-solid/icons/user";
@@ -12,6 +13,14 @@ export const Route = createFileRoute("/_layout")({
 
 function RouteComponent() {
 	const sessionState = useSession();
+
+	// check if user is uploader or higher
+	const isUploaderOrHigher = () => {
+		if (!sessionState?.data?.user) return false;
+		const user = sessionState.data.user as { role?: string } & typeof sessionState.data.user;
+		const role = user.role;
+		return role === "uploader" || role === "admin";
+	};
 
 	return (
 		<div class="min-h-screen bg-linear-to-b from-stone-900 via-stone-950 to-stone-900 pb-24 py-12 px-6 relative">
@@ -42,13 +51,27 @@ function RouteComponent() {
 								</Link>
 							}
 						>
+							<Show when={isUploaderOrHigher()}>
+								<Link to="/my-tracks">
+									<Button variant="secondary">
+										<Music class="w-5 h-5" />
+										My Tracks
+									</Button>
+								</Link>
+							</Show>
 							<Link to="/upload">
 								<Button variant="default">
 									<Upload class="w-5 h-5" />
 									Upload Track
 								</Button>
 							</Link>
-							<Show when={sessionState?.data?.user?.role === "admin"}>
+							<Show
+								when={
+									sessionState?.data?.user &&
+									(sessionState.data.user as { role?: string } & typeof sessionState.data.user)
+										.role === "admin"
+								}
+							>
 								<Link to="/admin">
 									<Button variant="secondary">
 										<Shield class="w-5 h-5" />
