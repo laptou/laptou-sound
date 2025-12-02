@@ -1,4 +1,5 @@
 // upload page for creating new tracks
+// supports both presigned url uploads (direct to r2) and indirect uploads (through api)
 
 import { createForm } from "@tanstack/solid-form";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
@@ -9,7 +10,10 @@ import { FileUploadZone } from "@/components/FileUploadZone";
 import { FormCheckbox, FormField, FormTextArea } from "@/components/FormField";
 import { AccessDeniedError } from "@/lib/errors";
 import { hasRole } from "@/server/auth";
-import { createTrack } from "@/server/tracks";
+import {
+	createTrackWithAudio,
+	getNewTrackAudioUploadUrl,
+} from "@/server/tracks";
 
 export const Route = createFileRoute("/_layout/_authed/upload")({
 	beforeLoad: async ({ context }) => {
@@ -23,11 +27,36 @@ export const Route = createFileRoute("/_layout/_authed/upload")({
 	component: UploadPage,
 });
 
+// feature detection: check if fetch with ReadableStream body supports progress
+// this works in modern browsers but not in all environments
+function supportsStreamUpload(): boolean {
+	try {
+		// check for Request constructor that accepts ReadableStream body
+		// and that the browser supports upload progress via streams
+		return (
+			typeof ReadableStream !== "undefined" &&
+			typeof Request !== "undefined" &&
+			// @ts-expect-error - checking for experimental feature
+			typeof new Request("", { method: "POST", body: new ReadableStream(), duplex: "half" }) !== "undefined"
+		);
+	} catch {
+		return false;
+	}
+}
+
+type UploadProgress =
+	| { type: "determinate"; percent: number }
+	| { type: "indeterminate" };
+
 function UploadPage() {
 	const navigate = useNavigate();
 	const [file, setFile] = createSignal<File | null>(null);
 	const [isUploading, setIsUploading] = createSignal(false);
-	const [uploadProgress, setUploadProgress] = createSignal(0);
+	const [uploadProgress, setUploadProgress] = createSignal<UploadProgress>({
+		type: "determinate",
+		percent: 0,
+	});
+	const [isFormLocked, setIsFormLocked] = createSignal(false);
 
 	// track form
 	const form = createForm(() => ({
@@ -46,76 +75,59 @@ function UploadPage() {
 			}
 
 			setIsUploading(true);
-			setUploadProgress(0);
+			setIsFormLocked(true);
+			setUploadProgress({ type: "determinate", percent: 0 });
 
 			try {
-				// create track metadata
-				const { id: trackId } = await createTrack({
+				const ext = currentFile.name.split(".").pop() || "mp3";
+
+				// get upload url (presigned or indirect)
+				const uploadInfo = await getNewTrackAudioUploadUrl({
 					data: {
+						contentType: currentFile.type,
+						fileExtension: ext,
+					},
+				});
+
+				setUploadProgress({ type: "determinate", percent: 5 });
+
+				let tempKey: string;
+
+				if (uploadInfo.mode === "presigned") {
+					// direct upload to r2 via presigned url
+					tempKey = uploadInfo.tempKey;
+					await uploadWithProgress(uploadInfo.uploadUrl, currentFile, "PUT");
+				} else {
+					// indirect upload through our api
+					const result = await uploadWithProgress(
+						uploadInfo.uploadUrl,
+						currentFile,
+						"POST",
+					);
+					tempKey = result.tempKey;
+				}
+
+				setUploadProgress({ type: "determinate", percent: 90 });
+
+				// create track with uploaded audio file
+				const { trackId } = await createTrackWithAudio({
+					data: {
+						tempKey,
 						title: value.title.trim(),
 						description: value.description.trim() || undefined,
 						isPublic: value.isPublic,
 						allowDownload: value.allowDownload,
+						fileExtension: ext,
 					},
 				});
 
-				setUploadProgress(5);
-
-				// upload file with progress tracking
-				const formData = new FormData();
-				formData.append("file", currentFile);
-				formData.append("trackId", trackId);
-
-				// use xmlhttprequest to track upload progress
-				const response = await new Promise<{ versionId: string; versionNumber: number }>(
-					(resolve, reject) => {
-						const xhr = new XMLHttpRequest();
-
-						// track upload progress (5-95% range, leaving 5% for completion)
-						xhr.upload.addEventListener("progress", (e) => {
-							if (e.lengthComputable) {
-								const percentComplete = 5 + (e.loaded / e.total) * 90;
-								setUploadProgress(Math.round(percentComplete));
-							}
-						});
-
-						xhr.addEventListener("load", () => {
-							if (xhr.status >= 200 && xhr.status < 300) {
-								try {
-									const data = JSON.parse(xhr.responseText);
-									resolve(data);
-								} catch (err) {
-									reject(new Error("Failed to parse response"));
-								}
-							} else {
-								try {
-									const error = JSON.parse(xhr.responseText);
-									reject(new Error(error.error || "Upload failed"));
-								} catch {
-									reject(new Error(`Upload failed with status ${xhr.status}`));
-								}
-							}
-						});
-
-						xhr.addEventListener("error", () => {
-							reject(new Error("Network error during upload"));
-						});
-
-						xhr.addEventListener("abort", () => {
-							reject(new Error("Upload was cancelled"));
-						});
-
-						xhr.open("POST", "/api/upload");
-						xhr.send(formData);
-					},
-				);
-
-				setUploadProgress(100);
+				setUploadProgress({ type: "determinate", percent: 100 });
 
 				toast.success("Track uploaded successfully");
 				navigate({ to: `/track/${trackId}` });
 			} catch (err) {
 				toast.error(err instanceof Error ? err.message : "Upload failed");
+				setIsFormLocked(false);
 				throw err;
 			} finally {
 				setIsUploading(false);
@@ -123,8 +135,132 @@ function UploadPage() {
 		},
 	}));
 
+	// upload file with progress tracking
+	// uses fetch with ReadableStream if supported, falls back to XHR
+	const uploadWithProgress = async (
+		url: string,
+		fileToUpload: File,
+		method: "PUT" | "POST",
+	): Promise<{ tempKey: string }> => {
+		const useStreams = supportsStreamUpload() && method === "PUT";
+
+		if (useStreams) {
+			return uploadWithFetch(url, fileToUpload);
+		}
+		return uploadWithXHR(url, fileToUpload, method);
+	};
+
+	// fetch-based upload with ReadableStream for progress (modern browsers)
+	const uploadWithFetch = async (
+		url: string,
+		fileToUpload: File,
+	): Promise<{ tempKey: string }> => {
+		const totalSize = fileToUpload.size;
+		let uploadedSize = 0;
+
+			// create a ReadableStream that tracks progress
+			const stream = fileToUpload.stream();
+			const reader = stream.getReader();
+
+			const progressStream = new ReadableStream({
+				async pull(controller) {
+					const { done, value } = await reader.read();
+					if (done) {
+						controller.close();
+						return;
+					}
+					uploadedSize += value.byteLength;
+					// upload progress: 5-90% (track creation takes final 10%)
+					const percent = 5 + (uploadedSize / totalSize) * 85;
+					setUploadProgress({ type: "determinate", percent: Math.round(percent) });
+					controller.enqueue(value);
+				},
+			});
+
+		const response = await fetch(url, {
+			method: "PUT",
+			headers: { "Content-Type": fileToUpload.type },
+			body: progressStream,
+			// @ts-expect-error - duplex is required for streaming uploads
+			duplex: "half",
+		});
+
+		if (!response.ok) {
+			throw new Error("Upload failed");
+		}
+
+		return { tempKey: "" }; // presigned uploads already know the key
+	};
+
+	// XHR-based upload with progress events (fallback)
+	const uploadWithXHR = (
+		url: string,
+		fileToUpload: File,
+		method: "PUT" | "POST",
+	): Promise<{ tempKey: string }> => {
+		return new Promise((resolve, reject) => {
+			const xhr = new XMLHttpRequest();
+
+			xhr.upload.addEventListener("progress", (e) => {
+				if (e.lengthComputable) {
+					// upload progress: 5-90% (track creation takes final 10%)
+					const percent = 5 + (e.loaded / e.total) * 85;
+					setUploadProgress({ type: "determinate", percent: Math.round(percent) });
+				} else {
+					// show indeterminate state when progress can't be computed
+					setUploadProgress({ type: "indeterminate" });
+				}
+			});
+
+			xhr.addEventListener("load", () => {
+				if (xhr.status >= 200 && xhr.status < 300) {
+					try {
+						// for indirect uploads, parse the response to get tempKey
+						if (method === "POST") {
+							const data = JSON.parse(xhr.responseText);
+							resolve({ tempKey: data.tempKey });
+						} else {
+							resolve({ tempKey: "" });
+						}
+					} catch {
+						resolve({ tempKey: "" });
+					}
+				} else {
+					try {
+						const error = JSON.parse(xhr.responseText);
+						reject(new Error(error.error || "Upload failed"));
+					} catch {
+						reject(new Error(`Upload failed with status ${xhr.status}`));
+					}
+				}
+			});
+
+			xhr.addEventListener("error", () => {
+				reject(new Error("Network error during upload"));
+			});
+
+			xhr.addEventListener("abort", () => {
+				reject(new Error("Upload was cancelled"));
+			});
+
+			xhr.open(method, url);
+
+			if (method === "PUT") {
+				// presigned url upload - send raw file with content type
+				xhr.setRequestHeader("Content-Type", fileToUpload.type);
+				xhr.send(fileToUpload);
+			} else {
+				// indirect upload - use FormData
+				const formData = new FormData();
+				formData.append("file", fileToUpload);
+				xhr.send(formData);
+			}
+		});
+	};
+
 	// auto-fill title when file is selected
 	const handleFileChange = (newFile: File | null) => {
+		if (isFormLocked()) return;
 		setFile(newFile);
 
 		if (newFile && !form.getFieldValue("title")) {
@@ -152,6 +288,7 @@ function UploadPage() {
 					file={file()}
 					onFileChange={handleFileChange}
 					placeholder="Drop your audio file here"
+					disabled={isFormLocked()}
 				/>
 
 				<div class="flex flex-col gap-4 w-full flex-1">
@@ -168,6 +305,7 @@ function UploadPage() {
 								label="Title *"
 								placeholder="Enter track title"
 								required
+								disabled={isFormLocked()}
 							/>
 						)}
 					</form.Field>
@@ -180,6 +318,7 @@ function UploadPage() {
 								placeholder="Add a description (optional)"
 								rows={3}
 								textareaClass="resize-none"
+								disabled={isFormLocked()}
 							/>
 						)}
 					</form.Field>
@@ -191,6 +330,7 @@ function UploadPage() {
 									field={field}
 									label="Public"
 									description="Anyone can see this track"
+									disabled={isFormLocked()}
 								/>
 							)}
 						</form.Field>
@@ -201,24 +341,46 @@ function UploadPage() {
 									field={field}
 									label="Allow Downloads"
 									description="Let others download the original file"
+									disabled={isFormLocked()}
 								/>
 							)}
 						</form.Field>
 					</div>
 
 					<Show when={isUploading()}>
-						<div class="bg-slate-700/50 rounded-lg p-4">
-							<div class="flex justify-between text-sm mb-2">
-								<span class="text-gray-300">Uploading...</span>
-								<span class="text-gray-400">{uploadProgress()}%</span>
-							</div>
-							<div class="h-2 bg-slate-600 rounded-full overflow-hidden">
-								<div
-									class="h-full bg-linear-to-r from-violet-500 to-indigo-500 transition-all duration-300"
-									style={{ width: `${uploadProgress()}%` }}
-								/>
-							</div>
-						</div>
+						{(() => {
+							const progress = uploadProgress();
+							return (
+								<div class="bg-slate-700/50 rounded-lg p-4">
+									<div class="flex justify-between text-sm mb-2">
+										<span class="text-gray-300">Uploading...</span>
+										<Show
+											when={progress.type === "determinate"}
+											fallback={<span class="text-gray-400">...</span>}
+										>
+											<span class="text-gray-400">
+												{(progress as { type: "determinate"; percent: number }).percent}%
+											</span>
+										</Show>
+									</div>
+									<div class="h-2 bg-slate-600 rounded-full overflow-hidden">
+										<Show
+											when={progress.type === "determinate"}
+											fallback={
+												<div class="h-full w-1/3 bg-linear-to-r from-violet-500 to-indigo-500 animate-[indeterminate_1.5s_ease-in-out_infinite]" />
+											}
+										>
+											<div
+												class="h-full bg-linear-to-r from-violet-500 to-indigo-500 transition-all duration-300"
+												style={{
+													width: `${(progress as { type: "determinate"; percent: number }).percent}%`,
+												}}
+											/>
+										</Show>
+									</div>
+								</div>
+							);
+						})()}
 					</Show>
 
 					<form.Subscribe
@@ -230,7 +392,12 @@ function UploadPage() {
 						{(state) => (
 							<Button
 								type="submit"
-								disabled={!state().canSubmit || state().isSubmitting || !file()}
+								disabled={
+									!state().canSubmit ||
+									state().isSubmitting ||
+									!file() ||
+									isFormLocked()
+								}
 								class="w-full"
 							>
 								{state().isSubmitting ? "Uploading..." : "Upload Track"}
@@ -239,6 +406,16 @@ function UploadPage() {
 					</form.Subscribe>
 				</div>
 			</form>
+
+			{/* css for indeterminate progress animation */}
+			<style>
+				{`
+					@keyframes indeterminate {
+						0% { transform: translateX(-100%); }
+						100% { transform: translateX(400%); }
+					}
+				`}
+			</style>
 		</div>
 	);
 }

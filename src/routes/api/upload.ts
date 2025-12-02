@@ -1,11 +1,14 @@
 // file upload api route
+// supports two modes:
+// 1. with trackId: creates version for existing track (legacy/direct flow)
+// 2. without trackId: uploads to temp location, returns tempKey for confirm step
 
 import { env } from "cloudflare:workers";
 import { createFileRoute } from "@tanstack/solid-router";
 import { desc, eq } from "drizzle-orm";
 import { getDb, tracks, trackVersions } from "@/db";
 import { createAuth } from "@/lib/auth";
-import { getOriginalKey } from "@/server/files";
+import { getOriginalKey, getTempUploadKey } from "@/server/files";
 
 export const Route = createFileRoute("/api/upload")({
 	server: {
@@ -44,16 +47,28 @@ export const Route = createFileRoute("/api/upload")({
 					});
 				}
 
+				const bucket = env.laptou_sound_files;
+				const ext = file.name.split(".").pop() || "mp3";
+
+				// mode 1: temp upload (no trackId) - returns tempKey for confirm step
 				if (!trackId) {
+					const uploadId = crypto.randomUUID();
+					const tempKey = getTempUploadKey(uploadId, ext);
+
+					await bucket.put(tempKey, await file.arrayBuffer(), {
+						httpMetadata: { contentType: file.type },
+					});
+
 					return new Response(
-						JSON.stringify({ error: "No track ID provided" }),
+						JSON.stringify({ tempKey }),
 						{
-							status: 400,
+							status: 200,
 							headers: { "Content-Type": "application/json" },
 						},
 					);
 				}
 
+				// mode 2: direct upload to existing track (legacy flow)
 				const db = getDb();
 
 				// verify track ownership
@@ -93,11 +108,9 @@ export const Route = createFileRoute("/api/upload")({
 					: 1;
 
 				const versionId = crypto.randomUUID();
-				const ext = file.name.split(".").pop() || "mp3";
 				const originalKey = getOriginalKey(trackId, versionId, ext);
 
 				// upload to r2
-				const bucket = env.laptou_sound_files;
 				await bucket.put(originalKey, await file.arrayBuffer(), {
 					httpMetadata: { contentType: file.type },
 				});

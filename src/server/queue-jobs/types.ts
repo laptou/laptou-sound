@@ -5,6 +5,7 @@ export interface AudioProcessingJob {
 	trackId: string;
 	versionId: string;
 	originalKey: string;
+	tempKey?: string; // if provided, file will be moved from temp to originalKey first
 }
 
 export interface DeleteTrackJob {

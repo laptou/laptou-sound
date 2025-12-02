@@ -25,6 +25,8 @@ type FileUploadZoneProps = {
 	placeholder?: string;
 	// optional: additional css classes
 	class?: string;
+	// optional: disabled state (prevents file selection)
+	disabled?: boolean;
 };
 
 const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
@@ -58,6 +60,7 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 	};
 
 	const handleFileSelect = (e: Event) => {
+		if (props.disabled) return;
 		const input = e.target as HTMLInputElement;
 		const selectedFile = input.files?.[0];
 
@@ -69,6 +72,8 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 	const handleDrop = (e: DragEvent) => {
 		e.preventDefault();
 		setIsDragOver(false);
+
+		if (props.disabled) return;
 
 		const droppedFile = e.dataTransfer?.files[0];
 		if (droppedFile && validateFile(droppedFile)) {
@@ -101,10 +106,10 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 			class={`w-full overflow-clip flex relative border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
 				props.file
 					? "border-violet-500 bg-violet-500/10"
-					: isDragOver()
+					: isDragOver() && !props.disabled
 						? "border-violet-400 bg-violet-500/5"
 						: "border-stone-700 hover:border-stone-600"
-			} ${props.class ?? ""}`}
+			} ${props.disabled ? "opacity-60 cursor-not-allowed" : ""} ${props.class ?? ""}`}
 		>
 			<Show
 				when={props.file}
@@ -119,7 +124,8 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 							type="file"
 							accept={accept()}
 							onChange={handleFileSelect}
-							class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+							disabled={props.disabled}
+							class={`absolute inset-0 w-full h-full opacity-0 ${props.disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
 						/>
 					</div>
 				}
@@ -153,7 +159,7 @@ export function FileUploadZone(props: FileUploadZoneProps) {
 								variant="destructive"
 								size="sm"
 								onClick={clearFile}
-								disabled={props.isUploading}
+								disabled={props.isUploading || props.disabled}
 							>
 								Remove
 							</Button>

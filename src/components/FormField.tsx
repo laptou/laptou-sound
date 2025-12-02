@@ -41,6 +41,7 @@ type FormFieldProps = {
 	type?: InputType;
 	placeholder?: string;
 	required?: boolean;
+	disabled?: boolean;
 	class?: string;
 	inputClass?: string;
 	autocomplete?: JSX.HTMLAutocomplete;
@@ -61,6 +62,7 @@ export function FormField(props: FormFieldProps) {
 			onChange={(value) => props.field().handleChange(value)}
 			validationState={hasError() ? "invalid" : "valid"}
 			required={props.required}
+			disabled={props.disabled}
 			class={props.class}
 		>
 			<TextFieldLabel for={props.field().name}>{props.label}</TextFieldLabel>
@@ -87,6 +89,7 @@ type FormTextAreaProps = {
 	placeholder?: string;
 	rows?: number;
 	required?: boolean;
+	disabled?: boolean;
 	class?: string;
 	textareaClass?: string;
 };
@@ -104,6 +107,7 @@ export function FormTextArea(props: FormTextAreaProps) {
 			onChange={(value) => props.field().handleChange(value)}
 			validationState={hasError() ? "invalid" : "valid"}
 			required={props.required}
+			disabled={props.disabled}
 			class={props.class}
 		>
 			{props.label && (
@@ -127,22 +131,24 @@ type FormCheckboxProps = {
 	field: FieldAccessor<boolean>;
 	label: string;
 	description?: string;
+	disabled?: boolean;
 	class?: string;
 };
 
 export function FormCheckbox(props: FormCheckboxProps) {
 	return (
 		<label
-			class={`flex items-center gap-3 cursor-pointer ${props.class ?? ""}`}
+			class={`flex items-center gap-3 ${props.disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${props.class ?? ""}`}
 		>
 			<input
 				type="checkbox"
 				checked={props.field().state.value}
 				onChange={(e) => props.field().handleChange(e.currentTarget.checked)}
+				disabled={props.disabled}
 				class="w-4 h-4 rounded border-stone-600 bg-stone-800 text-violet-500 focus:ring-violet-500"
 			/>
 			<div>
-				<Label class="text-white/80 cursor-pointer">{props.label}</Label>
+				<Label class={`text-white/80 ${props.disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>{props.label}</Label>
 				{props.description && (
 					<p class="text-stone-400 text-sm">{props.description}</p>
 				)}

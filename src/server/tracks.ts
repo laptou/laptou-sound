@@ -1269,3 +1269,142 @@ export const confirmTrackUpload = createServerFn({ method: "POST" })
 
 		return { versionId: data.versionId, versionNumber: data.versionNumber };
 	});
+
+// get upload url for a new track audio file
+// returns presigned url for direct r2 upload, or indirect endpoint for dev mode
+// uploads to temp location first, confirm will move to final location
+export const getNewTrackAudioUploadUrl = createServerFn({ method: "GET" })
+	.inputValidator(
+		(data: { contentType: string; fileExtension: string }) => data,
+	)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		// check uploader role
+		const role = session.user.role as string;
+		if (role !== "uploader" && role !== "admin") {
+			throw new Error("You do not have permission to upload tracks");
+		}
+
+		// validate content type
+		if (!data.contentType.startsWith("audio/")) {
+			throw new Error("File must be an audio file");
+		}
+
+		const uploadId = crypto.randomUUID();
+		const tempKey = getTempUploadKey(uploadId, data.fileExtension);
+
+		if (useIndirectAccess()) {
+			return {
+				mode: "indirect" as const,
+				uploadUrl: "/api/upload",
+				uploadId,
+				tempKey,
+			};
+		}
+
+		// generate presigned url for direct r2 upload
+		const presignedUrl = await generatePresignedUrl(
+			tempKey,
+			"PUT",
+			1800, // 30 minutes for large audio files
+			data.contentType,
+		);
+
+		return {
+			mode: "presigned" as const,
+			uploadUrl: presignedUrl,
+			uploadId,
+			tempKey,
+		};
+	});
+
+// create track with uploaded audio file
+// creates track and version records, queues processing
+// the audio file should already be uploaded to tempKey before calling this
+export const createTrackWithAudio = createServerFn({ method: "POST" })
+	.inputValidator(
+		(data: {
+			tempKey: string;
+			title: string;
+			description?: string;
+			isPublic?: boolean;
+			allowDownload?: boolean;
+			fileExtension: string;
+		}) => data,
+	)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		const auth = createAuth();
+		const session = await auth.api.getSession({ headers: request.headers });
+
+		if (!session) {
+			throw new Error("Unauthorized");
+		}
+
+		// check uploader role
+		const role = session.user.role as string;
+		if (role !== "uploader" && role !== "admin") {
+			throw new Error("You do not have permission to upload tracks");
+		}
+
+		// verify file exists in r2
+		const bucket = env.laptou_sound_files;
+		const file = await bucket.head(data.tempKey);
+
+		if (!file) {
+			throw new Error("Upload not found - file may have expired");
+		}
+
+		const db = getDb();
+		const trackId = crypto.randomUUID();
+		const versionId = crypto.randomUUID();
+		const now = new Date();
+
+		// generate the final original key
+		const originalKey = getOriginalKey(trackId, versionId, data.fileExtension);
+
+		// create track record
+		const newTrack: NewTrack = {
+			id: trackId,
+			ownerId: session.user.id,
+			title: data.title,
+			description: data.description ?? null,
+			isPublic: data.isPublic ?? true,
+			allowDownload: data.allowDownload ?? false,
+			socialPromptEnabled: false,
+			socialLinks: null,
+			createdAt: now,
+			updatedAt: now,
+		};
+
+		await db.insert(tracks).values(newTrack);
+
+		// create version record
+		await db.insert(trackVersions).values({
+			id: versionId,
+			trackId,
+			versionNumber: 1,
+			originalKey,
+			processingStatus: "pending",
+			createdAt: now,
+		});
+
+		// enqueue processing job (will move from temp to original)
+		const queue = env.laptou_sound_audio_processing_queue;
+		await queue.send({
+			type: "process_audio",
+			trackId,
+			versionId,
+			originalKey,
+			tempKey: data.tempKey,
+		});
+
+		return { trackId, versionId, versionNumber: 1 };
+	});

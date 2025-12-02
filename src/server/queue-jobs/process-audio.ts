@@ -27,6 +27,27 @@ export async function processAudioJob(job: AudioProcessingJob): Promise<void> {
 		.where(eq(schema.trackVersions.id, job.versionId));
 
 	try {
+		// if tempKey is provided, move file from temp to original location first
+		if (job.tempKey) {
+			const tempFile = await bucket.get(job.tempKey);
+			if (!tempFile) {
+				throw new Error(`Temp file not found: ${job.tempKey}`);
+			}
+
+			// copy to original location
+			await bucket.put(job.originalKey, tempFile.body, {
+				httpMetadata: tempFile.httpMetadata,
+			});
+
+			// delete temp file
+			await bucket.delete(job.tempKey);
+
+			logDebug("moved file from temp to original", {
+				tempKey: job.tempKey,
+				originalKey: job.originalKey,
+			});
+		}
+
 		// get original file
 		const original = await bucket.get(job.originalKey);
 		if (!original) {
