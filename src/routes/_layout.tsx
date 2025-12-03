@@ -17,7 +17,9 @@ function RouteComponent() {
 	// check if user is uploader or higher
 	const isUploaderOrHigher = () => {
 		if (!sessionState?.data?.user) return false;
-		const user = sessionState.data.user as { role?: string } & typeof sessionState.data.user;
+		const user = sessionState.data.user as {
+			role?: string;
+		} & typeof sessionState.data.user;
 		const role = user.role;
 		return role === "uploader" || role === "admin";
 	};
@@ -68,8 +70,11 @@ function RouteComponent() {
 							<Show
 								when={
 									sessionState?.data?.user &&
-									(sessionState.data.user as { role?: string } & typeof sessionState.data.user)
-										.role === "admin"
+									(
+										sessionState.data.user as {
+											role?: string;
+										} & typeof sessionState.data.user
+									).role === "admin"
 								}
 							>
 								<Link to="/admin">

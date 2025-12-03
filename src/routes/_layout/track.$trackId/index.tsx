@@ -3,8 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import Download from "lucide-solid/icons/download";
-import EyeOff from "lucide-solid/icons/eye-off";
 import Eye from "lucide-solid/icons/eye";
+import EyeOff from "lucide-solid/icons/eye-off";
 import MessageCircle from "lucide-solid/icons/message-circle";
 import Music from "lucide-solid/icons/music";
 import Pencil from "lucide-solid/icons/pencil";
@@ -91,7 +91,9 @@ function TrackDetailPage() {
 		},
 		onSuccess: () => {
 			setNewComment("");
-			queryClient.invalidateQueries({ queryKey: ["comments", data().track.id] });
+			queryClient.invalidateQueries({
+				queryKey: ["comments", data().track.id],
+			});
 		},
 	}));
 
@@ -100,7 +102,9 @@ function TrackDetailPage() {
 			return hideComment({ data: { commentId } });
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["comments", data().track.id] });
+			queryClient.invalidateQueries({
+				queryKey: ["comments", data().track.id],
+			});
 		},
 	}));
 
@@ -109,7 +113,9 @@ function TrackDetailPage() {
 			return unhideComment({ data: { commentId } });
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["comments", data().track.id] });
+			queryClient.invalidateQueries({
+				queryKey: ["comments", data().track.id],
+			});
 		},
 	}));
 
@@ -118,7 +124,9 @@ function TrackDetailPage() {
 			return deleteComment({ data: { commentId } });
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["comments", data().track.id] });
+			queryClient.invalidateQueries({
+				queryKey: ["comments", data().track.id],
+			});
 		},
 	}));
 
@@ -486,7 +494,8 @@ function TrackDetailPage() {
 						</div>
 						<Show when={createCommentMutation.isError}>
 							<p class="mt-2 text-red-400 text-sm">
-								{createCommentMutation.error?.message ?? "Failed to post comment"}
+								{createCommentMutation.error?.message ??
+									"Failed to post comment"}
 							</p>
 						</Show>
 					</form>

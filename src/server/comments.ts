@@ -265,4 +265,3 @@ export const getCommentCount = createServerFn({ method: "GET" })
 
 		return { count: result.length };
 	});
-

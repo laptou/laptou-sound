@@ -59,13 +59,10 @@ export const Route = createFileRoute("/api/upload")({
 						httpMetadata: { contentType: file.type },
 					});
 
-					return new Response(
-						JSON.stringify({ tempKey }),
-						{
-							status: 200,
-							headers: { "Content-Type": "application/json" },
-						},
-					);
+					return new Response(JSON.stringify({ tempKey }), {
+						status: 200,
+						headers: { "Content-Type": "application/json" },
+					});
 				}
 
 				// mode 2: direct upload to existing track (legacy flow)

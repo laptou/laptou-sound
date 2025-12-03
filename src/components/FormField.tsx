@@ -148,7 +148,11 @@ export function FormCheckbox(props: FormCheckboxProps) {
 				class="w-4 h-4 rounded border-stone-600 bg-stone-800 text-violet-500 focus:ring-violet-500"
 			/>
 			<div>
-				<Label class={`text-white/80 ${props.disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>{props.label}</Label>
+				<Label
+					class={`text-white/80 ${props.disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+				>
+					{props.label}
+				</Label>
 				{props.description && (
 					<p class="text-stone-400 text-sm">{props.description}</p>
 				)}

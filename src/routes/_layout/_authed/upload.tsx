@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_layout/_authed/upload")({
 
 // feature detection: check if fetch with ReadableStream body supports progress
 // this works in modern browsers but not in all environments
-function supportsStreamUpload(): boolean {
+function _supportsStreamUpload(): boolean {
 	try {
 		// check for Request constructor that accepts ReadableStream body
 		// and that the browser supports upload progress via streams
@@ -37,7 +37,11 @@ function supportsStreamUpload(): boolean {
 			typeof ReadableStream !== "undefined" &&
 			typeof Request !== "undefined" &&
 			// @ts-expect-error - checking for experimental feature
-			typeof new Request("", { method: "POST", body: new ReadableStream(), duplex: "half" }) !== "undefined"
+			typeof new Request("", {
+				method: "POST",
+				body: new ReadableStream(),
+				duplex: "half",
+			}) !== "undefined"
 		);
 	} catch {
 		return false;
@@ -155,7 +159,10 @@ function UploadPage() {
 				if (e.lengthComputable) {
 					// upload progress: 5-90% (track creation takes final 10%)
 					const percent = 5 + (e.loaded / e.total) * 85;
-					setUploadProgress({ type: "determinate", percent: Math.round(percent) });
+					setUploadProgress({
+						type: "determinate",
+						percent: Math.round(percent),
+					});
 				} else {
 					// show indeterminate state when progress can't be computed
 					setUploadProgress({ type: "indeterminate" });
@@ -309,7 +316,11 @@ function UploadPage() {
 											fallback={<span class="text-gray-400">...</span>}
 										>
 											<span class="text-gray-400">
-												{(progress as { type: "determinate"; percent: number }).percent}%
+												{
+													(progress as { type: "determinate"; percent: number })
+														.percent
+												}
+												%
 											</span>
 										</Show>
 									</div>
