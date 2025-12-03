@@ -141,9 +141,13 @@ function UploadPage() {
 		fileToUpload: File,
 		method: "PUT" | "POST",
 	): Promise<{ tempKey: string }> => {
-		// it would be tempting to use fetch with ReadableStream here, but there are two issues:
-		// 1. it does not work in Firefox (it just sends "[object ReadableStream]" as the body)
-		// 2. in Chrome, it seems to require HTTP/2, which is not supported by R2
+		// it would be tempting to use fetch with ReadableStream here, but there
+		// are two issues:
+		// 1. it does not work in Firefox (it just sends "[object
+		//    ReadableStream]" as the body) and there's no easy way to do
+		//    feature detection for this
+		// 2. in Chrome, it seems to require HTTP/2, which is not supported by
+		//    R2, so the request fails with ERR_ALPN_NEGOTIATION_FAILED
 		return new Promise((resolve, reject) => {
 			const xhr = new XMLHttpRequest();
 
