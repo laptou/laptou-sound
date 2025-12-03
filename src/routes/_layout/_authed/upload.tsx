@@ -136,68 +136,14 @@ function UploadPage() {
 	}));
 
 	// upload file with progress tracking
-	// uses fetch with ReadableStream if supported, falls back to XHR
 	const uploadWithProgress = async (
 		url: string,
 		fileToUpload: File,
 		method: "PUT" | "POST",
 	): Promise<{ tempKey: string }> => {
-		const useStreams = supportsStreamUpload() && method === "PUT";
-
-		if (useStreams) {
-			return uploadWithFetch(url, fileToUpload);
-		}
-		return uploadWithXHR(url, fileToUpload, method);
-	};
-
-	// fetch-based upload with ReadableStream for progress (modern browsers)
-	const uploadWithFetch = async (
-		url: string,
-		fileToUpload: File,
-	): Promise<{ tempKey: string }> => {
-		const totalSize = fileToUpload.size;
-		let uploadedSize = 0;
-
-			// create a ReadableStream that tracks progress
-			const stream = fileToUpload.stream();
-			const reader = stream.getReader();
-
-			const progressStream = new ReadableStream({
-				async pull(controller) {
-					const { done, value } = await reader.read();
-					if (done) {
-						controller.close();
-						return;
-					}
-					uploadedSize += value.byteLength;
-					// upload progress: 5-90% (track creation takes final 10%)
-					const percent = 5 + (uploadedSize / totalSize) * 85;
-					setUploadProgress({ type: "determinate", percent: Math.round(percent) });
-					controller.enqueue(value);
-				},
-			});
-
-		const response = await fetch(url, {
-			method: "PUT",
-			headers: { "Content-Type": fileToUpload.type },
-			body: progressStream,
-			// @ts-expect-error - duplex is required for streaming uploads
-			duplex: "half",
-		});
-
-		if (!response.ok) {
-			throw new Error("Upload failed");
-		}
-
-		return { tempKey: "" }; // presigned uploads already know the key
-	};
-
-	// XHR-based upload with progress events (fallback)
-	const uploadWithXHR = (
-		url: string,
-		fileToUpload: File,
-		method: "PUT" | "POST",
-	): Promise<{ tempKey: string }> => {
+		// it would be tempting to use fetch with ReadableStream here, but there are two issues:
+		// 1. it does not work in Firefox (it just sends "[object ReadableStream]" as the body)
+		// 2. in Chrome, it seems to require HTTP/2, which is not supported by R2
 		return new Promise((resolve, reject) => {
 			const xhr = new XMLHttpRequest();
 
