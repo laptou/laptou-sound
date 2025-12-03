@@ -145,6 +145,8 @@ function UploadPage() {
 		fileToUpload: File,
 		method: "PUT" | "POST",
 	): Promise<{ tempKey: string }> => {
+		const fileSize = fileToUpload.size;
+
 		// it would be tempting to use fetch with ReadableStream here, but there
 		// are two issues:
 		// 1. it does not work in Firefox (it just sends "[object
@@ -159,6 +161,13 @@ function UploadPage() {
 				if (e.lengthComputable) {
 					// upload progress: 5-90% (track creation takes final 10%)
 					const percent = 5 + (e.loaded / e.total) * 85;
+					setUploadProgress({
+						type: "determinate",
+						percent: Math.round(percent),
+					});
+				} else if (e.loaded) {
+					// upload progress: 5-90% (track creation takes final 10%)
+					const percent = 5 + (e.loaded / fileSize) * 85;
 					setUploadProgress({
 						type: "determinate",
 						percent: Math.round(percent),
